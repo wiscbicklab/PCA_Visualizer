@@ -124,7 +124,7 @@ PCA_11.27.24-pca/
 
 ## Known Issues That Need Fixing:
 
-1. Visualization: Group colors are not being applied correctly (grayed out option)
+1. Visualization: Visualize PCA - Group colors are not being applied correctly (grayed out option)
 2. Feature Mapping: Enable/disable logic not functioning properly
 3. Heatmap: Currently showing index of features instead of top features
 
