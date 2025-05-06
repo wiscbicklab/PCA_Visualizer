@@ -1,26 +1,24 @@
+
+```text
 PCA_11.27.24-pca/
 │
-├── requirements.txt           ← Python dependencies
+├── requirements.txt ← Python dependencies
 │
 └── source/
-    ├── analysis/
-    │   └── pca.py             ← Core PCA computation
-    │
-    ├── gui/
-    │   ├── app.py             ← Main GUI application (tkinter)   
-    │   └── spillover.py       ← Event bindings & interactivity helpers
-    │
-    ├── utils/
-    │   ├── constant.py        ← Column/feature definitions, defaults
-    │   ├── file_operations.py ← CSV loading/saving utilities
-    │   └── helpers.py         ← Data cleaning, transformation utilities
-    │
-    └── visualization/
-        ├── base.py            ← Plotting foundation
-        ├── biplot.py          ← PCA biplot rendering
-        └── heatmap.py         ← Heatmap rendering
-
----
+├── analysis/
+│ └── pca.py ← Core PCA computation
+├── gui/
+│ ├── app.py ← Main GUI application (tkinter)
+│ └── spillover.py ← Event bindings & interactivity helpers
+├── utils/
+│ ├── constant.py ← Column/feature definitions, defaults
+│ ├── file_operations.py ← CSV loading/saving utilities
+│ └── helpers.py ← Data cleaning, transformation utilities
+└── visualization/
+├── base.py ← Plotting foundation
+├── biplot.py ← PCA biplot rendering
+└── heatmap.py ← Heatmap rendering
+```
 
 **For updating:**
 
