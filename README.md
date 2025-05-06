@@ -1,6 +1,6 @@
-# PCA Analysis Tool
+# PCA Tool
 
-## Project Structure
+## GUI File Structure
 
 ```
 PCA_11.27.24-pca/
