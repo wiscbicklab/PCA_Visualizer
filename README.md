@@ -79,7 +79,7 @@ PCA_11.27.24-pca/
 
 - **View Results**:
     - Scree plots
-    - Standard or grouped biplots (colored by label or cluster)
+    - Standard or grouped biplots (colored by label or group)
     - Heatmaps of top PCA-contributing features
 - **Save Outputs**:
     - Cleaned CSV
@@ -132,8 +132,8 @@ PCA_11.27.24-pca/
 
 - Fix the highlighted issues
 - Fix the workflow - very clunky + not intuitive (buggy around clean csv/ run pca analysis if out of order)
-- Fix the save file interactions (add more messaging boxes? - help user understand when things are going)
+- Fix the save file interactions (add more messaging boxes? - help user understand where things are going more clearly)
 - Fix the saved plot formatting issues - view of plot is wonky in output dir
 - Generalize BBCH-specific filtering to support custom categorical filters
-- Improve interactive plotting capabilities - have it pop up in browswer for user? something like that 
+- Improve interactive plotting capabilities - have it pop out or in browswer for user? something like that 
 - Add more customization (e.g. user decides color palette) 
