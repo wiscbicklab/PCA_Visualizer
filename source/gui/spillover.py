@@ -70,8 +70,6 @@ class PCAAnalysisApp:
         # Initially disable visualization buttons
         self.disable_visualization_buttons()
 
-
-
     def disable_visualization_buttons(self):
         """Disable all visualization buttons"""
         for button in [self.visualize_button, self.biplot_button,
@@ -115,9 +113,7 @@ class PCAAnalysisApp:
         except Exception as e:
             messagebox.showerror("Error", f"Data cleaning failed: {str(e)}")
 
-
-
-        #### 2. UTILITY METHODS ####
+    #### 2. UTILITY METHODS ####
     def get_columns_to_drop(self):
         """Get list of columns to drop, checking for existence first."""
         user_columns = [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
@@ -317,7 +313,6 @@ class PCAAnalysisApp:
             self.featureresults_summary.delete(1.0, tk.END)
             self.featureresults_summary.config(state="disabled")
 
-
     def enable_visualization_buttons(self):
         """Enable visualization buttons after successful analysis."""
         for button in [self.visualize_button, self.biplot_button,
@@ -359,8 +354,6 @@ class PCAAnalysisApp:
 
         self.pcaresults_summary.insert(tk.END, summary)
 
-
-
     def update_figure(self):
         """Update the matplotlib figure."""
         self.canvas.draw()
@@ -380,7 +373,6 @@ class PCAAnalysisApp:
             messagebox.showinfo("Success", f"Plot saved as {save_path}")
         except Exception as e:
             messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
-
 
     def get_columns_to_drop(self):
         """Get list of columns to drop."""
@@ -463,8 +455,6 @@ class PCAAnalysisApp:
             self.featureresults_summary.config(state="disabled")
         except Exception as e:
             messagebox.showerror("Error", f"Error updating mapping display: {str(e)}")
-
-
 
     def enable_analysis_buttons(self):
         """Enable buttons for PCA analysis and visualizations."""
@@ -744,12 +734,5 @@ class PCAAnalysisApp:
         loadings['rank'] = range(1, len(loadings) + 1)
 
         return loadings
-
-
-
-
-
-
-
 
 

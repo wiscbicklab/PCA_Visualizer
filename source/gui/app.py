@@ -602,13 +602,13 @@ class PCAAnalysisApp:
 
             # Run analysis using the analyzer
             results = self.pca_analyzer.analyze(
-                data=self.data,
+                df=self.data,
                 n_components=n_components,
             )
 
             # Store results
             self.pca_model = results['model']
-            self.standardized_data = self.pca_analyzer.standardized_data
+            self.standardized_data = self.pca_analyzer.data_norm
 
             # Update display
             self.update_results_display(results)
@@ -642,8 +642,8 @@ class PCAAnalysisApp:
             # Prepare data using PCAAnalyzer
             prepared_data, missing_cols = self.pca_analyzer.prepare_data(
                 self.data,
-                drop_columns=drop_columns,
-                default_columns_to_drop=DEFAULT_COLUMNS_TO_DROP
+                drop_cols=drop_columns,
+                default_drop_cols=DEFAULT_COLUMNS_TO_DROP
             )
 
             # Log if no columns are dropped
@@ -1226,7 +1226,6 @@ class PCAAnalysisApp:
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update color palette: {str(e)}")
 
-
     def update_target_input(self, *args):
         """Enable or disable the target input box based on the dropdown selection."""
         if self.target_mode.get() == "Input Specific Target":
@@ -1255,49 +1254,6 @@ class PCAAnalysisApp:
 
         except Exception as e:
             messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

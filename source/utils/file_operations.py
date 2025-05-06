@@ -13,7 +13,6 @@ def load_file(file_path):
     encoding = result['encoding']
     return pd.read_csv(file_path, encoding=encoding)
 
-
 def save_plot(fig, filename_prefix="plot", output_dir=OUTPUT_DIR):
     """Save plot with timestamp to a specified directory."""
     if not os.path.exists(output_dir):
@@ -23,3 +22,5 @@ def save_plot(fig, filename_prefix="plot", output_dir=OUTPUT_DIR):
     save_path = os.path.join(output_dir, plot_filename)
     fig.savefig(save_path)
     return save_path
+
+
