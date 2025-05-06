@@ -122,7 +122,7 @@ PCA_11.27.24-pca/
     - Check "Top Loadings" to see feature rankings
     - For more than 2 principal components, adjust the component number textbox from the default 2, then run PCA again
 
-## Known Issues
+## Known Issues That Need Fixing:
 
 1. Visualization: Group colors are not being applied correctly (grayed out option)
 2. Feature Mapping: Enable/disable logic not functioning properly
@@ -134,3 +134,4 @@ PCA_11.27.24-pca/
 - Generalize BBCH-specific filtering to support custom categorical filters
 - Improve interactive plotting capabilities
 - Enhance feature grouping functionality
+- Add more customization (e.g. user decides color palette) 
