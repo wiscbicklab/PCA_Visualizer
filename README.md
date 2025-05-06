@@ -127,6 +127,7 @@ PCA_11.27.24-pca/
 1. Visualization: when hit 'Visualize PCA' - Group colors are not being applied correctly (grayed out)
 2. Feature Mapping: Enable/disable logic not functioning (not doing anything)
 3. Heatmap: Currently showing index of features instead of top features
+4. User input - case sensitive and depeonds on user's csv - very rigid right now
 
 ## Future Enhancements
 
