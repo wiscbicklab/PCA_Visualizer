@@ -124,14 +124,16 @@ PCA_11.27.24-pca/
 
 ## Known Issues That Need Fixing:
 
-1. Visualization: Visualize PCA - Group colors are not being applied correctly (grayed out option)
-2. Feature Mapping: Enable/disable logic not functioning properly
+1. Visualization: when hit 'Visualize PCA' - Group colors are not being applied correctly (grayed out)
+2. Feature Mapping: Enable/disable logic not functioning (not doing anything)
 3. Heatmap: Currently showing index of features instead of top features
 
 ## Future Enhancements
 
 - Fix the highlighted issues
+- Fix the workflow - very clunky + not intuitive (buggy around clean csv/ run pca analysis if out of order)
+- Fix the save file interactions (add more messaging boxes? - help user understand when things are going)
+- Fix the saved plot formatting issues - view of plot is wonky in output dir
 - Generalize BBCH-specific filtering to support custom categorical filters
-- Improve interactive plotting capabilities
-- Enhance feature grouping functionality
+- Improve interactive plotting capabilities - have it pop up in browswer for user? something like that 
 - Add more customization (e.g. user decides color palette) 
