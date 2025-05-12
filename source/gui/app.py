@@ -81,7 +81,6 @@ class PCAAnalysisApp:
         self.components_entry = None
 
         # Analysis Buttons
-        self.run_button = None
         self.visualize_button = None
         self.biplot_button = None
         self.interactive_biplot_button = None
@@ -118,6 +117,7 @@ class PCAAnalysisApp:
 
         # Data-related variables
         self.df = None
+        self.df_updated = False
         self.pca_results = None
         self.feature_to_group = None
         self.feature_groups_colors = None
@@ -163,7 +163,6 @@ class PCAAnalysisApp:
         self.initialize_matplotlib()
         self.create_widgets()
         self.setup_layout()
-        self.disable_visualization_buttons()
 
     def setup_window(self):
         """
@@ -324,10 +323,6 @@ class PCAAnalysisApp:
         self.target_mode.trace_add("write", self.update_target_input)
 
         # Analysis Buttons
-        self.run_button = tk.Button(self.main,
-                                    text="Run PCA Analysis",
-                                    **self.button_style,
-                                    command=self.run_analysis)
         self.visualize_button = tk.Button(self.main,
                                           text="Visualize PCA",
                                           **self.button_style,
@@ -343,7 +338,7 @@ class PCAAnalysisApp:
         self.scree_plot_button = tk.Button(self.main,
                                            text="Show Scree Plot",
                                            **self.button_style,
-                                           command=self.create_scree_plot)
+                                           command=self.create_screen_plot)
         self.top_features_button = tk.Button(self.main,
                                              text="Top Features Loadings",
                                              **self.button_style,
@@ -377,7 +372,7 @@ class PCAAnalysisApp:
                                         text="Upload Mapping CSV",
                                         **self.button_style,
                                         command=self.upload_mapping_csv)
-        self.mapping_button.config(state="disabled")
+        self.mapping_button.config(state="normal")
 
 
         ### Focus on signficant loadings (Biplot)
@@ -529,8 +524,7 @@ class PCAAnalysisApp:
         self.text_distance_entry.grid(row=19, column=1, padx=5, pady=5, sticky="w")
 
         # Run Analysis Buttons
-        self.run_button.grid(row=20, column=0, padx=5, pady=5)
-        self.visualize_button.grid(row=20, column=1, padx=5, pady=5)
+        self.visualize_button.grid(row=20, column=0, padx=5, pady=5)
 
         # Results Section
         self.pcaresults_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
@@ -583,7 +577,7 @@ class PCAAnalysisApp:
 
     def run_analysis(self):
         """Execute PCA analysis."""
-        if not self.is_data_loaded():
+        if not self.is_data_loaded() or not self.df_updated:
             return
 
         try:
@@ -703,12 +697,14 @@ class PCAAnalysisApp:
                 self.df = pd.DataFrame(x_imputed, columns=self.df.columns)
 
             # Enable buttons and update UI
-            self.run_button.config(state="normal")
             self.visualize_button.config(state="normal")
             self.heatmap_button.config(state="normal")  # Enable heatmap button after cleaning
             self.update_data_info()
             self.is_cleaned = True
             messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
+
+            # Note that df has been updated
+            self.df_updated = True
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -735,9 +731,12 @@ class PCAAnalysisApp:
 
     def visualize_pca(self):
         """Create PCA visualization."""
+        if not self.is_clean_data():
+            return
+        
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             # Reset the canvas
             self.reset_canvas()
@@ -767,11 +766,14 @@ class PCAAnalysisApp:
             print(error_str)
             messagebox.showerror("Visualization Error", str(e))
 
-    def create_scree_plot(self):
-        """Create scree plot."""
+    def create_screen_plot(self):
+        """Create screen plot."""
+        if not self.is_clean_data():
+            return
+        
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             # Reset the canvas
             self.reset_canvas()
@@ -788,9 +790,12 @@ class PCAAnalysisApp:
 
     def create_biplot(self):
         """Create biplot visualization."""
+        if not self.is_clean_data():
+            return
+        
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             # Ensure figure and canvas are properly initialized
             if self.fig is None:
@@ -837,9 +842,12 @@ class PCAAnalysisApp:
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
+        if not self.is_clean_data():
+            return
+
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             interactive_visualizer = InteractiveBiplotVisualizer()
             fig = interactive_visualizer.create_interactive_biplot(
@@ -863,9 +871,12 @@ class PCAAnalysisApp:
 
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
+        if not self.is_clean_data():
+            return
+        
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             # Reset the canvas
             self.reset_canvas()
@@ -899,9 +910,12 @@ class PCAAnalysisApp:
 
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
+        if not self.is_clean_data():
+            return
+        
         try:
             # Ensures PCA has been run
-            self.check_pca_loaded()
+            self.run_analysis()
 
             # Reset the canvas
             self.reset_canvas()
@@ -1002,6 +1016,21 @@ class PCAAnalysisApp:
         if not hasattr(self, 'df') or self.df is None:
             messagebox.showerror("Error", "No data loaded. Please load a CSV file first.")
             return False
+        return True
+    
+    def is_clean_data(self):
+        """Check if the loaded data meets the criteria for cleaned data."""
+        if not self.is_data_loaded():
+            return False
+        
+        if self.df.isnull().values.any():
+            print("Data contains missing values.")  # Debug
+            return False
+
+        if not all(pd.api.types.is_numeric_dtype(self.df[col]) for col in self.df.columns):
+            print("Non-numeric columns detected.")  # Debug
+            return False
+
         return True
 
     def check_pca_loaded(self):
@@ -1108,20 +1137,6 @@ class PCAAnalysisApp:
 
         self.pcaresults_summary.insert(tk.END, summary)
 
-    def enable_visualization_buttons(self):
-        """Enable visualization buttons."""
-        for button in [self.visualize_button, self.biplot_button,
-                       self.interactive_biplot_button, self.heatmap_button,
-                       self.scree_plot_button, self.save_button]:
-            button.config(state="normal")
-
-    def disable_visualization_buttons(self):
-        """Disable visualization buttons."""
-        for button in [self.visualize_button, self.biplot_button,
-                       self.interactive_biplot_button, self.heatmap_button,
-                       self.scree_plot_button, self.save_button]:
-            button.config(state="disabled")
-
     def toggle_buttons(self, buttons, state="normal"):
         for button in buttons:
             button.config(state=state)
@@ -1135,14 +1150,8 @@ class PCAAnalysisApp:
                                 "Feature grouping is now enabled. Please upload a mapping file.")
         else:
             # Disable the mapping upload button and reset group-related variables
-            self.mapping_button.config(state="disabled")
             self.feature_to_group = None
             self.feature_groups_colors = None
-
-            # Re-enable dependent buttons if PCA is complete
-            if hasattr(self, 'pca_model') and self.pca_results["model"] is not None:
-                self.biplot_button.config(state="normal")
-                self.interactive_biplot_button.config(state="normal")
 
             # Clear results or mapping display
             if hasattr(self, 'featureresults_summary'):
@@ -1198,9 +1207,9 @@ class PCAAnalysisApp:
 
     def handle_successful_load(self):
         """Handle successful file load."""
+        self.df_updated = True
         messagebox.showinfo("Success", f"File loaded successfully: ")
         self.update_data_info()
-        self.run_button.config(state="normal")
 
     def handle_load_error(self, error: Exception):
         """Handle file loading errors."""
