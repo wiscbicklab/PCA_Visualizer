@@ -189,7 +189,7 @@ class PCAAnalysisApp:
         self.file_label = tk.Label(self.main, text="Load CSV file:",
                                    bg=DEFAULT_STYLE["bg_color"], font=DEFAULT_STYLE["label_font"])
         self.file_button = tk.Button(self.main, text="Browse",
-                                     **self.button_style, command=self.load_file)
+                                     **self.button_style, command=self.load_data_file)
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
@@ -575,18 +575,11 @@ class PCAAnalysisApp:
 
     #### 1. DATA HANDLING METHODS ####
 
-    def load_file(self):
+    def load_data_file(self):
         """Load data from CSV file."""
-        try:
-            file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
-            if file_path:
-                self.file_path = file_path  # Save the file path for later use
-                self.df = load_csv_file(file_path)
-                self.handle_successful_load(file_path)
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            self.handle_load_error(e)
+        self.df = load_csv_file()
+        if self.is_data_loaded():
+            self.handle_successful_load()
 
     def run_analysis(self):
         """Execute PCA analysis."""
@@ -1015,8 +1008,6 @@ class PCAAnalysisApp:
         if not hasattr(self, 'pca_results') or self.pca_results is None:
             raise ValueError("Please run PCA analysis first.")
 
-
-
     def upload_mapping_csv(self):
         """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
         file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
@@ -1205,9 +1196,9 @@ class PCAAnalysisApp:
 
     #### 5. EVENT HANDLERS ####
 
-    def handle_successful_load(self, file_path: str):
+    def handle_successful_load(self):
         """Handle successful file load."""
-        messagebox.showinfo("Success", f"File loaded successfully: {file_path}")
+        messagebox.showinfo("Success", f"File loaded successfully: ")
         self.update_data_info()
         self.run_button.config(state="normal")
 

@@ -2,16 +2,26 @@ import os
 import time
 import chardet
 import pandas as pd
+from tkinter import filedialog
 
 OUTPUT_DIR = "output"  # Default directory for saving plots
 
 
-def load_csv_file(file_path):
+def load_csv_file():
     """Load and validate CSV file."""
-    with open(file_path, 'rb') as file:
-        result = chardet.detect(file.read())
-    encoding = result['encoding']
-    return pd.read_csv(file_path, encoding=encoding)
+    file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+    if not file_path:
+        print("No file selected")
+        return
+
+    try:
+        with open(file_path, 'rb') as file:
+            result = chardet.detect(file.read())
+        encoding = result['encoding']
+        return pd.read_csv(file_path, encoding=encoding)
+    except FileNotFoundError:
+        print("File not found.")
+        
 
 def save_plot(fig, filename_prefix="plot", output_dir=OUTPUT_DIR):
     """Save plot with timestamp to a specified directory."""
