@@ -15,3 +15,9 @@ DEFAULT_COLUMNS_TO_DROP = [
     'Rep', 'SideFlowerStrip', 'SideFlowerStrip_E',
     'SideFlowerStrip_W', 'SideFlowerStrip_preflow'
 ]
+
+DEFAULT_STYLE = {
+    "label_font":   ('Helvetica', 10),
+    "bg_color":     "#f5f5f5",
+
+}
