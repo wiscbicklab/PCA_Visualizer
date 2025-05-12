@@ -26,6 +26,8 @@ from source.utils.constant import OUTPUT_DIR, DEFAULT_COLUMNS_TO_DROP, DEFAULT_S
 from source.utils.file_operations import load_csv_file, save_plot
 from source.utils.helpers import generate_color_palette
 
+import traceback
+
 
 class PCAAnalysisApp:
     """GUI Application for PCA Analysis."""
@@ -115,9 +117,8 @@ class PCAAnalysisApp:
         self.save_button = None
 
         # Data-related variables
-        self.data = None
-        self.pca_model = None
-        self.standardized_data = None
+        self.df = None
+        self.pca_results = None
         self.feature_to_group = None
         self.feature_groups_colors = None
 
@@ -320,7 +321,7 @@ class PCAAnalysisApp:
         self.custom_target_entry = tk.Entry(self.main, font=DEFAULT_STYLE["label_font"], width=20, state="disabled")
 
         # Trace dropdown to enable/disable custom target input
-        self.target_mode.trace_add("w", self.update_target_input)
+        self.target_mode.trace_add("write", self.update_target_input)
 
         # Analysis Buttons
         self.run_button = tk.Button(self.main,
@@ -580,7 +581,7 @@ class PCAAnalysisApp:
             file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
             if file_path:
                 self.file_path = file_path  # Save the file path for later use
-                self.data = load_csv_file(file_path)
+                self.df = load_csv_file(file_path)
                 self.handle_successful_load(file_path)
         except Exception as e:
             self.handle_load_error(e)
@@ -597,30 +598,26 @@ class PCAAnalysisApp:
             drop_cols = self.get_columns_to_drop()
 
             # Standardize column names
-            self.data.columns = self.data.columns.str.strip().str.lower()
+            self.df.columns = self.df.columns.str.strip().str.lower()
             drop_cols = [col.strip().lower() for col in drop_cols]
 
             # Filter valid columns to drop
-            valid_drop_cols = [col for col in drop_cols if col in self.data.columns]
-            missing_cols = set(drop_cols) - set(self.data.columns)
+            valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
+            missing_cols = set(drop_cols) - set(self.df.columns)
             if missing_cols:
                 print("Missing columns (not in dataset):", missing_cols)
 
             # Drop valid columns
-            self.data.drop(columns=valid_drop_cols, inplace=True)
+            self.df.drop(columns=valid_drop_cols, inplace=True)
 
-            # Run analysis using the analyzer
-            results = self.pca_analyzer.analyze(
-                df=self.data,
+            # Run analysis and store the result
+            self.pca_results = self.pca_analyzer.analyze(
+                df=self.df,
                 n_components=n_components,
             )
 
-            # Store results
-            self.pca_model = results['model']
-            self.standardized_data = self.pca_analyzer.data_norm
-
             # Update display
-            self.update_results_display(results)
+            self.update_results_display(self.pca_results)
             self.toggle_buttons(
                 [
                     self.visualize_button,
@@ -650,7 +647,7 @@ class PCAAnalysisApp:
 
             # Prepare data using PCAAnalyzer
             prepared_data, missing_cols = self.pca_analyzer.prepare_data(
-                self.data,
+                self.df,
                 drop_cols=drop_columns,
                 default_drop_cols=DEFAULT_COLUMNS_TO_DROP
             )
@@ -660,8 +657,8 @@ class PCAAnalysisApp:
                 print("No columns were specified for dropping. Proceeding with the original dataset.")
 
             # Update internal data with prepared data
-            self.data = prepared_data
-            print(f"Data processed successfully. Shape after preparation: {self.data.shape}")
+            self.df = prepared_data
+            print(f"Data processed successfully. Shape after preparation: {self.df.shape}")
 
             # Inform user if any specified columns were missing
             if missing_cols:
@@ -702,47 +699,47 @@ class PCAAnalysisApp:
             with open(self.file_path, 'rb') as file:
                 result = chardet.detect(file.read())
             encoding = result['encoding']
-            self.data = pd.read_csv(self.file_path, encoding=encoding)
-            self.data.replace([np.inf, -np.inf], np.nan, inplace=True)
+            self.df = pd.read_csv(self.file_path, encoding=encoding)
+            self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
             # Convert int64 to float for PCA compatibility
-            for col in self.data.columns:
-                if self.data[col].dtype == 'int64':
-                    self.data[col] = self.data[col].astype(float)
+            for col in self.df.columns:
+                if self.df[col].dtype == 'int64':
+                    self.df[col] = self.df[col].astype(float)
 
             # Ensure BBCH column exists and is treated as string
-            if 'bbch' in self.data.columns:
-                self.data['bbch'] = self.data['bbch'].astype(str).str.strip()
+            if 'bbch' in self.df.columns:
+                self.df['bbch'] = self.df['bbch'].astype(str).str.strip()
 
             # Filter by BBCH stage
             selected_bbch = self.bbch_choice.get()
             if selected_bbch == 59:
-                self.data = self.data[self.data['bbch'] == 'B59']
+                self.df = self.df[self.df['bbch'] == 'B59']
             elif selected_bbch == 69:
-                self.data = self.data[self.data['bbch'] == 'B69']
+                self.df = self.df[self.df['bbch'] == 'B69']
             elif selected_bbch == 85:
-                self.data = self.data[self.data['bbch'] == 'B85']
+                self.df = self.df[self.df['bbch'] == 'B85']
             elif selected_bbch == -1:
                 pass  # No filter applied if selected is -1 (all stages)
 
             # Drop user-specified columns
             drop_columns = self.get_columns_to_drop()
-            self.data.columns = self.data.columns.str.strip().str.lower()  # Standardize column names
+            self.df.columns = self.df.columns.str.strip().str.lower()  # Standardize column names
             drop_columns = [col.strip().lower() for col in drop_columns]  # Ensure consistency
 
             # Filter valid columns to drop
-            valid_columns_to_drop = [col for col in drop_columns if col in self.data.columns]
-            missing_columns = set(drop_columns) - set(self.data.columns)
+            valid_columns_to_drop = [col for col in drop_columns if col in self.df.columns]
+            missing_columns = set(drop_columns) - set(self.df.columns)
             if missing_columns:
                 print(
                     f"Warning: The following columns were not found in the dataset and could not be dropped: {missing_columns}")
-            self.data.drop(columns=valid_columns_to_drop, inplace=True, errors='ignore')
+            self.df.drop(columns=valid_columns_to_drop, inplace=True, errors='ignore')
 
             # Drop non-numeric columns except BBCH
-            if 'bbch' in self.data.columns:
-                non_numeric_cols = self.data.select_dtypes(exclude=[float, int]).columns
+            if 'bbch' in self.df.columns:
+                non_numeric_cols = self.df.select_dtypes(exclude=[float, int]).columns
                 non_numeric_cols = non_numeric_cols.drop('bbch', errors='ignore')
-                self.data.drop(columns=non_numeric_cols, inplace=True, errors='ignore')
+                self.df.drop(columns=non_numeric_cols, inplace=True, errors='ignore')
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
@@ -758,9 +755,9 @@ class PCAAnalysisApp:
                 return
 
             # Impute missing values
-            if self.data.isnull().any().any():
-                x_imputed = imputer.fit_transform(self.data)
-                self.data = pd.DataFrame(x_imputed, columns=self.data.columns)
+            if self.df.isnull().any().any():
+                x_imputed = imputer.fit_transform(self.df)
+                self.df = pd.DataFrame(x_imputed, columns=self.df.columns)
 
             # Enable buttons and update UI
             self.run_button.config(state="normal")
@@ -775,11 +772,11 @@ class PCAAnalysisApp:
 
     def is_clean_data(self):
         """Check if the loaded data meets the criteria for cleaned data."""
-        if self.data.isnull().values.any():
+        if self.df.isnull().values.any():
             print("Data contains missing values.")  # Debug
             return False
 
-        if not all(pd.api.types.is_numeric_dtype(self.data[col]) for col in self.data.columns):
+        if not all(pd.api.types.is_numeric_dtype(self.df[col]) for col in self.df.columns):
             print("Non-numeric columns detected.")  # Debug
             return False
 
@@ -805,7 +802,7 @@ class PCAAnalysisApp:
     def visualize_pca(self):
         """Create PCA visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_model is None:
+            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
                 raise ValueError("Please run PCA analysis first.")
 
             # Reset the canvas
@@ -813,21 +810,21 @@ class PCAAnalysisApp:
 
             # Get the target variable
             target_variable = self.get_target_variable()
-            if target_variable and target_variable not in self.data.columns:
+            if target_variable and target_variable not in self.df.columns:
                 raise ValueError(f"Target variable '{target_variable}' not found in the dataset.")
 
             # Debugging (optional)
             print("Target variable:", target_variable)
-            print("Data columns:", self.data.columns.tolist())
+            print("Data columns:", self.df.columns.tolist())
 
             # Perform PCA transformation
             pca_visualizer = PCAVisualizer(self.fig, self.ax)
-            transformed_data = self.pca_model.transform(self.standardized_data)
+            transformed_data = self.pca_results['transformed_data']
 
             # Plot the PCA visualization, grouped by target
             pca_visualizer.plot(
                 principal_components=transformed_data,
-                data=self.data,
+                data=self.df,
                 target=target_variable,
                 target_mode=self.target_mode.get().strip().lower()
             )
@@ -836,19 +833,21 @@ class PCAAnalysisApp:
             self.canvas.draw()
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Visualization Error", str(e))
 
     def create_scree_plot(self):
         """Create scree plot."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_model is None:
+            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
                 raise ValueError("Please run PCA analysis first")
 
             # Reset the canvas
             self.reset_canvas()
 
             scree_visualizer = ScreePlotVisualizer(self.fig, self.ax)
-            scree_visualizer.create_scree_plot(self.pca_model)
+            scree_visualizer.create_scree_plot(self.pca_results["model"])
 
             self.canvas.draw()  # This ensures the new plot appears on the canvas
 
@@ -858,7 +857,7 @@ class PCAAnalysisApp:
     def create_biplot(self):
         """Create biplot visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_model is None:
+            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
                 raise ValueError("Please run PCA analysis first.")
 
             # Ensure figure and canvas are properly initialized
@@ -882,13 +881,13 @@ class PCAAnalysisApp:
             # Delegate to BiplotVisualizer
             biplot_visualizer = BiplotVisualizer(self.fig, self.ax)
             biplot_visualizer.create_biplot(
-                pca_model=self.pca_model,
-                x_standardized=self.standardized_data,
-                data=self.data,
+                pca_model=self.pca_results["model"],
+                x_standardized=self.pca_results['standardized_data'],
+                df=self.df,
                 feature_to_group=self.feature_to_group,
                 enable_feature_grouping=self.enable_feature_grouping.get(),
                 top_n=top_n,
-                text_distance=text_distance,
+                text_dist=text_distance,
                 focus_on_loadings=self.focus_on_loadings.get()
             )
 
@@ -905,14 +904,14 @@ class PCAAnalysisApp:
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_model is None:
+            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
                 raise ValueError("Please run PCA analysis first")
 
             interactive_visualizer = InteractiveBiplotVisualizer()
             fig = interactive_visualizer.create_interactive_biplot(
-                pca_model=self.pca_model,
-                x_standardized=self.standardized_data,
-                data=self.data,
+                pca_model=self.pca_results["model"],
+                x_standardized=self.pca_results("standardized_data"),
+                data=self.df,
                 top_n_entry=self.components_entry,  # Replace with actual entry for top N
                 text_distance_entry=self.components_entry,  # Replace with actual entry for text distance
                 enable_feature_grouping=self.enable_feature_grouping.get(),
@@ -929,7 +928,7 @@ class PCAAnalysisApp:
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_model is None:
+            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
                 raise ValueError("PCA analysis has not been performed yet.")
 
             # Reset the canvas
@@ -941,7 +940,7 @@ class PCAAnalysisApp:
                 raise ValueError("Heatmap mode is not defined.")
 
             # Calculate PCA loadings
-            loadings = self.pca_model.components_.T
+            loadings = self.pca_results["model"].components_.T
 
             # Determine focus columns
             focus_columns = self.get_focus_columns(heatmap_mode, focus_entry=self.focus_entry.get())
@@ -950,7 +949,7 @@ class PCAAnalysisApp:
             heatmap_visualizer = LoadingsHeatmapVisualizer(self.fig, self.ax)
             heatmap_visualizer.display_loadings_heatmap(
                 loadings=loadings,
-                data_columns=self.data.columns.tolist(),
+                data_columns=self.df.columns.tolist(),
                 focus_columns=focus_columns,
                 cmap="coolwarm"
             )
@@ -966,13 +965,13 @@ class PCAAnalysisApp:
         # Reset the canvas
         self.reset_canvas()
 
-        if not hasattr(self, 'pca_model') or self.pca_model is None:
+        if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
             messagebox.showerror("Error", "PCA analysis has not been performed yet.")
             return
 
         try:
             # Initialize LoadingsProcessor
-            loadings_processor = LoadingsProcessor(self.pca_model, self.data)
+            loadings_processor = LoadingsProcessor(self.pca_results["model"], self.df)
 
             # Get top N features from user input
             try:
@@ -1029,7 +1028,7 @@ class PCAAnalysisApp:
             new_name = self.replace_new_entry.get().strip()
 
             # Ensure the column exists in the dataset
-            if old_name not in self.data.columns:
+            if old_name not in self.df.columns:
                 messagebox.showerror("Error", f"Column '{old_name}' not found in the dataset.")
                 return
 
@@ -1039,7 +1038,7 @@ class PCAAnalysisApp:
                 return
 
             # Replace the column name
-            self.data.rename(columns={old_name: new_name}, inplace=True)
+            self.df.rename(columns={old_name: new_name}, inplace=True)
 
             # Update the dataset info displayed in the GUI
             self.update_data_info()
@@ -1059,7 +1058,7 @@ class PCAAnalysisApp:
 
     def validate_data_exists(self) -> bool:
         """Check if data is loaded."""
-        if not hasattr(self, 'data') or self.data is None:
+        if not hasattr(self, 'data') or self.df is None:
             messagebox.showerror("Error", "No data loaded. Please load a CSV file first.")
             return False
         return True
@@ -1097,16 +1096,16 @@ class PCAAnalysisApp:
         """Determine columns to focus on based on heatmap mode."""
         try:
             if heatmap_mode_var == "Top 10 Features":
-                return self.data.columns[:10].tolist()  # Top 10 features by default
+                return self.df.columns[:10].tolist()  # Top 10 features by default
             elif heatmap_mode_var == "Top 20 Features":
-                return self.data.columns[:20].tolist()  # Top 20 features by default
+                return self.df.columns[:20].tolist()  # Top 20 features by default
             elif heatmap_mode_var == "Custom Features":
                 if focus_entry:
                     columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
                     if not columns:
                         raise ValueError("No valid columns specified for custom heatmap.")
                     # Ensure specified columns exist in the data
-                    missing_columns = [col for col in columns if col not in self.data.columns]
+                    missing_columns = [col for col in columns if col not in self.df.columns]
                     if missing_columns:
                         raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
                     return columns
@@ -1132,11 +1131,11 @@ class PCAAnalysisApp:
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"
-            info_text += f"Dataset Shape: {self.data.shape[0]} rows × {self.data.shape[1]} columns\n\n"
+            info_text += f"Dataset Shape: {self.df.shape[0]} rows × {self.df.shape[1]} columns\n\n"
             info_text += "Columns:\n"
 
             # Simple column listing
-            columns = self.data.columns.tolist()
+            columns = self.df.columns.tolist()
             for i, col in enumerate(columns, 1):
                 info_text += f"{i}. {col}\n"
 
@@ -1196,7 +1195,7 @@ class PCAAnalysisApp:
             self.feature_groups_colors = None
 
             # Re-enable dependent buttons if PCA is complete
-            if hasattr(self, 'pca_model') and self.pca_model is not None:
+            if hasattr(self, 'pca_model') and self.pca_results["model"] is not None:
                 self.biplot_button.config(state="normal")
                 self.interactive_biplot_button.config(state="normal")
 

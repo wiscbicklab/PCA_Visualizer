@@ -186,7 +186,7 @@ class PCAAnalyzer:
         """
         try:
             # Prepare and validate data
-            prepared_data, missing_columns = self.prepare_data(
+            prepared_data, missing_cols = self.prepare_data(
                 df,
                 drop_cols=drop_cols,
                 default_drop_cols=default_drop_cols
@@ -206,7 +206,8 @@ class PCAAnalyzer:
                 'missing_columns': missing_cols,
                 'original_shape': df.shape,
                 'prepared_shape': prepared_data.shape,
-                'standardized_shape': standardized_data.shape
+                'standardized_shape': standardized_data.shape,
+                'standardized_data': standardized_data,
             })
 
             return results
