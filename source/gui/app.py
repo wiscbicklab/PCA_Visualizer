@@ -594,20 +594,20 @@ class PCAAnalysisApp:
         try:
             # Get analysis parameters
             n_components = int(self.components_entry.get())
-            drop_columns = self.get_columns_to_drop()
+            drop_cols = self.get_columns_to_drop()
 
             # Standardize column names
             self.data.columns = self.data.columns.str.strip().str.lower()
-            drop_columns = [col.strip().lower() for col in drop_columns]
+            drop_cols = [col.strip().lower() for col in drop_cols]
 
             # Filter valid columns to drop
-            valid_columns_to_drop = [col for col in drop_columns if col in self.data.columns]
-            missing_columns = set(drop_columns) - set(self.data.columns)
-            if missing_columns:
-                print("Missing columns (not in dataset):", missing_columns)
+            valid_drop_cols = [col for col in drop_cols if col in self.data.columns]
+            missing_cols = set(drop_cols) - set(self.data.columns)
+            if missing_cols:
+                print("Missing columns (not in dataset):", missing_cols)
 
             # Drop valid columns
-            self.data.drop(columns=valid_columns_to_drop, inplace=True)
+            self.data.drop(columns=valid_drop_cols, inplace=True)
 
             # Run analysis using the analyzer
             results = self.pca_analyzer.analyze(
