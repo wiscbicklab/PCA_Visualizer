@@ -15,7 +15,7 @@ class PCAAnalyzer:
             df: pd.DataFrame,
             drop_cols: Optional[List[str]] = None,
             default_drop_cols: Optional[List[str]] = None
-    ) -> pd.DataFrame:
+    ) -> Tuple[pd.DataFrame, List[str]]:
         """
         Removes the specified columns from the data
 
@@ -28,7 +28,7 @@ class PCAAnalyzer:
             DataFrame: A copy of data with the specified columns filtered out
         """
         if not isinstance(df, pd.DataFrame):
-            raise TypeError("Input must be a pandas DataFrame")
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
 
         # Create working copy
         df_copy = df.copy()
@@ -45,9 +45,9 @@ class PCAAnalyzer:
             default_to_drop = [col for col in default_drop_cols if col in df_copy.columns]
             df_copy = df_copy.drop(columns=default_to_drop)
 
-        return df_copy
+        return df_copy, missing_cols if drop_cols else []
 
-    def clean_numeric_data(self, df: pd.DataFrame) -> pd.DataFrame:
+    def clean_numeric_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
         """
         Excludes and prints non-numeric columns. Cleans numeric data by replacing inf values with NaN
         
@@ -58,7 +58,7 @@ class PCAAnalyzer:
             (pd.DataFrame): The numeric data from the given data with cleaned values.
         """
         if not isinstance(df, pd.DataFrame):
-            raise TypeError("Input must be a pandas DataFrame")
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
 
         # Select numeric data
         numeric_df = df.select_dtypes(include=[np.number])
@@ -89,7 +89,7 @@ class PCAAnalyzer:
         """
         # Validate Input data
         if not isinstance(df, pd.DataFrame):
-            raise TypeError("Input must be a pandas DataFrame")
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
 
         # Standardize Data
         standardized = pd.DataFrame(StandardScaler().fit_transform(df), columns=df.columns)
@@ -122,7 +122,7 @@ class PCAAnalyzer:
 
         # Verifies parameter types
         if not isinstance(df, pd.DataFrame):
-            raise TypeError("Input must be a pandas DataFrame")
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
         if n_components > df.shape[1]:
             raise ValueError("More components selected then exist")
 
@@ -193,7 +193,7 @@ class PCAAnalyzer:
             )
 
             # Clean numeric data
-            numeric_data = self.clean_numeric_data(prepared_data)
+            numeric_data, missing_cols = self.clean_numeric_data(prepared_data)
 
             # Standardize
             standardized_data = self.standardize_data(numeric_data)
@@ -203,7 +203,7 @@ class PCAAnalyzer:
 
             # Add additional context to results
             results.update({
-                'missing_columns': missing_columns,
+                'missing_columns': missing_cols,
                 'original_shape': df.shape,
                 'prepared_shape': prepared_data.shape,
                 'standardized_shape': standardized_data.shape
@@ -212,5 +212,6 @@ class PCAAnalyzer:
             return results
 
         except Exception as e:
-            traceback.print_exc()  # Keep detailed error tracking
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             raise Exception(f"PCA analysis failed: {str(e)}")

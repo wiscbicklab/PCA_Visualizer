@@ -320,7 +320,7 @@ class PCAAnalysisApp:
         self.custom_target_entry = tk.Entry(self.main, font=DEFAULT_STYLE["label_font"], width=20, state="disabled")
 
         # Trace dropdown to enable/disable custom target input
-        self.target_mode.trace("w", self.update_target_input)
+        self.target_mode.trace_add("w", self.update_target_input)
 
         # Analysis Buttons
         self.run_button = tk.Button(self.main,
