@@ -15,7 +15,7 @@ from source.visualization.loadings import LoadingsProcessor
 from source.analysis.pca import PCAAnalyzer
 
 from source.utils.constant import OUTPUT_DIR, FEATURE_GROUPS_COLORS, DEFAULT_COLUMNS_TO_DROP
-from source.utils.file_operations import load_file, save_plot
+from source.utils.file_operations import load_csv_file, save_plot
 from source.utils.helpers import generate_color_palette
 import time
 import os

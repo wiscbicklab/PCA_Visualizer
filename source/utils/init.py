@@ -7,7 +7,7 @@ from constant import (
     FEATURE_GROUPS_COLORS,
     DEFAULT_COLUMNS_TO_DROP
 )
-from file_operations import load_file, save_plot
+from file_operations import load_csv_file, save_plot
 from helpers import generate_color_palette
 
 __all__ = [
@@ -17,7 +17,7 @@ __all__ = [
     'DEFAULT_COLUMNS_TO_DROP',
 
     # File operations
-    'load_file',
+    'load_csv_file',
     'save_plot',
 
     # Helpers

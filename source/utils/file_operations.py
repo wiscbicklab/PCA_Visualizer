@@ -6,7 +6,7 @@ import pandas as pd
 OUTPUT_DIR = "output"  # Default directory for saving plots
 
 
-def load_file(file_path):
+def load_csv_file(file_path):
     """Load and validate CSV file."""
     with open(file_path, 'rb') as file:
         result = chardet.detect(file.read())

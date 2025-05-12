@@ -1,5 +1,5 @@
 # constants.py
-OUTPUT_DIR = 'KUpca_plots_output5'
+OUTPUT_DIR = 'KUpca_plots_output'
 
 FEATURE_GROUPS_COLORS = {
     "FAB": "black",
