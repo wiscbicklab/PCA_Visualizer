@@ -35,9 +35,9 @@ class PCAAnalyzer:
 
         # Validate user-specified columns exist
         if drop_cols:
-            missing_columns = [col for col in drop_cols if col not in df_copy.columns]
-            if missing_columns:
-                raise ValueError(f"Columns not found in the dataset: {', '.join(missing_columns)}")
+            missing_cols = [col for col in drop_cols if col not in df_copy.columns]
+            if missing_cols:
+                raise ValueError(f"Columns not found in the dataset: {', '.join(missing_cols)}")
             df_copy = df_copy.drop(columns=drop_cols)
 
         # Drop predefined columns
@@ -61,22 +61,22 @@ class PCAAnalyzer:
             raise TypeError("Input must be a pandas DataFrame")
 
         # Select numeric data
-        numeric_data = df.select_dtypes(include=[np.number])
+        numeric_df = df.select_dtypes(include=[np.number])
 
         # Check if numeric data is empty
-        if numeric_data.empty:
+        if numeric_df.empty:
             raise ValueError("No numerical data available for PCA")
 
         # Identify and log non-numeric columns
-        removed_columns = df.columns.difference(numeric_data.columns)
-        if not removed_columns.empty:
-            print(f"Non-numeric columns excluded: {list(removed_columns)}")
+        rm_cols = df.columns.difference(numeric_df.columns)
+        if not rm_cols.empty:
+            print(f"Non-numeric columns excluded: {list(rm_cols)}")
 
         # Replace inf values with NaN
-        if np.any(np.isinf(numeric_data.values)):
-            numeric_data = numeric_data.replace([np.inf, -np.inf], np.nan)
+        if np.any(np.isinf(numeric_df.values)):
+            numeric_df = numeric_df.replace([np.inf, -np.inf], np.nan)
 
-        return numeric_data, removed_columns
+        return numeric_df, rm_cols
   
     def standardize_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """
