@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 from matplotlib.colors import to_hex
 from matplotlib.colors import Normalize
-from matplotlib.patches import Ellipse
+from matplotlib.patches import Ellipse, FancyArrowPatch
 from scipy import stats
 import plotly.graph_objects as go
 import plotly.io as pio
@@ -24,8 +24,8 @@ def generate_significance_color(magnitude, min_magnitude, max_magnitude):
 class BiplotVisualizer(BasePlotter):
     """Exact match to original biplot functionality."""
 
-    def create_biplot(self, pca_model, x_standardized, data, feature_to_group=None,
-                      feature_groups_colors=None, text_distance=1.1, top_n=10,
+    def create_biplot(self, pca_model, x_standardized, df, feature_to_group=None,
+                      feature_groups_colors=None, text_dist=1.1, top_n=10,
                       enable_feature_grouping=False, significance_threshold=0.2, focus_on_loadings=False):
         """
         Create a biplot visualization with optional feature grouping and significance-based filtering.
@@ -40,7 +40,7 @@ class BiplotVisualizer(BasePlotter):
 
         # Top N features based on loading magnitude
         loadings = pca_model.components_.T
-        feature_names = data.columns
+        feature_names = df.columns
         loading_magnitudes = np.sqrt(loadings[:, 0] ** 2 + loadings[:, 1] ** 2)
         top_indices = np.argsort(loading_magnitudes)[::-1][:top_n]
 
@@ -107,12 +107,20 @@ class BiplotVisualizer(BasePlotter):
                 print(f"Feature: {feature}, Group: {group}, Color: {color}")
 
                 # Plot the arrow
-                self.ax.arrow(0, 0, scaled_loadings[idx, 0], scaled_loadings[idx, 1],
-                              color=color, alpha=0.8, head_width=0.05, length_includes_head=True)
+                arrow = FancyArrowPatch(
+                    (0, 0),
+                    (scaled_loadings[idx, 0], scaled_loadings[idx, 1]),
+                    color=color,
+                    arrowstyle='->',
+                    mutation_scale=15,
+                    alpha=0.8
+                )
+                self.ax.add_patch(arrow)
+                
                 # Add the feature label
                 text = self.ax.text(
-                    scaled_loadings[idx, 0] * text_distance,
-                    scaled_loadings[idx, 1] * text_distance,
+                    scaled_loadings[idx, 0] * text_dist,
+                    scaled_loadings[idx, 1] * text_dist,
                     feature, fontsize=10, color=color,
                     ha='center', va='center'
                 )
@@ -138,11 +146,18 @@ class BiplotVisualizer(BasePlotter):
                     continue
 
                 # Add arrow and label
-                self.ax.arrow(0, 0, scaled_loadings[idx, 0], scaled_loadings[idx, 1],
-                              color=color, alpha=0.8, head_width=0.05, length_includes_head=True)
+                arrow = FancyArrowPatch(
+                    (0, 0),
+                    (scaled_loadings[idx, 0], scaled_loadings[idx, 1]),
+                    color=color,
+                    arrowstyle='->',
+                    mutation_scale=15,
+                    alpha=0.8
+                )
+                self.ax.add_patch(arrow)
                 text = self.ax.text(
-                    scaled_loadings[idx, 0] * text_distance,
-                    scaled_loadings[idx, 1] * text_distance,
+                    scaled_loadings[idx, 0] * text_dist,
+                    scaled_loadings[idx, 1] * text_dist,
                     feature, fontsize=10, color=color,
                     ha='center', va='center'
                 )

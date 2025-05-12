@@ -189,10 +189,10 @@ class PCAAnalysisApp:
             biplot_visualizer.create_biplot(
                 pca_model=self.pca_model,
                 x_standardized=self.x_standardized,
-                data=self.data,
+                df=self.data,
                 feature_to_group=self.feature_to_group,
                 feature_groups_colors=self.feature_groups_colors,
-                text_distance=float(self.text_distance_entry.get()),
+                text_dist=float(self.text_distance_entry.get()),
                 top_n=int(self.top_n_entry.get()),
                 enable_feature_grouping=self.enable_feature_grouping.get(),
                 significance_threshold=significance_threshold

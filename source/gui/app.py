@@ -584,12 +584,13 @@ class PCAAnalysisApp:
                 self.df = load_csv_file(file_path)
                 self.handle_successful_load(file_path)
         except Exception as e:
-            self.handle_load_error(e)
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             self.handle_load_error(e)
 
     def run_analysis(self):
         """Execute PCA analysis."""
-        if not self.validate_data_exists():
+        if not self.is_data_loaded():
             return
 
         try:
@@ -599,7 +600,6 @@ class PCAAnalysisApp:
 
             # Standardize column names
             self.df.columns = self.df.columns.str.strip().str.lower()
-            drop_cols = [col.strip().lower() for col in drop_cols]
 
             # Filter valid columns to drop
             valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
@@ -634,49 +634,9 @@ class PCAAnalysisApp:
         except ValueError as ve:
             messagebox.showerror("Analysis Error", str(ve))
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"PCA analysis failed: {str(e)}")
-
-    def process_data(self):
-        """Process data according to user selections."""
-        if not self.validate_data_exists():
-            return
-
-        try:
-            # Check user-selected columns to drop
-            drop_columns = self.get_columns_to_drop()
-
-            # Prepare data using PCAAnalyzer
-            prepared_data, missing_cols = self.pca_analyzer.prepare_data(
-                self.df,
-                drop_cols=drop_columns,
-                default_drop_cols=DEFAULT_COLUMNS_TO_DROP
-            )
-
-            # Log if no columns are dropped
-            if not drop_columns and not DEFAULT_COLUMNS_TO_DROP:
-                print("No columns were specified for dropping. Proceeding with the original dataset.")
-
-            # Update internal data with prepared data
-            self.df = prepared_data
-            print(f"Data processed successfully. Shape after preparation: {self.df.shape}")
-
-            # Inform user if any specified columns were missing
-            if missing_cols:
-                print(f"Warning: The following columns were not found in the dataset: {', '.join(missing_cols)}")
-                messagebox.showinfo(
-                    "Missing Columns",
-                    f"The following columns were not found in the dataset and could not be dropped: {', '.join(missing_cols)}"
-                )
-
-        except ValueError as ve:
-            # Handle known errors gracefully
-            print(f"ValueError during data preparation: {str(ve)}")
-            messagebox.showerror("Data Preparation Error", str(ve))
-
-        except Exception as e:
-            # Handle unexpected errors with a user-friendly message
-            print(f"Unexpected error during data preparation: {str(e)}")
-            messagebox.showerror("Error", f"An unexpected error occurred during data preparation: {str(e)}")
 
     def select_output_directory(self):
         """Allow the user to select an output directory for saving plots."""
@@ -690,18 +650,10 @@ class PCAAnalysisApp:
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
-        if not hasattr(self, 'file_path') or not self.file_path:
-            messagebox.showerror("Error", "No file loaded. Please load a CSV file first.")
+        if not self.is_data_loaded():
             return
 
         try:
-            # Detect file encoding and load the data
-            with open(self.file_path, 'rb') as file:
-                result = chardet.detect(file.read())
-            encoding = result['encoding']
-            self.df = pd.read_csv(self.file_path, encoding=encoding)
-            self.df.replace([np.inf, -np.inf], np.nan, inplace=True)
-
             # Convert int64 to float for PCA compatibility
             for col in self.df.columns:
                 if self.df[col].dtype == 'int64':
@@ -723,23 +675,21 @@ class PCAAnalysisApp:
                 pass  # No filter applied if selected is -1 (all stages)
 
             # Drop user-specified columns
-            drop_columns = self.get_columns_to_drop()
+            drop_cols = self.get_columns_to_drop()
             self.df.columns = self.df.columns.str.strip().str.lower()  # Standardize column names
-            drop_columns = [col.strip().lower() for col in drop_columns]  # Ensure consistency
 
             # Filter valid columns to drop
-            valid_columns_to_drop = [col for col in drop_columns if col in self.df.columns]
-            missing_columns = set(drop_columns) - set(self.df.columns)
-            if missing_columns:
-                print(
-                    f"Warning: The following columns were not found in the dataset and could not be dropped: {missing_columns}")
-            self.df.drop(columns=valid_columns_to_drop, inplace=True, errors='ignore')
+            valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
+            missing_cols = set(drop_cols) - set(self.df.columns)
+            if missing_cols:
+                print(f"Warning: The following columns were not found in the dataset and could not be dropped: {missing_cols}")
+            self.df.drop(columns=valid_drop_cols, inplace=True, errors='ignore')
 
             # Drop non-numeric columns except BBCH
             if 'bbch' in self.df.columns:
-                non_numeric_cols = self.df.select_dtypes(exclude=[float, int]).columns
-                non_numeric_cols = non_numeric_cols.drop('bbch', errors='ignore')
-                self.df.drop(columns=non_numeric_cols, inplace=True, errors='ignore')
+                non_num_cols = self.df.select_dtypes(exclude=[float, int]).columns
+                non_num_cols = non_num_cols.drop('bbch', errors='ignore')
+                self.df.drop(columns=non_num_cols, inplace=True, errors='ignore')
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
@@ -768,19 +718,10 @@ class PCAAnalysisApp:
             messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"An error occurred during data cleaning: {e}")
 
-    def is_clean_data(self):
-        """Check if the loaded data meets the criteria for cleaned data."""
-        if self.df.isnull().values.any():
-            print("Data contains missing values.")  # Debug
-            return False
-
-        if not all(pd.api.types.is_numeric_dtype(self.df[col]) for col in self.df.columns):
-            print("Non-numeric columns detected.")  # Debug
-            return False
-
-        return True
 
     #### 2. VISUALIZATION METHODS ####
 
@@ -797,13 +738,13 @@ class PCAAnalysisApp:
 
         # Update the canvas to use the cleared figure
         self.canvas.figure = self.fig
-        self.canvas.draw()
+        self.update_figure()
 
     def visualize_pca(self):
         """Create PCA visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-                raise ValueError("Please run PCA analysis first.")
+            # Ensures PCA has been run
+            self.check_pca_loaded()
 
             # Reset the canvas
             self.reset_canvas()
@@ -812,10 +753,6 @@ class PCAAnalysisApp:
             target_variable = self.get_target_variable()
             if target_variable and target_variable not in self.df.columns:
                 raise ValueError(f"Target variable '{target_variable}' not found in the dataset.")
-
-            # Debugging (optional)
-            print("Target variable:", target_variable)
-            print("Data columns:", self.df.columns.tolist())
 
             # Perform PCA transformation
             pca_visualizer = PCAVisualizer(self.fig, self.ax)
@@ -830,7 +767,7 @@ class PCAAnalysisApp:
             )
 
             # Redraw the canvas
-            self.canvas.draw()
+            self.update_figure()
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -840,8 +777,8 @@ class PCAAnalysisApp:
     def create_scree_plot(self):
         """Create scree plot."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-                raise ValueError("Please run PCA analysis first")
+            # Ensures PCA has been run
+            self.check_pca_loaded()
 
             # Reset the canvas
             self.reset_canvas()
@@ -849,16 +786,18 @@ class PCAAnalysisApp:
             scree_visualizer = ScreePlotVisualizer(self.fig, self.ax)
             scree_visualizer.create_scree_plot(self.pca_results["model"])
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.update_figure()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Error creating scree plot: {str(e)}")
 
     def create_biplot(self):
         """Create biplot visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-                raise ValueError("Please run PCA analysis first.")
+            # Ensures PCA has been run
+            self.check_pca_loaded()
 
             # Ensure figure and canvas are properly initialized
             if self.fig is None:
@@ -874,9 +813,9 @@ class PCAAnalysisApp:
                 top_n = 10  # Default to 10 if invalid input
 
             try:
-                text_distance = float(self.text_distance_entry.get())
+                text_dist = float(self.text_distance_entry.get())
             except ValueError:
-                text_distance = 1.1  # Default to 1.1 if invalid input
+                text_dist = 1.1  # Default to 1.1 if invalid input
 
             # Delegate to BiplotVisualizer
             biplot_visualizer = BiplotVisualizer(self.fig, self.ax)
@@ -887,7 +826,7 @@ class PCAAnalysisApp:
                 feature_to_group=self.feature_to_group,
                 enable_feature_grouping=self.enable_feature_grouping.get(),
                 top_n=top_n,
-                text_dist=text_distance,
+                text_dist=text_dist,
                 focus_on_loadings=self.focus_on_loadings.get()
             )
 
@@ -896,21 +835,23 @@ class PCAAnalysisApp:
             self.ax.set_facecolor('#f8f9fa')
             self.ax.set_aspect('equal', adjustable='box')
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.update_figure()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Error creating biplot: {str(e)}")
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-                raise ValueError("Please run PCA analysis first")
+            # Ensures PCA has been run
+            self.check_pca_loaded()
 
             interactive_visualizer = InteractiveBiplotVisualizer()
             fig = interactive_visualizer.create_interactive_biplot(
                 pca_model=self.pca_results["model"],
-                x_standardized=self.pca_results("standardized_data"),
+                x_standardized=self.pca_results["standardized_data"],
                 data=self.df,
                 top_n_entry=self.components_entry,  # Replace with actual entry for top N
                 text_distance_entry=self.components_entry,  # Replace with actual entry for text distance
@@ -923,13 +864,15 @@ class PCAAnalysisApp:
 
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Error creating interactive biplot: {str(e)}")
 
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
         try:
-            if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-                raise ValueError("PCA analysis has not been performed yet.")
+            # Ensures PCA has been run
+            self.check_pca_loaded()
 
             # Reset the canvas
             self.reset_canvas()
@@ -954,22 +897,22 @@ class PCAAnalysisApp:
                 cmap="coolwarm"
             )
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.update_figure()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
 
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
-
-        # Reset the canvas
-        self.reset_canvas()
-
-        if not hasattr(self, 'pca_model') or self.pca_results["model"] is None:
-            messagebox.showerror("Error", "PCA analysis has not been performed yet.")
-            return
-
         try:
+            # Ensures PCA has been run
+            self.check_pca_loaded()
+
+            # Reset the canvas
+            self.reset_canvas()
+
             # Initialize LoadingsProcessor
             loadings_processor = LoadingsProcessor(self.pca_results["model"], self.df)
 
@@ -1005,21 +948,24 @@ class PCAAnalysisApp:
             self.ax.tick_params(axis='y', labelsize=10)
 
             # Update the canvas to reflect the new plot
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.update_figure()  # This ensures the new plot appears on the canvas
             messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Failed to plot top feature loadings: {str(e)}")
 
     #### 3. UTILITY METHODS ####
 
     def get_columns_to_drop(self) -> list:
         """Get list of columns to drop from user input."""
-        return [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
+        drop_cols =  [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
+        return [col.strip().lower() for col in drop_cols]  # Ensure consistency
 
     def replace_column_name(self):
         """Replace a column name in the loaded dataset."""
-        if not self.validate_data_exists():
+        if not self.is_data_loaded():
             return
 
         try:
@@ -1045,6 +991,8 @@ class PCAAnalysisApp:
 
             messagebox.showinfo("Success", f"Column '{old_name}' successfully renamed to '{new_name}'.")
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Failed to replace column name: {str(e)}")
 
     def get_target_variable(self) -> str:
@@ -1056,16 +1004,18 @@ class PCAAnalysisApp:
             return self.custom_target_entry.get().strip().lower()
         return None
 
-    def validate_data_exists(self) -> bool:
+    def is_data_loaded(self) -> bool:
         """Check if data is loaded."""
-        if not hasattr(self, 'data') or self.df is None:
+        if not hasattr(self, 'df') or self.df is None:
             messagebox.showerror("Error", "No data loaded. Please load a CSV file first.")
             return False
         return True
 
-    def update_figure(self):
-        """Update the matplotlib figure."""
-        self.canvas.draw()
+    def check_pca_loaded(self):
+        if not hasattr(self, 'pca_results') or self.pca_results is None:
+            raise ValueError("Please run PCA analysis first.")
+
+
 
     def upload_mapping_csv(self):
         """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
@@ -1090,6 +1040,8 @@ class PCAAnalysisApp:
             print(self.biplot_manager.feature_to_group)
             print(self.biplot_manager.group_colors)
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Failed to load mapping CSV: {str(e)}")
 
     def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
@@ -1114,6 +1066,8 @@ class PCAAnalysisApp:
             else:
                 raise ValueError(f"Invalid heatmap mode: {heatmap_mode_var}")
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
 
@@ -1127,7 +1081,7 @@ class PCAAnalysisApp:
 
     def update_data_info(self):
         """Update display with simplified data information."""
-        if self.validate_data_exists():
+        if self.is_data_loaded():
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"
@@ -1232,6 +1186,8 @@ class PCAAnalysisApp:
             else:
                 messagebox.showinfo("No Groups Defined", "No feature groups are currently defined.")
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Error", f"Failed to update color palette: {str(e)}")
 
     def update_target_input(self, *args):
@@ -1241,6 +1197,11 @@ class PCAAnalysisApp:
         else:
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
+
+    def update_figure(self):
+        """Update the matplotlib figure."""
+        self.canvas.draw()
+
 
     #### 5. EVENT HANDLERS ####
 
@@ -1261,6 +1222,8 @@ class PCAAnalysisApp:
             messagebox.showinfo("Success", f"Plot saved at:\n{save_path}")
 
         except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
 
 
