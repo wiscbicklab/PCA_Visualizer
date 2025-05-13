@@ -31,16 +31,16 @@ import traceback
 class PCAAnalysisApp:
     """GUI Application for PCA Analysis."""
 
-    def __init__(self, main):
+    def __init__(self, root):
         """
         Initialize the GUI_Application
 
         Args:
-            main: 
+            root: 
         """
         self.os_type = platform.system()
 
-        self.main = main
+        self.root = root
         self.pca_analyzer = PCAAnalyzer()
         self.biplot_visualizer = BiplotVisualizer()
         self.biplot_manager = BiplotManager()
@@ -134,6 +134,7 @@ class PCAAnalysisApp:
         self.initialize_matplotlib()
         self.create_widgets()
         self.setup_layout()
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def setup_window(self):
         """
@@ -141,196 +142,196 @@ class PCAAnalysisApp:
             Set the window to fullscreen and sets a minimum application size
             Sets a title and background color
         """
-        self.main.title("PCA Analysis Tool")
+        self.root.title("PCA Analysis Tool")
 
         # Sets state maximized if possible
         if self.os_type == "Windows" or self.os_type == "Darwin":
-            self.main.state("-zoomed")
-        else: self.main.state('normal')
+            self.root.state("-zoomed")
+        else: self.root.state('normal')
 
-        self.main.configure(bg=LABEL_STYLE["bg"])
-        self.main.minsize(1000, 600)
+        self.root.configure(bg=LABEL_STYLE["bg"])
+        self.root.minsize(1000, 600)
 
     def initialize_matplotlib(self):
         """Initialize the Matplotlib figure, axes, and canvas."""
         self.fig = Figure(figsize=(5, 5))
         self.ax = self.fig.add_subplot(111)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self.main)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self.root)
         self.canvas.get_tk_widget().pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)  # Attach canvas to Tkinter
 
     def create_widgets(self):
         """Create all widgets"""
         # File Section
-        self.file_label = tk.Label(self.main, text="Load CSV file:",
+        self.file_label = tk.Label(self.root, text="Load CSV file:",
                                    bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.file_button = tk.Button(self.main, text="Browse",
+        self.file_button = tk.Button(self.root, text="Browse",
                                      **BUTTON_STYLE, command=self.load_data_file)
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
-        self.output_dir_label = tk.Label(self.main,
+        self.output_dir_label = tk.Label(self.root,
                                          text=f"Output Directory: {self.output_dir}",
                                          bg=LABEL_STYLE["bg"],
                                          font=LABEL_STYLE["font"],
                                          wraplength=300,  # Wrap text for long paths
                                          anchor="w", justify="left")
-        self.output_dir_button = tk.Button(self.main,
+        self.output_dir_button = tk.Button(self.root,
                                            text="Select Output Directory",
                                            **BUTTON_STYLE,
                                            command=self.select_output_directory)
 
-        self.clean_data_button = tk.Button(self.main,
+        self.clean_data_button = tk.Button(self.root,
                                            text="Clean CSV",
                                            **BUTTON_STYLE,
                                            command=self.clean_data)
 
         # Missing Values Section
-        self.missing_label = tk.Label(self.main,
+        self.missing_label = tk.Label(self.root,
                                       text="Handle Missing Values:",
                                       bg=LABEL_STYLE["bg"],
                                       font=LABEL_STYLE["font"])
-        self.impute_mean_radio = tk.Radiobutton(self.main,
+        self.impute_mean_radio = tk.Radiobutton(self.root,
                                                 text="Impute with Mean",
                                                 variable=self.missing_choice,
                                                 value="impute_mean",
                                                 bg=LABEL_STYLE["bg"])
-        self.impute_median_radio = tk.Radiobutton(self.main,
+        self.impute_median_radio = tk.Radiobutton(self.root,
                                                   text="Impute with Median",
                                                   variable=self.missing_choice,
                                                   value="impute_median",
                                                   bg=LABEL_STYLE["bg"])
-        self.replace_nan_radio = tk.Radiobutton(self.main,
+        self.replace_nan_radio = tk.Radiobutton(self.root,
                                                 text="Replace NaN with 0",
                                                 variable=self.missing_choice,
                                                 value="replace_nan",
                                                 bg=LABEL_STYLE["bg"])
-        self.leave_empty_radio = tk.Radiobutton(self.main,
+        self.leave_empty_radio = tk.Radiobutton(self.root,
                                                 text="Leave Empty (Null)",
                                                 variable=self.missing_choice,
                                                 value="leave_empty",
                                                 bg=LABEL_STYLE["bg"])
 
         # BBCH Selection
-        self.bbch_label = tk.Label(self.main,
+        self.bbch_label = tk.Label(self.root,
                                    text="Filter by BBCH Stage:",
                                    bg=LABEL_STYLE["bg"],
                                    font=LABEL_STYLE["font"])
-        self.bbch_none_radio = tk.Radiobutton(self.main,
+        self.bbch_none_radio = tk.Radiobutton(self.root,
                                               text="All (no filter)",
                                               variable=self.bbch_choice,
                                               value=-1,
                                               bg=LABEL_STYLE["bg"])
-        self.bbch_59_radio = tk.Radiobutton(self.main,
+        self.bbch_59_radio = tk.Radiobutton(self.root,
                                             text="BBCH 59",
                                             variable=self.bbch_choice,
                                             value=59,
                                             bg=LABEL_STYLE["bg"])
-        self.bbch_69_radio = tk.Radiobutton(self.main,
+        self.bbch_69_radio = tk.Radiobutton(self.root,
                                             text="BBCH 69",
                                             variable=self.bbch_choice,
                                             value=69,
                                             bg=LABEL_STYLE["bg"])
-        self.bbch_85_radio = tk.Radiobutton(self.main,
+        self.bbch_85_radio = tk.Radiobutton(self.root,
                                             text="BBCH 85",
                                             variable=self.bbch_choice,
                                             value=85,
                                             bg=LABEL_STYLE["bg"])
 
         # Drop Columns Section
-        self.drop_label = tk.Label(self.main,
+        self.drop_label = tk.Label(self.root,
                                    text="Columns to Drop (comma-separated):",
                                    bg=LABEL_STYLE["bg"],
                                    font=LABEL_STYLE["font"])
-        self.drop_entry = tk.Entry(self.main, width=40, font=LABEL_STYLE["font"])
+        self.drop_entry = tk.Entry(self.root, width=40, font=LABEL_STYLE["font"])
 
         # Replace Column Section
-        self.replace_label = tk.Label(self.main,
+        self.replace_label = tk.Label(self.root,
                                       text="Replace Column Name (Correct typos):",
                                       bg=LABEL_STYLE["bg"],
                                       font=LABEL_STYLE["font"])
 
-        self.replace_old_entry = tk.Entry(self.main,
+        self.replace_old_entry = tk.Entry(self.root,
                                           width=20,
                                           font=LABEL_STYLE["font"])
         self.replace_old_entry.insert(0, "Enter current name")  # Placeholder text
 
-        self.replace_new_entry = tk.Entry(self.main,
+        self.replace_new_entry = tk.Entry(self.root,
                                           width=20,
                                           font=LABEL_STYLE["font"])
         self.replace_new_entry.insert(0, "Enter new name")  # Placeholder text
 
-        self.replace_button = tk.Button(self.main,
+        self.replace_button = tk.Button(self.root,
                                         text="Replace Column Name",
                                         **BUTTON_STYLE,
                                         command=self.replace_column_name)
 
         # PCA Parameters Section
-        self.components_label = tk.Label(self.main,
+        self.components_label = tk.Label(self.root,
                                          text="Number of PCA Components:",
                                          **LABEL_STYLE)
-        self.components_entry = tk.Entry(self.main,
+        self.components_entry = tk.Entry(self.root,
                                          font=LABEL_STYLE["font"],
                                          width=10)
         self.components_entry.insert(0, "2")
 
-        self.top_n_label = tk.Label(self.main, text="Top N Features for Biplot:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.top_n_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=10)
+        self.top_n_label = tk.Label(self.root, text="Top N Features for Biplot:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
+        self.top_n_entry = tk.Entry(self.root, font=LABEL_STYLE["font"], width=10)
         self.top_n_entry.insert(0, "10")  # Default to 10
 
-        self.text_distance_label = tk.Label(self.main, text="Text Distance for Labels:", bg=LABEL_STYLE["bg"],
+        self.text_distance_label = tk.Label(self.root, text="Text Distance for Labels:", bg=LABEL_STYLE["bg"],
                                             font=LABEL_STYLE["font"])
-        self.text_distance_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=10)
+        self.text_distance_entry = tk.Entry(self.root, font=LABEL_STYLE["font"], width=10)
         self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
 
         # Dropdown for selecting predefined targets
-        self.target_label = tk.Label(self.main, text="Target Variable:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
+        self.target_label = tk.Label(self.root, text="Target Variable:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
         self.target_mode = tk.StringVar()
         self.target_mode.set("None")  # Default option
         target_options = ["None", "bbch", "Input Specific Target"]
-        self.target_dropdown = tk.OptionMenu(self.main, self.target_mode, *target_options)
+        self.target_dropdown = tk.OptionMenu(self.root, self.target_mode, *target_options)
         self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
                                     activebackground="#005f99", relief="flat")
 
         # Input box for custom target
-        self.custom_target_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=20, state="disabled")
+        self.custom_target_entry = tk.Entry(self.root, font=LABEL_STYLE["font"], width=20, state="disabled")
 
         # Trace dropdown to enable/disable custom target input
         self.target_mode.trace_add("write", self.update_target_input)
 
         # Analysis Buttons
-        self.visualize_button = tk.Button(self.main,
+        self.visualize_button = tk.Button(self.root,
                                           text="Visualize PCA",
                                           **BUTTON_STYLE,
                                           command=self.visualize_pca)
-        self.biplot_button = tk.Button(self.main,
+        self.biplot_button = tk.Button(self.root,
                                        text="Biplot with Groups",
                                        **BUTTON_STYLE,
                                        command=self.create_biplot)
-        self.interactive_biplot_button = tk.Button(self.main,
+        self.interactive_biplot_button = tk.Button(self.root,
                                                    text="Interactive Biplot",
                                                    **BUTTON_STYLE,
                                                    command=self.create_interactive_biplot)
-        self.scree_plot_button = tk.Button(self.main,
+        self.scree_plot_button = tk.Button(self.root,
                                            text="Show Scree Plot",
                                            **BUTTON_STYLE,
                                            command=self.create_scree_plot)
-        self.top_features_button = tk.Button(self.main,
+        self.top_features_button = tk.Button(self.root,
                                              text="Top Features Loadings",
                                              **BUTTON_STYLE,
                                              command=self.plot_top_features_loadings)
 
         # Color Palette Selection
-        self.palette_label = tk.Label(self.main,
+        self.palette_label = tk.Label(self.root,
                                       text="Select Color Palette:",
                                       bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.palette_menu = tk.OptionMenu(self.main,
+        self.palette_menu = tk.OptionMenu(self.root,
                                           self.selected_palette,
                                           *COLOR_PALETTES.keys(),
                                           command=self.update_color_palette)
 
         # Feature Grouping Section
         self.grouping_checkbox = tk.Checkbutton(
-            self.main,
+            self.root,
             text="Enable Feature Grouping",
             variable=self.enable_feature_grouping,
             bg=LABEL_STYLE["bg"],
@@ -338,12 +339,12 @@ class PCAAnalysisApp:
             command=self.toggle_feature_grouping
         )
 
-        self.mapping_label = tk.Label(self.main,
+        self.mapping_label = tk.Label(self.root,
                                       text="Feature-to-Group Mapping (Optional):",
                                       bg=LABEL_STYLE["bg"],
                                       font=LABEL_STYLE["font"])
 
-        self.mapping_button = tk.Button(self.main,
+        self.mapping_button = tk.Button(self.root,
                                         text="Upload Mapping CSV",
                                         **BUTTON_STYLE,
                                         command=self.upload_mapping_csv)
@@ -356,40 +357,40 @@ class PCAAnalysisApp:
 
         # Add the "Focus on Loadings" checkbox
         self.focus_checkbox = tk.Checkbutton(
-            self.main,
+            self.root,
             text="Focus on Loadings",
             variable=self.focus_on_loadings,
             command=self.update_focus_on_loadings)  # Update logic when toggled
 
         # Results Section
 
-        self.pcaresults_label = tk.Label(self.main,
+        self.pcaresults_label = tk.Label(self.root,
                                          text="Data Insights Box:",
                                          bg=LABEL_STYLE["bg"],
                                          font=LABEL_STYLE["font"])
-        self.pcaresults_summary = tk.Text(self.main,
+        self.pcaresults_summary = tk.Text(self.root,
                                           height=8,
                                           width=50,
                                           font=LABEL_STYLE["font"],
                                           bg="white")
 
         # Heatmap Controls
-        self.focus_label = tk.Label(self.main,
+        self.focus_label = tk.Label(self.root,
                                     text="Columns to Focus On (comma-separated):",
                                     bg=LABEL_STYLE["bg"],
                                     font=LABEL_STYLE["font"])
 
-        self.focus_entry = tk.Entry(self.main,
+        self.focus_entry = tk.Entry(self.root,
                                     width=20,
                                     font=LABEL_STYLE["font"])
 
-        self.heatmap_mode_label = tk.Label(self.main,
+        self.heatmap_mode_label = tk.Label(self.root,
                                            text="Select Heatmap Mode:",
                                            bg=LABEL_STYLE["bg"],
                                            font=LABEL_STYLE["font"])
 
         self.heatmap_mode_menu = tk.OptionMenu(
-            self.main,
+            self.root,
             self.heatmap_mode_var,
             "Top 10 Features",
             "Top 20 Features",
@@ -397,7 +398,7 @@ class PCAAnalysisApp:
         )
 
         self.heatmap_button = tk.Button(
-            self.main,
+            self.root,
             text="Plot Heatmap",
             command=self.plot_loadings_heatmap,
             bg="#007ACC",
@@ -407,33 +408,33 @@ class PCAAnalysisApp:
 
 
         # Banners
-        self.clean_data_banner = tk.Label(self.main,
+        self.clean_data_banner = tk.Label(self.root,
                                           text="Clean and/or Filter Data",
                                           font=("Helvetica", 12),
                                           bg="#dcdcdc",
                                           relief="groove")
-        self.clean_data_banner = tk.Label(self.main,
+        self.clean_data_banner = tk.Label(self.root,
                                           text="Clean and/or Filter Data",
                                           font=("Helvetica", 12),
                                           bg="#dcdcdc",
                                           relief="groove")
-        self.visualizepca_banner = tk.Label(self.main,
+        self.visualizepca_banner = tk.Label(self.root,
                                             text="Visualize PCA",
                                             font=("Helvetica", 12),
                                             bg="#dcdcdc",
                                             relief="groove")
-        self.biplot_banner = tk.Label(self.main,
+        self.biplot_banner = tk.Label(self.root,
                                       text="Biplot Section",
                                       font=("Helvetica", 12),
                                       bg="#dcdcdc",
                                       relief="groove")
-        self.heatmap_banner = tk.Label(self.main,
+        self.heatmap_banner = tk.Label(self.root,
                                        text="Heatmap Section",
                                        font=("Helvetica", 12),
                                        bg="#dcdcdc",
                                        relief="groove")
         # Save
-        self.save_button = tk.Button(self.main,
+        self.save_button = tk.Button(self.root,
                                      text="Save Plot",
                                      **BUTTON_STYLE,
                                      command=self.save_plot)
@@ -441,10 +442,10 @@ class PCAAnalysisApp:
     def setup_layout(self):
         """Setup the layout of GUI components"""
         # Configure grid weights
-        self.main.grid_rowconfigure(0, weight=1)
-        self.main.grid_columnconfigure(2, weight=5)
-        self.main.grid_columnconfigure(0, weight=1)
-        self.main.grid_columnconfigure(1, weight=1)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(2, weight=5)
+        self.root.grid_columnconfigure(0, weight=1)
+        self.root.grid_columnconfigure(1, weight=1)
 
         # Place canvas on right side
         self.canvas.get_tk_widget().grid(row=0, column=2, rowspan=25,
@@ -540,7 +541,7 @@ class PCAAnalysisApp:
 
         # Configure remaining row weights
         for i in range(31):
-            self.main.grid_rowconfigure(i, weight=1)
+            self.root.grid_rowconfigure(i, weight=1)
 
     #### 1. DATA HANDLING METHODS ####
 
@@ -1090,7 +1091,6 @@ class PCAAnalysisApp:
 
         self.pcaresults_summary.insert(tk.END, summary)
 
-
     def toggle_feature_grouping(self):
         """Toggle the feature grouping functionality."""
         if self.enable_feature_grouping.get():
@@ -1171,6 +1171,11 @@ class PCAAnalysisApp:
             print(error_str)
             messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
 
+    def on_close(self):
+        if self.canvas:
+            self.canvas.get_tk_widget().destroy()
+        plt.close('all')
+        self.root.destroy()
 
 # Start App
 if __name__ == "__main__":  
