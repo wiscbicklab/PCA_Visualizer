@@ -38,12 +38,16 @@ class PCAAnalysisApp:
         Args:
             root: 
         """
+        # Grabs the os type
         self.os_type = platform.system()
 
         self.root = root
         self.pca_analyzer = PCAAnalyzer()
         self.biplot_visualizer = BiplotVisualizer()
         self.biplot_manager = BiplotManager()
+
+        # Create data validation handlers
+        self.vcmd_pi = (self.root.register(self.validate_positive_integer), '%P')
 
         # Initialize all GUI variables
         self.target_var = tk.StringVar(value="None")
@@ -271,8 +275,14 @@ class PCAAnalysisApp:
                                          **LABEL_STYLE)
         self.components_entry = tk.Entry(self.root,
                                          font=LABEL_STYLE["font"],
-                                         width=10)
+                                         width=10,
+                                         validate="key",
+                                         validatecommand=self.vcmd_pi)
         self.components_entry.insert(0, "2")
+
+        # Bind focus out event to reset empty input
+        self.components_entry.bind("<FocusOut>", self.on_focus_out)
+
 
         self.top_n_label = tk.Label(self.root, text="Top N Features for Biplot:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
         self.top_n_entry = tk.Entry(self.root, font=LABEL_STYLE["font"], width=10)
@@ -1170,6 +1180,22 @@ class PCAAnalysisApp:
             self.canvas.get_tk_widget().destroy()
         plt.close('all')
         self.root.destroy()
+
+    #### 6. DATA TYPE VALIDATION ####
+
+    def validate_positive_integer(self, proposed_value):
+        if proposed_value.isdigit() and int(proposed_value) > 0:
+            self.df_updated = True
+            return True
+        elif proposed_value == "":
+            return True  # Allow clearing before retyping
+        return False
+    
+    def on_focus_out(self, event):
+        value = self.components_entry.get()
+        if value.strip() == "":
+            self.components_entry.delete(0, tk.END)
+            self.components_entry.insert(0, "2")
 
 # Start App
 if __name__ == "__main__":  
