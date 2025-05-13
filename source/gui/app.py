@@ -27,6 +27,7 @@ from source.utils.helpers import generate_color_palette
 
 # Components Imports
 from source.gui.load_file_box import LoadFileBox
+from source.gui.clean_file_box import CleanFileBox
 
 import traceback
 
@@ -49,33 +50,14 @@ class PCAAnalysisApp(tk.Tk):
 
 
         # Create the custom component
-        self.load_file_box = LoadFileBox(self)
-        self.load_file_box.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.load_file_box = None
+        self.clean_file_box = None
+        
 
 
         # Create data validation handlers
         self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
 
-        # Initialize all widget references
-        self.clean_data_button = None
-
-        # Missing Values Section
-        self.missing_label = None
-        self.impute_mean_radio = None
-        self.impute_median_radio = None
-        self.replace_nan_radio = None
-        self.leave_empty_radio = None
-
-        # BBCH Selection
-        self.bbch_label = None
-        self.bbch_none_radio = None
-        self.bbch_59_radio = None
-        self.bbch_69_radio = None
-        self.bbch_85_radio = None
-
-        # Drop Columns Section
-        self.drop_label = None
-        self.drop_entry = None
 
         # PCA Parameters
         self.components_label = None
@@ -96,8 +78,8 @@ class PCAAnalysisApp(tk.Tk):
         self.focus_checkbox = None
 
         # Results Section
-        self.pcaresults_label = None
-        self.pcaresults_summary = None
+        self.data_insight_label = None
+        self.data_insight_summary = None
         self.featureresults_summary = None
 
         # Heatmap Controls
@@ -108,7 +90,6 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_button = None
 
         # Banners
-        self.clean_data_banner = None
         self.visualizepca_banner = None
         self.biplot_banner = None
         self.heatmap_banner = None
@@ -169,70 +150,12 @@ class PCAAnalysisApp(tk.Tk):
                                            **BUTTON_STYLE,
                                            command=self.select_output_directory)
 
-        self.clean_data_button = tk.Button(self,
-                                           text="Clean CSV",
-                                           **BUTTON_STYLE,
-                                           command=self.clean_data)
 
-        # Missing Values Section
-        self.missing_label = tk.Label(self,
-                                      text="Handle Missing Values:",
-                                      bg=LABEL_STYLE["bg"],
-                                      font=LABEL_STYLE["font"])
-        self.impute_mean_radio = tk.Radiobutton(self,
-                                                text="Impute with Mean",
-                                                variable=self.missing_choice,
-                                                value="impute_mean",
-                                                bg=LABEL_STYLE["bg"])
-        self.impute_median_radio = tk.Radiobutton(self,
-                                                  text="Impute with Median",
-                                                  variable=self.missing_choice,
-                                                  value="impute_median",
-                                                  bg=LABEL_STYLE["bg"])
-        self.replace_nan_radio = tk.Radiobutton(self,
-                                                text="Replace NaN with 0",
-                                                variable=self.missing_choice,
-                                                value="replace_nan",
-                                                bg=LABEL_STYLE["bg"])
-        self.leave_empty_radio = tk.Radiobutton(self,
-                                                text="Leave Empty (Null)",
-                                                variable=self.missing_choice,
-                                                value="leave_empty",
-                                                bg=LABEL_STYLE["bg"])
+        self.load_file_box = LoadFileBox(self)
+        self.clean_file_box = CleanFileBox(self)
 
-        # BBCH Selection
-        self.bbch_label = tk.Label(self,
-                                   text="Filter by BBCH Stage:",
-                                   bg=LABEL_STYLE["bg"],
-                                   font=LABEL_STYLE["font"])
-        self.bbch_none_radio = tk.Radiobutton(self,
-                                              text="All (no filter)",
-                                              variable=self.bbch_choice,
-                                              value=-1,
-                                              bg=LABEL_STYLE["bg"])
-        self.bbch_59_radio = tk.Radiobutton(self,
-                                            text="BBCH 59",
-                                            variable=self.bbch_choice,
-                                            value=59,
-                                            bg=LABEL_STYLE["bg"])
-        self.bbch_69_radio = tk.Radiobutton(self,
-                                            text="BBCH 69",
-                                            variable=self.bbch_choice,
-                                            value=69,
-                                            bg=LABEL_STYLE["bg"])
-        self.bbch_85_radio = tk.Radiobutton(self,
-                                            text="BBCH 85",
-                                            variable=self.bbch_choice,
-                                            value=85,
-                                            bg=LABEL_STYLE["bg"])
 
-        # Drop Columns Section
-        self.drop_label = tk.Label(self,
-                                   text="Columns to Drop (comma-separated):",
-                                   bg=LABEL_STYLE["bg"],
-                                   font=LABEL_STYLE["font"])
-        self.drop_entry = tk.Entry(self, width=40, font=LABEL_STYLE["font"])
-
+        
         # Replace Column Section
         self.replace_label = tk.Label(self,
                                       text="Replace Column Name (Correct typos):",
@@ -359,11 +282,10 @@ class PCAAnalysisApp(tk.Tk):
 
         # Results Section
 
-        self.pcaresults_label = tk.Label(self,
+        self.data_insight_label = tk.Label(self,
                                          text="Data Insights Box:",
-                                         bg=LABEL_STYLE["bg"],
-                                         font=LABEL_STYLE["font"])
-        self.pcaresults_summary = tk.Text(self,
+                                         **LABEL_STYLE)
+        self.data_insight_summary = tk.Text(self,
                                           height=8,
                                           width=50,
                                           font=LABEL_STYLE["font"],
@@ -403,16 +325,6 @@ class PCAAnalysisApp(tk.Tk):
 
 
         # Banners
-        self.clean_data_banner = tk.Label(self,
-                                          text="Clean and/or Filter Data",
-                                          font=("Helvetica", 12),
-                                          bg="#dcdcdc",
-                                          relief="groove")
-        self.clean_data_banner = tk.Label(self,
-                                          text="Clean and/or Filter Data",
-                                          font=("Helvetica", 12),
-                                          bg="#dcdcdc",
-                                          relief="groove")
         self.visualizepca_banner = tk.Label(self,
                                             text="Visualize PCA",
                                             font=("Helvetica", 12),
@@ -445,32 +357,12 @@ class PCAAnalysisApp(tk.Tk):
         # Place canvas on right side
         self.canvas.get_tk_widget().grid(row=0, column=2, rowspan=25,
                                          padx=10, pady=10, sticky="nsew")
+        
+        self.load_file_box.grid(row=0, padx=10, pady=10, columnspan=2)
+        self.clean_file_box.grid(row=1, padx=10, pady=10, columnspan=2, sticky="we")
+        
 
-        # Clean Data Banner
-        self.clean_data_banner.grid(row=1, column=0, columnspan=2,
-                                    sticky="we", padx=5, pady=5)
-
-        # Missing Values Section
-        self.missing_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.impute_mean_radio.grid(row=3, column=0, padx=5, pady=5, sticky="w")
-        self.impute_median_radio.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-        self.replace_nan_radio.grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        self.leave_empty_radio.grid(row=6, column=0, padx=5, pady=5, sticky="w")
-
-        # BBCH Selection
-        self.bbch_label.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_none_radio.grid(row=3, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_59_radio.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_69_radio.grid(row=5, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_85_radio.grid(row=6, column=1, padx=5, pady=5, sticky="w")
-
-        # Clean Data Button
-        self.clean_data_button.grid(row=11, column=0, columnspan=2, padx=5, pady=5)
-
-        # Drop Columns Section
-        self.drop_label.grid(row=10, column=0, padx=5, pady=5, sticky="e")
-        self.drop_entry.grid(row=10, column=1, padx=5, pady=5, sticky="w")
-
+        
         # self.replace_label.grid(row=11, column=0, padx=5, pady=5, sticky="e")
         # self.replace_old_entry.grid(row=11, column=1, padx=5, pady=5, sticky="w")
         # self.replace_new_entry.grid(row=12, column=1, padx=5, pady=5, sticky="w")
@@ -494,8 +386,8 @@ class PCAAnalysisApp(tk.Tk):
         self.visualize_button.grid(row=20, column=0, padx=5, pady=5)
 
         # Results Section
-        self.pcaresults_label.grid(row=13, column=0, padx=5, pady=5, sticky="w")
-        self.pcaresults_summary.grid(row=13, column=1, padx=5, pady=5, sticky="nsew")
+        self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
+        self.data_insight_summary.grid(row=28, column=2, padx=5, pady=5, sticky="nsew")
 
         # Visualization Buttons
         self.scree_plot_button.grid(row=25, column=0, padx=5, pady=5)
@@ -504,7 +396,6 @@ class PCAAnalysisApp(tk.Tk):
         self.top_features_button.grid(row=26, column=1, padx=5, pady=5)
 
         # Banners
-        self.clean_data_banner.grid(row=1, column=0, columnspan=2, sticky="we", padx=5, pady=5)
         self.visualizepca_banner.grid(row=14, column=0, columnspan=2, sticky="we", padx=5, pady=5)
         self.biplot_banner.grid(row=21, column=0, columnspan=2, sticky="we", padx=5, pady=5)
         self.heatmap_banner.grid(row=27, column=0, columnspan=2, sticky="we", padx=5, pady=5)
@@ -563,8 +454,6 @@ class PCAAnalysisApp(tk.Tk):
 
         # Variables to track user inputs from the GUI
         self.target_var = tk.StringVar(value="None")
-        self.missing_choice = tk.StringVar(value="impute_mean")
-        self.bbch_choice = tk.IntVar(value=-1)
         self.enable_feature_grouping = tk.BooleanVar(value=False)
         self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
         self.target_mode = tk.StringVar(value="Select Target")
@@ -617,76 +506,7 @@ class PCAAnalysisApp(tk.Tk):
         else:
             messagebox.showwarning("No Directory Selected", "Using the default output directory.")
 
-    def clean_data(self):
-        """Clean the data and prepare it for PCA analysis."""
-        if not self.df_loaded:
-            messagebox.showinfo("Error", "Data must be loaded before it can be cleaned!")
-            return
-
-        try:
-            # Convert int64 to float for PCA compatibility
-            for col in self.df.columns:
-                if self.df[col].dtype == 'int64':
-                    self.df[col] = self.df[col].astype(float)
-
-            # Ensure BBCH column exists and is treated as string
-            if 'bbch' in self.df.columns:
-                self.df['bbch'] = self.df['bbch'].astype(str).str.strip()
-
-            # Filter by BBCH stage
-            selected_bbch = self.bbch_choice.get()
-            if selected_bbch == 59:
-                self.df = self.df[self.df['bbch'] == 'B59']
-            elif selected_bbch == 69:
-                self.df = self.df[self.df['bbch'] == 'B69']
-            elif selected_bbch == 85:
-                self.df = self.df[self.df['bbch'] == 'B85']
-            elif selected_bbch == -1:
-                pass  # No filter applied if selected is -1 (all stages)
-
-            # Drop user-specified columns
-            self.df.columns = self.df.columns.str.strip().str.lower()  # Standardize column names
-            self.drop_cols()
-
-            # Drop non-numeric columns except BBCH
-            if 'bbch' in self.df.columns:
-                non_num_cols = self.df.select_dtypes(exclude=[float, int]).columns
-                non_num_cols = non_num_cols.drop('bbch', errors='ignore')
-                self.df.drop(columns=non_num_cols, inplace=True, errors='ignore')
-
-            # Handle missing values
-            if self.missing_choice.get() == "impute_mean":
-                imputer = SimpleImputer(strategy='mean')
-            elif self.missing_choice.get() == "impute_median":
-                imputer = SimpleImputer(strategy='median')
-            elif self.missing_choice.get() == "replace_nan":
-                imputer = SimpleImputer(strategy='constant', fill_value=0)
-            elif self.missing_choice.get() == "leave_empty":
-                imputer = SimpleImputer(strategy='constant', fill_value=np.nan)
-            else:
-                messagebox.showerror("Error", "Please select a valid missing value handling strategy.")
-                return
-
-            # Impute missing values
-            if self.df.isnull().any().any():
-                x_imputed = imputer.fit_transform(self.df)
-                self.df = pd.DataFrame(x_imputed, columns=self.df.columns)
-
-            # Enable buttons and update UI
-            self.visualize_button.config(state="normal")
-            self.heatmap_button.config(state="normal")  # Enable heatmap button after cleaning
-            self.update_data_info()
-            messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
-
-            # Update Varibales tracking df status
-            self.df_updated = True
-            self.df_clean = True
-
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"An error occurred during data cleaning: {e}")
-
+    
 
     #### 2. VISUALIZATION METHODS ####
 
@@ -944,30 +764,7 @@ class PCAAnalysisApp(tk.Tk):
 
     #### 3. UTILITY METHODS ####
 
-    def drop_cols(self) -> list:
-        """
-        Gets the user entered columns to drop and drops them from the df.
-        Prints a messages about requested columns that couldn't nbe dropped
-
-        Return:
-            drop_cols: A list of the columns that were dropped from the data
-            missing_cols: A list of the columns that were requested to be 
-                        dropped but could not be dropped
-        """
-        # Grabs the user entered columns to drop
-        drop_cols =  [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
-        drop_cols = [col.strip().lower() for col in drop_cols]  # Ensure consistency
-
-        # Filter valid columns to drop
-        valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
-        missing_cols = set(drop_cols) - set(self.df.columns)
-        if missing_cols:
-            print("Missing columns (not in dataset):", missing_cols)
-        
-        # Drop valid columns
-        self.df.drop(columns=valid_drop_cols, inplace=True)
-
-        return drop_cols
+    
 
     def replace_column_name(self):
         """Replace a column name in the loaded dataset."""
@@ -1088,12 +885,12 @@ class PCAAnalysisApp(tk.Tk):
                 info_text += f"{i}. {col}\n"
 
             # Update the results summary box
-            self.pcaresults_summary.delete(1.0, tk.END)
-            self.pcaresults_summary.insert(tk.END, info_text)
+            self.data_insight_summary.delete(1.0, tk.END)
+            self.data_insight_summary.insert(tk.END, info_text)
 
     def update_results_display(self, results: dict):
         """Update results display with simplified formatting."""
-        self.pcaresults_summary.delete(1.0, tk.END)
+        self.data_insight_summary.delete(1.0, tk.END)
 
         # Simple, clean formatting
         summary = "PCA Analysis Results\n"
@@ -1109,7 +906,7 @@ class PCAAnalysisApp(tk.Tk):
         for i, var in enumerate(results['explained_variance']):
             summary += f"PC{i + 1}: {var:.3f}\n"
 
-        self.pcaresults_summary.insert(tk.END, summary)
+        self.data_insight_summary.insert(tk.END, summary)
 
     def toggle_feature_grouping(self):
         """Toggle the feature grouping functionality."""
