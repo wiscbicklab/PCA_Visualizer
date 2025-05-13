@@ -118,6 +118,8 @@ class PCAAnalysisApp:
         # Data-related variables
         self.df = None
         self.df_updated = False
+        self.df_loaded = False
+        self.df_clean = False
         self.pca_results = None
         self.feature_to_group = None
         self.feature_groups_colors = None
@@ -572,12 +574,17 @@ class PCAAnalysisApp:
     def load_data_file(self):
         """Load data from CSV file."""
         self.df = load_csv_file()
-        if self.is_data_loaded():
-            self.handle_successful_load()
+
+        if self.df is None or self.df.empty:
+            self.handle_load_error(ValueError("File not loaded, No File Selected"))
+            return
+        
+        self.df_loaded = True
+        self.handle_successful_load()
 
     def run_analysis(self):
         """Execute PCA analysis."""
-        if not self.is_data_loaded() or not self.df_updated:
+        if not self.df_clean or not self.df_updated:
             return
 
         try:
@@ -616,7 +623,9 @@ class PCAAnalysisApp:
                 ],
                 state="normal",
             )
-            messagebox.showinfo("Success", "PCA analysis completed successfully!")
+
+            # Update df status variables
+            self.df_updated = False
 
         except ValueError as ve:
             messagebox.showerror("Analysis Error", str(ve))
@@ -637,7 +646,8 @@ class PCAAnalysisApp:
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
-        if not self.is_data_loaded():
+        if not self.df_loaded:
+            messagebox.showinfo("Error", "Data must be loaded before it can be cleaned!")
             return
 
         try:
@@ -700,11 +710,11 @@ class PCAAnalysisApp:
             self.visualize_button.config(state="normal")
             self.heatmap_button.config(state="normal")  # Enable heatmap button after cleaning
             self.update_data_info()
-            self.is_cleaned = True
             messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
 
-            # Note that df has been updated
+            # Update Varibales tracking df status
             self.df_updated = True
+            self.df_clean = True
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -731,7 +741,7 @@ class PCAAnalysisApp:
 
     def visualize_pca(self):
         """Create PCA visualization."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
         
         try:
@@ -768,7 +778,7 @@ class PCAAnalysisApp:
 
     def create_screen_plot(self):
         """Create screen plot."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
         
         try:
@@ -790,7 +800,7 @@ class PCAAnalysisApp:
 
     def create_biplot(self):
         """Create biplot visualization."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
         
         try:
@@ -842,7 +852,7 @@ class PCAAnalysisApp:
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
 
         try:
@@ -871,7 +881,7 @@ class PCAAnalysisApp:
 
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
         
         try:
@@ -910,7 +920,7 @@ class PCAAnalysisApp:
 
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
-        if not self.is_clean_data():
+        if not self.df_clean:
             return
         
         try:
@@ -972,7 +982,7 @@ class PCAAnalysisApp:
 
     def replace_column_name(self):
         """Replace a column name in the loaded dataset."""
-        if not self.is_data_loaded():
+        if not self.df_loaded:
             return
 
         try:
@@ -1010,28 +1020,6 @@ class PCAAnalysisApp:
         elif target_mode == "input specific target":
             return self.custom_target_entry.get().strip().lower()
         return None
-
-    def is_data_loaded(self) -> bool:
-        """Check if data is loaded."""
-        if not hasattr(self, 'df') or self.df is None:
-            messagebox.showerror("Error", "No data loaded. Please load a CSV file first.")
-            return False
-        return True
-    
-    def is_clean_data(self):
-        """Check if the loaded data meets the criteria for cleaned data."""
-        if not self.is_data_loaded():
-            return False
-        
-        if self.df.isnull().values.any():
-            print("Data contains missing values.")  # Debug
-            return False
-
-        if not all(pd.api.types.is_numeric_dtype(self.df[col]) for col in self.df.columns):
-            print("Non-numeric columns detected.")  # Debug
-            return False
-
-        return True
 
     def check_pca_loaded(self):
         if not hasattr(self, 'pca_results') or self.pca_results is None:
@@ -1101,7 +1089,7 @@ class PCAAnalysisApp:
 
     def update_data_info(self):
         """Update display with simplified data information."""
-        if self.is_data_loaded():
+        if self.df_loaded:
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"

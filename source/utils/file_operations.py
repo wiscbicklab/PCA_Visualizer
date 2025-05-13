@@ -12,7 +12,7 @@ def load_csv_file():
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if not file_path:
         print("No file selected")
-        return
+        return None
 
     try:
         with open(file_path, 'rb') as file:
