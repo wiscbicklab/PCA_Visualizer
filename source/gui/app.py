@@ -151,8 +151,8 @@ class PCAAnalysisApp(tk.Tk):
                                            command=self.select_output_directory)
 
 
-        self.load_file_box = LoadFileBox(self)
-        self.clean_file_box = CleanFileBox(self)
+        self.load_file_box = LoadFileBox(self, bg="#f0f0f0")
+        self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
 
 
         
