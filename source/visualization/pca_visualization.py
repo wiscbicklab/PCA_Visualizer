@@ -34,14 +34,12 @@ class PCAVisualizer(BasePlotter):
                 unique_targets = sorted(target_vals.unique())
 
                 # Assign colors dynamically
-                if target == "bbch":
-                    colors = {"B59": "red", "B69": "blue", "B85": "green"}
-                else:
-                    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
+                colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
+
 
                 for i, t in enumerate(unique_targets):
                     mask = target_vals == t
-                    color = colors[i] if target != "bbch" else colors.get(t, "gray")
+                    color = colors[i] 
                     self.ax.scatter(
                         principal_df.loc[mask, "PC1"],
                         principal_df.loc[mask, "PC2"],

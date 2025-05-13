@@ -8,8 +8,7 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import pandas as pd
 import numpy as np
-import os
-import time
+import platform
 
 from sklearn.impute import SimpleImputer
 
@@ -23,7 +22,7 @@ from source.visualization.loadings import LoadingsProcessor
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import OUTPUT_DIR, DEFAULT_COLUMNS_TO_DROP, DEFAULT_STYLE
-from source.utils.file_operations import load_csv_file, save_plot
+import source.utils.file_operations as file_ops
 from source.utils.helpers import generate_color_palette
 
 import traceback
@@ -39,6 +38,8 @@ class PCAAnalysisApp:
         Args:
             main: 
         """
+        self.os_type = platform.system()
+
         self.main = main
         self.pca_analyzer = PCAAnalyzer()
         self.biplot_visualizer = BiplotVisualizer()
@@ -173,7 +174,12 @@ class PCAAnalysisApp:
             Sets a title and background color
         """
         self.main.title("PCA Analysis Tool")
-        self.main.state('normal')
+
+        # Sets state maximized if possible
+        if self.os_type == "Windows" or self.os_type == "Darwin":
+            self.main.state("-zoomed")
+        else: self.main.state('normal')
+
         self.main.configure(bg=DEFAULT_STYLE["bg_color"])
         self.main.minsize(1000, 600)
 
@@ -340,7 +346,7 @@ class PCAAnalysisApp:
         self.scree_plot_button = tk.Button(self.main,
                                            text="Show Scree Plot",
                                            **self.button_style,
-                                           command=self.create_screen_plot)
+                                           command=self.create_scree_plot)
         self.top_features_button = tk.Button(self.main,
                                              text="Top Features Loadings",
                                              **self.button_style,
@@ -573,7 +579,7 @@ class PCAAnalysisApp:
 
     def load_data_file(self):
         """Load data from CSV file."""
-        self.df = load_csv_file()
+        self.df = file_ops.load_csv_file()
 
         if self.df is None or self.df.empty:
             self.handle_load_error(ValueError("File not loaded, No File Selected"))
@@ -590,19 +596,7 @@ class PCAAnalysisApp:
         try:
             # Get analysis parameters
             n_components = int(self.components_entry.get())
-            drop_cols = self.get_columns_to_drop()
-
-            # Standardize column names
-            self.df.columns = self.df.columns.str.strip().str.lower()
-
-            # Filter valid columns to drop
-            valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
-            missing_cols = set(drop_cols) - set(self.df.columns)
-            if missing_cols:
-                print("Missing columns (not in dataset):", missing_cols)
-
-            # Drop valid columns
-            self.df.drop(columns=valid_drop_cols, inplace=True)
+            self.drop_cols()
 
             # Run analysis and store the result
             self.pca_results = self.pca_analyzer.analyze(
@@ -612,17 +606,6 @@ class PCAAnalysisApp:
 
             # Update display
             self.update_results_display(self.pca_results)
-            self.toggle_buttons(
-                [
-                    self.visualize_button,
-                    self.biplot_button,
-                    self.heatmap_button,
-                    self.interactive_biplot_button,
-                    self.scree_plot_button,
-                    self.save_button,
-                ],
-                state="normal",
-            )
 
             # Update df status variables
             self.df_updated = False
@@ -672,15 +655,8 @@ class PCAAnalysisApp:
                 pass  # No filter applied if selected is -1 (all stages)
 
             # Drop user-specified columns
-            drop_cols = self.get_columns_to_drop()
             self.df.columns = self.df.columns.str.strip().str.lower()  # Standardize column names
-
-            # Filter valid columns to drop
-            valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
-            missing_cols = set(drop_cols) - set(self.df.columns)
-            if missing_cols:
-                print(f"Warning: The following columns were not found in the dataset and could not be dropped: {missing_cols}")
-            self.df.drop(columns=valid_drop_cols, inplace=True, errors='ignore')
+            self.drop_cols()
 
             # Drop non-numeric columns except BBCH
             if 'bbch' in self.df.columns:
@@ -737,7 +713,7 @@ class PCAAnalysisApp:
 
         # Update the canvas to use the cleared figure
         self.canvas.figure = self.fig
-        self.update_figure()
+        self.canvas.draw()
 
     def visualize_pca(self):
         """Create PCA visualization."""
@@ -769,15 +745,15 @@ class PCAAnalysisApp:
             )
 
             # Redraw the canvas
-            self.update_figure()
+            self.canvas.draw()
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Visualization Error", str(e))
 
-    def create_screen_plot(self):
-        """Create screen plot."""
+    def create_scree_plot(self):
+        """Create scree plot."""
         if not self.df_clean:
             return
         
@@ -791,7 +767,7 @@ class PCAAnalysisApp:
             scree_visualizer = ScreePlotVisualizer(self.fig, self.ax)
             scree_visualizer.create_scree_plot(self.pca_results["model"])
 
-            self.update_figure()  # This ensures the new plot appears on the canvas
+            self.canvas.draw()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -843,7 +819,7 @@ class PCAAnalysisApp:
             self.ax.set_facecolor('#f8f9fa')
             self.ax.set_aspect('equal', adjustable='box')
 
-            self.update_figure()  # This ensures the new plot appears on the canvas
+            self.canvas.draw()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -855,9 +831,11 @@ class PCAAnalysisApp:
         if not self.df_clean:
             return
 
+        # Ensures PCA has been run
+        self.run_analysis()
+
         try:
-            # Ensures PCA has been run
-            self.run_analysis()
+            
 
             interactive_visualizer = InteractiveBiplotVisualizer()
             fig = interactive_visualizer.create_interactive_biplot(
@@ -911,7 +889,7 @@ class PCAAnalysisApp:
                 cmap="coolwarm"
             )
 
-            self.update_figure()  # This ensures the new plot appears on the canvas
+            self.canvas.draw()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -965,7 +943,7 @@ class PCAAnalysisApp:
             self.ax.tick_params(axis='y', labelsize=10)
 
             # Update the canvas to reflect the new plot
-            self.update_figure()  # This ensures the new plot appears on the canvas
+            self.canvas.draw()  # This ensures the new plot appears on the canvas
             messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
 
         except Exception as e:
@@ -975,10 +953,30 @@ class PCAAnalysisApp:
 
     #### 3. UTILITY METHODS ####
 
-    def get_columns_to_drop(self) -> list:
-        """Get list of columns to drop from user input."""
+    def drop_cols(self) -> list:
+        """
+        Gets the user entered columns to drop and drops them from the df.
+        Prints a messages about requested columns that couldn't nbe dropped
+
+        Return:
+            drop_cols: A list of the columns that were dropped from the data
+            missing_cols: A list of the columns that were requested to be 
+                        dropped but could not be dropped
+        """
+        # Grabs the user entered columns to drop
         drop_cols =  [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
-        return [col.strip().lower() for col in drop_cols]  # Ensure consistency
+        drop_cols = [col.strip().lower() for col in drop_cols]  # Ensure consistency
+
+        # Filter valid columns to drop
+        valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
+        missing_cols = set(drop_cols) - set(self.df.columns)
+        if missing_cols:
+            print("Missing columns (not in dataset):", missing_cols)
+        
+        # Drop valid columns
+        self.df.drop(columns=valid_drop_cols, inplace=True)
+
+        return drop_cols
 
     def replace_column_name(self):
         """Replace a column name in the loaded dataset."""
@@ -1125,9 +1123,6 @@ class PCAAnalysisApp:
 
         self.pcaresults_summary.insert(tk.END, summary)
 
-    def toggle_buttons(self, buttons, state="normal"):
-        for button in buttons:
-            button.config(state=state)
 
     def toggle_feature_grouping(self):
         """Toggle the feature grouping functionality."""
@@ -1186,11 +1181,6 @@ class PCAAnalysisApp:
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
-    def update_figure(self):
-        """Update the matplotlib figure."""
-        self.canvas.draw()
-
-
     #### 5. EVENT HANDLERS ####
 
     def handle_successful_load(self):
@@ -1206,7 +1196,7 @@ class PCAAnalysisApp:
     def save_plot(self):
         """Save the current plot using the dynamic output directory."""
         try:
-            save_path = save_plot(self.fig, output_dir=self.output_dir)
+            save_path = file_ops.save_plot(self.fig, output_dir=self.output_dir)
             messagebox.showinfo("Success", f"Plot saved at:\n{save_path}")
 
         except Exception as e:
