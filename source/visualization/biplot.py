@@ -103,9 +103,6 @@ class BiplotVisualizer(BasePlotter):
                 group = feature_to_group.get(feature, "Unknown")
                 color = feature_groups_colors.get(group, "gray")
 
-                # Debugging print
-                print(f"Feature: {feature}, Group: {group}, Color: {color}")
-
                 # Plot the arrow
                 arrow = FancyArrowPatch(
                     (0, 0),
@@ -413,8 +410,7 @@ class BiplotManager:
             group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
         }
 
-        print("Feature-to-Group mapping:", self.feature_to_group)
-        print("Group Colors:", self.group_colors)
+
 
     def get_group(self, feature):
         """

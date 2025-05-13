@@ -127,17 +127,8 @@ class PCAAnalyzer:
             raise ValueError("More components selected then exist")
 
         # PCA Execution with detailed tracking
-        print("\nStarting PCA fit...")
         model = PCA(n_components=n_components)
-        print("PCA model initialized")
-
         transformed_data = model.fit_transform(df)
-        print("PCA fit completed")
-
-        # Debug output
-        print("\nPCA Results:")
-        print(f"PCA components shape: {model.components_.shape}")
-        print(f"Explained variance ratios: {model.explained_variance_ratio_}")
 
         # Return comprehensive results
         return {

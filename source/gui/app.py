@@ -769,6 +769,7 @@ class PCAAnalysisApp:
             except ValueError:
                 text_dist = 1.1  # Default to 1.1 if invalid input
 
+
             # Delegate to BiplotVisualizer
             biplot_visualizer = BiplotVisualizer(self.fig, self.ax)
             biplot_visualizer.create_biplot(
@@ -1010,9 +1011,6 @@ class PCAAnalysisApp:
             self.biplot_visualizer.group_colors = self.biplot_manager.group_colors
 
             messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
-            print("Mapping file loaded successfully.")
-            print(self.biplot_manager.feature_to_group)
-            print(self.biplot_manager.group_colors)
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
@@ -1129,10 +1127,6 @@ class PCAAnalysisApp:
 
                 # Generate a combined palette using the helper function
                 self.feature_groups_colors = generate_color_palette(n_groups, preferred_colors)
-
-                # Debugging: Print updated colors
-                print(f"Debug: Updated feature group colors for palette '{selected_palette}':")
-                print(self.feature_groups_colors)
             else:
                 messagebox.showinfo("No Groups Defined", "No feature groups are currently defined.")
         except Exception as e:
