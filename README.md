@@ -124,9 +124,14 @@ PCA_11.27.24-pca/
 
 ## Known Issues That Need Fixing:
 
-1. Visualization: Visualize PCA - Group colors are not being applied correctly (grayed out option)
+1. Program Exit: After generating certain elements the program is unable to close.
+                Biplot with Groups
+                Top Features Loading
+                Plot Heatmap
+
 2. Feature Mapping: Enable/disable logic not functioning properly
 3. Heatmap: Currently showing index of features instead of top features
+4. User input - case sensitive and depeonds on user's csv - very rigid right now
 
 ## Future Enhancements
 

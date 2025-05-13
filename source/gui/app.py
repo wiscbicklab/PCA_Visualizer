@@ -21,7 +21,7 @@ from source.visualization.loadings import LoadingsProcessor
 
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
-from source.utils.constant import OUTPUT_DIR, DEFAULT_COLUMNS_TO_DROP, DEFAULT_STYLE
+from source.utils.constant import *
 import source.utils.file_operations as file_ops
 from source.utils.helpers import generate_color_palette
 
@@ -125,39 +125,7 @@ class PCAAnalysisApp:
         self.feature_to_group = None
         self.feature_groups_colors = None
 
-        # Style constants
-        self.button_style = {
-            'font': ('Helvetica', 10),
-            'bg': '#007ACC',
-            'fg': 'white',
-            'activebackground': '#005f99',
-            'relief': 'raised',
-            'width': 18
-        }
-
-        self.color_palettes = {
-            "Default": {
-                "FAB": "black",
-                "non-FAB": "silver",
-                "non-RAA pests": "pink",
-                "Beneficials": "green",
-                "RAA": "red"
-            },
-            "Colorblind-Friendly": {
-                "FAB": "#117733",
-                "non-FAB": "#88CCEE",
-                "non-RAA pests": "#CC6677",
-                "Beneficials": "#DDCC77",
-                "RAA": "#332288"
-            },
-            "Bright": {
-                "FAB": "#FF0000",
-                "non-FAB": "#00FF00",
-                "non-RAA pests": "#0000FF",
-                "Beneficials": "#FFFF00",
-                "RAA": "#FF00FF"
-            }
-        }
+        # Sets selected color pallet
         self.selected_palette = tk.StringVar(value="Default")
 
 
@@ -180,7 +148,7 @@ class PCAAnalysisApp:
             self.main.state("-zoomed")
         else: self.main.state('normal')
 
-        self.main.configure(bg=DEFAULT_STYLE["bg_color"])
+        self.main.configure(bg=LABEL_STYLE["bg"])
         self.main.minsize(1000, 600)
 
     def initialize_matplotlib(self):
@@ -194,138 +162,137 @@ class PCAAnalysisApp:
         """Create all widgets"""
         # File Section
         self.file_label = tk.Label(self.main, text="Load CSV file:",
-                                   bg=DEFAULT_STYLE["bg_color"], font=DEFAULT_STYLE["label_font"])
+                                   bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
         self.file_button = tk.Button(self.main, text="Browse",
-                                     **self.button_style, command=self.load_data_file)
+                                     **BUTTON_STYLE, command=self.load_data_file)
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
         self.output_dir_label = tk.Label(self.main,
                                          text=f"Output Directory: {self.output_dir}",
-                                         bg=DEFAULT_STYLE["bg_color"],
-                                         font=DEFAULT_STYLE["label_font"],
+                                         bg=LABEL_STYLE["bg"],
+                                         font=LABEL_STYLE["font"],
                                          wraplength=300,  # Wrap text for long paths
                                          anchor="w", justify="left")
         self.output_dir_button = tk.Button(self.main,
                                            text="Select Output Directory",
-                                           **self.button_style,
+                                           **BUTTON_STYLE,
                                            command=self.select_output_directory)
 
         self.clean_data_button = tk.Button(self.main,
                                            text="Clean CSV",
-                                           **self.button_style,
+                                           **BUTTON_STYLE,
                                            command=self.clean_data)
 
         # Missing Values Section
         self.missing_label = tk.Label(self.main,
                                       text="Handle Missing Values:",
-                                      bg=DEFAULT_STYLE["bg_color"],
-                                      font=DEFAULT_STYLE["label_font"])
+                                      bg=LABEL_STYLE["bg"],
+                                      font=LABEL_STYLE["font"])
         self.impute_mean_radio = tk.Radiobutton(self.main,
                                                 text="Impute with Mean",
                                                 variable=self.missing_choice,
                                                 value="impute_mean",
-                                                bg=DEFAULT_STYLE["bg_color"])
+                                                bg=LABEL_STYLE["bg"])
         self.impute_median_radio = tk.Radiobutton(self.main,
                                                   text="Impute with Median",
                                                   variable=self.missing_choice,
                                                   value="impute_median",
-                                                  bg=DEFAULT_STYLE["bg_color"])
+                                                  bg=LABEL_STYLE["bg"])
         self.replace_nan_radio = tk.Radiobutton(self.main,
                                                 text="Replace NaN with 0",
                                                 variable=self.missing_choice,
                                                 value="replace_nan",
-                                                bg=DEFAULT_STYLE["bg_color"])
+                                                bg=LABEL_STYLE["bg"])
         self.leave_empty_radio = tk.Radiobutton(self.main,
                                                 text="Leave Empty (Null)",
                                                 variable=self.missing_choice,
                                                 value="leave_empty",
-                                                bg=DEFAULT_STYLE["bg_color"])
+                                                bg=LABEL_STYLE["bg"])
 
         # BBCH Selection
         self.bbch_label = tk.Label(self.main,
                                    text="Filter by BBCH Stage:",
-                                   bg=DEFAULT_STYLE["bg_color"],
-                                   font=DEFAULT_STYLE["label_font"])
+                                   bg=LABEL_STYLE["bg"],
+                                   font=LABEL_STYLE["font"])
         self.bbch_none_radio = tk.Radiobutton(self.main,
                                               text="All (no filter)",
                                               variable=self.bbch_choice,
                                               value=-1,
-                                              bg=DEFAULT_STYLE["bg_color"])
+                                              bg=LABEL_STYLE["bg"])
         self.bbch_59_radio = tk.Radiobutton(self.main,
                                             text="BBCH 59",
                                             variable=self.bbch_choice,
                                             value=59,
-                                            bg=DEFAULT_STYLE["bg_color"])
+                                            bg=LABEL_STYLE["bg"])
         self.bbch_69_radio = tk.Radiobutton(self.main,
                                             text="BBCH 69",
                                             variable=self.bbch_choice,
                                             value=69,
-                                            bg=DEFAULT_STYLE["bg_color"])
+                                            bg=LABEL_STYLE["bg"])
         self.bbch_85_radio = tk.Radiobutton(self.main,
                                             text="BBCH 85",
                                             variable=self.bbch_choice,
                                             value=85,
-                                            bg=DEFAULT_STYLE["bg_color"])
+                                            bg=LABEL_STYLE["bg"])
 
         # Drop Columns Section
         self.drop_label = tk.Label(self.main,
                                    text="Columns to Drop (comma-separated):",
-                                   bg=DEFAULT_STYLE["bg_color"],
-                                   font=DEFAULT_STYLE["label_font"])
-        self.drop_entry = tk.Entry(self.main, width=40, font=DEFAULT_STYLE["label_font"])
+                                   bg=LABEL_STYLE["bg"],
+                                   font=LABEL_STYLE["font"])
+        self.drop_entry = tk.Entry(self.main, width=40, font=LABEL_STYLE["font"])
 
         # Replace Column Section
         self.replace_label = tk.Label(self.main,
                                       text="Replace Column Name (Correct typos):",
-                                      bg=DEFAULT_STYLE["bg_color"],
-                                      font=DEFAULT_STYLE["label_font"])
+                                      bg=LABEL_STYLE["bg"],
+                                      font=LABEL_STYLE["font"])
 
         self.replace_old_entry = tk.Entry(self.main,
                                           width=20,
-                                          font=DEFAULT_STYLE["label_font"])
+                                          font=LABEL_STYLE["font"])
         self.replace_old_entry.insert(0, "Enter current name")  # Placeholder text
 
         self.replace_new_entry = tk.Entry(self.main,
                                           width=20,
-                                          font=DEFAULT_STYLE["label_font"])
+                                          font=LABEL_STYLE["font"])
         self.replace_new_entry.insert(0, "Enter new name")  # Placeholder text
 
         self.replace_button = tk.Button(self.main,
                                         text="Replace Column Name",
-                                        **self.button_style,
+                                        **BUTTON_STYLE,
                                         command=self.replace_column_name)
 
         # PCA Parameters Section
         self.components_label = tk.Label(self.main,
                                          text="Number of PCA Components:",
-                                         bg=DEFAULT_STYLE["bg_color"],
-                                         font=DEFAULT_STYLE["label_font"])
+                                         **LABEL_STYLE)
         self.components_entry = tk.Entry(self.main,
-                                         font=DEFAULT_STYLE["label_font"],
+                                         font=LABEL_STYLE["font"],
                                          width=10)
         self.components_entry.insert(0, "2")
 
-        self.top_n_label = tk.Label(self.main, text="Top N Features for Biplot:", bg=DEFAULT_STYLE["bg_color"], font=DEFAULT_STYLE["label_font"])
-        self.top_n_entry = tk.Entry(self.main, font=DEFAULT_STYLE["label_font"], width=10)
+        self.top_n_label = tk.Label(self.main, text="Top N Features for Biplot:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
+        self.top_n_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=10)
         self.top_n_entry.insert(0, "10")  # Default to 10
 
-        self.text_distance_label = tk.Label(self.main, text="Text Distance for Labels:", bg=DEFAULT_STYLE["bg_color"],
-                                            font=DEFAULT_STYLE["label_font"])
-        self.text_distance_entry = tk.Entry(self.main, font=DEFAULT_STYLE["label_font"], width=10)
+        self.text_distance_label = tk.Label(self.main, text="Text Distance for Labels:", bg=LABEL_STYLE["bg"],
+                                            font=LABEL_STYLE["font"])
+        self.text_distance_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=10)
         self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
 
         # Dropdown for selecting predefined targets
-        self.target_label = tk.Label(self.main, text="Target Variable:", bg=DEFAULT_STYLE["bg_color"], font=DEFAULT_STYLE["label_font"])
+        self.target_label = tk.Label(self.main, text="Target Variable:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
         self.target_mode = tk.StringVar()
         self.target_mode.set("None")  # Default option
         target_options = ["None", "bbch", "Input Specific Target"]
         self.target_dropdown = tk.OptionMenu(self.main, self.target_mode, *target_options)
-        self.target_dropdown.config(font=DEFAULT_STYLE["label_font"], bg="#007ACC", fg="white",
+        self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
                                     activebackground="#005f99", relief="flat")
 
         # Input box for custom target
-        self.custom_target_entry = tk.Entry(self.main, font=DEFAULT_STYLE["label_font"], width=20, state="disabled")
+        self.custom_target_entry = tk.Entry(self.main, font=LABEL_STYLE["font"], width=20, state="disabled")
 
         # Trace dropdown to enable/disable custom target input
         self.target_mode.trace_add("write", self.update_target_input)
@@ -333,32 +300,32 @@ class PCAAnalysisApp:
         # Analysis Buttons
         self.visualize_button = tk.Button(self.main,
                                           text="Visualize PCA",
-                                          **self.button_style,
+                                          **BUTTON_STYLE,
                                           command=self.visualize_pca)
         self.biplot_button = tk.Button(self.main,
                                        text="Biplot with Groups",
-                                       **self.button_style,
+                                       **BUTTON_STYLE,
                                        command=self.create_biplot)
         self.interactive_biplot_button = tk.Button(self.main,
                                                    text="Interactive Biplot",
-                                                   **self.button_style,
+                                                   **BUTTON_STYLE,
                                                    command=self.create_interactive_biplot)
         self.scree_plot_button = tk.Button(self.main,
                                            text="Show Scree Plot",
-                                           **self.button_style,
+                                           **BUTTON_STYLE,
                                            command=self.create_scree_plot)
         self.top_features_button = tk.Button(self.main,
                                              text="Top Features Loadings",
-                                             **self.button_style,
+                                             **BUTTON_STYLE,
                                              command=self.plot_top_features_loadings)
 
         # Color Palette Selection
         self.palette_label = tk.Label(self.main,
                                       text="Select Color Palette:",
-                                      bg=DEFAULT_STYLE["bg_color"], font=DEFAULT_STYLE["label_font"])
+                                      bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
         self.palette_menu = tk.OptionMenu(self.main,
                                           self.selected_palette,
-                                          *self.color_palettes.keys(),
+                                          *COLOR_PALETTES.keys(),
                                           command=self.update_color_palette)
 
         # Feature Grouping Section
@@ -366,19 +333,19 @@ class PCAAnalysisApp:
             self.main,
             text="Enable Feature Grouping",
             variable=self.enable_feature_grouping,
-            bg=DEFAULT_STYLE["bg_color"],
-            font=DEFAULT_STYLE["label_font"],
+            bg=LABEL_STYLE["bg"],
+            font=LABEL_STYLE["font"],
             command=self.toggle_feature_grouping
         )
 
         self.mapping_label = tk.Label(self.main,
                                       text="Feature-to-Group Mapping (Optional):",
-                                      bg=DEFAULT_STYLE["bg_color"],
-                                      font=DEFAULT_STYLE["label_font"])
+                                      bg=LABEL_STYLE["bg"],
+                                      font=LABEL_STYLE["font"])
 
         self.mapping_button = tk.Button(self.main,
                                         text="Upload Mapping CSV",
-                                        **self.button_style,
+                                        **BUTTON_STYLE,
                                         command=self.upload_mapping_csv)
         self.mapping_button.config(state="normal")
 
@@ -398,28 +365,28 @@ class PCAAnalysisApp:
 
         self.pcaresults_label = tk.Label(self.main,
                                          text="Data Insights Box:",
-                                         bg=DEFAULT_STYLE["bg_color"],
-                                         font=DEFAULT_STYLE["label_font"])
+                                         bg=LABEL_STYLE["bg"],
+                                         font=LABEL_STYLE["font"])
         self.pcaresults_summary = tk.Text(self.main,
                                           height=8,
                                           width=50,
-                                          font=DEFAULT_STYLE["label_font"],
+                                          font=LABEL_STYLE["font"],
                                           bg="white")
 
         # Heatmap Controls
         self.focus_label = tk.Label(self.main,
                                     text="Columns to Focus On (comma-separated):",
-                                    bg=DEFAULT_STYLE["bg_color"],
-                                    font=DEFAULT_STYLE["label_font"])
+                                    bg=LABEL_STYLE["bg"],
+                                    font=LABEL_STYLE["font"])
 
         self.focus_entry = tk.Entry(self.main,
                                     width=20,
-                                    font=DEFAULT_STYLE["label_font"])
+                                    font=LABEL_STYLE["font"])
 
         self.heatmap_mode_label = tk.Label(self.main,
                                            text="Select Heatmap Mode:",
-                                           bg=DEFAULT_STYLE["bg_color"],
-                                           font=DEFAULT_STYLE["label_font"])
+                                           bg=LABEL_STYLE["bg"],
+                                           font=LABEL_STYLE["font"])
 
         self.heatmap_mode_menu = tk.OptionMenu(
             self.main,
@@ -435,7 +402,7 @@ class PCAAnalysisApp:
             command=self.plot_loadings_heatmap,
             bg="#007ACC",
             fg="white",
-            font=DEFAULT_STYLE["label_font"]
+            font=LABEL_STYLE["font"]
         )
 
 
@@ -468,7 +435,7 @@ class PCAAnalysisApp:
         # Save
         self.save_button = tk.Button(self.main,
                                      text="Save Plot",
-                                     **self.button_style,
+                                     **BUTTON_STYLE,
                                      command=self.save_plot)
 
     def setup_layout(self):
