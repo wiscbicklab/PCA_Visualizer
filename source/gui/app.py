@@ -38,24 +38,11 @@ class PCAAnalysisApp:
         Args:
             root: 
         """
-        # Grabs the os type
-        self.os_type = platform.system()
-
-        self.root = root
-        self.pca_analyzer = PCAAnalyzer()
-        self.biplot_visualizer = BiplotVisualizer()
-        self.biplot_manager = BiplotManager()
+        self.init_dependencies(root)
+        self.init_variables()
 
         # Create data validation handlers
         self.vcmd_pi = (self.root.register(self.validate_positive_integer), '%P')
-
-        # Initialize all GUI variables
-        self.target_var = tk.StringVar(value="None")
-        self.missing_choice = tk.StringVar(value="impute_mean")
-        self.bbch_choice = tk.IntVar(value=-1)
-        self.enable_feature_grouping = tk.BooleanVar(value=False)
-        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
-        self.target_mode = tk.StringVar(value="Select Target")
 
         # Initialize all widget references
         # File Section
@@ -119,15 +106,6 @@ class PCAAnalysisApp:
 
         # Save Button
         self.save_button = None
-
-        # Data-related variables
-        self.df = None
-        self.df_updated = False
-        self.df_loaded = False
-        self.df_clean = False
-        self.pca_results = None
-        self.feature_to_group = None
-        self.feature_groups_colors = None
 
         # Sets selected color pallet
         self.selected_palette = tk.StringVar(value="Default")
@@ -552,6 +530,49 @@ class PCAAnalysisApp:
         # Configure remaining row weights
         for i in range(31):
             self.root.grid_rowconfigure(i, weight=1)
+
+    def init_dependencies(self, root):
+        """
+        Intializes program dependencies
+
+        ARGS:
+            root: The main tkinter windows to build the application on
+        """
+        self.root = root
+        self.pca_analyzer = PCAAnalyzer()
+        self.biplot_visualizer = BiplotVisualizer()
+        self.biplot_manager = BiplotManager()
+
+
+    def init_variables(self):
+        """
+        Initializes variables for storing data within the application
+        """
+        # Variables for tracking the data to run PCA on
+        self.df = None
+        self.df_updated = False
+        self.df_loaded = False
+        self.df_clean = False
+
+        # Variables for visualizing pca results
+        self.pca_results = None
+        self.feature_to_group = None
+        self.feature_groups_colors = None
+
+        # Variables to track user inputs from the GUI
+        self.target_var = tk.StringVar(value="None")
+        self.missing_choice = tk.StringVar(value="impute_mean")
+        self.bbch_choice = tk.IntVar(value=-1)
+        self.enable_feature_grouping = tk.BooleanVar(value=False)
+        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
+        self.target_mode = tk.StringVar(value="Select Target")
+
+        # Gets the name of the os
+        self.os_type = platform.system()
+
+
+
+
 
     #### 1. DATA HANDLING METHODS ####
 
