@@ -112,7 +112,7 @@ class PCAAnalysisApp(tk.Tk):
             self.state("-zoomed")
         else: self.state('normal')
 
-        self.configure(bg=LABEL_STYLE["bg"])
+        self.configure(bg="#f5f5f5")
         self.minsize(1000, 600)
 
     def initialize_matplotlib(self):
@@ -299,7 +299,7 @@ class PCAAnalysisApp(tk.Tk):
                                          padx=10, pady=10, sticky="nsew")
         
         self.load_file_box.grid(row=0, column=0, padx=10, pady=10, columnspan=2)
-        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
 

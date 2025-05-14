@@ -20,6 +20,31 @@ class PcaBox(tk.Frame):
         super().__init__(main, **kwargs)
 
         # Visualization button
+        self.visualize_button = None
+
+        # Banner
+        self.visualizepca_banner = None
+
+        # Data validation handler
+        self.vcmd_pi = None
+
+        # PCA Parameters Section
+        self.components_label = None
+        self.components_entry = None
+
+        # Top N Feature User Input
+        self.top_n_label = None
+        self.top_n_entry = None
+
+        # Text Distance for Labels User Input
+        self.text_distance_label = None
+        self.text_distance_entry = None
+
+        self.create_components()
+        self.setup_layout()
+
+    def create_components(self):
+        # Visualization button
         self.visualize_button = tk.Button(self,
                                           text="Visualize PCA",
                                           **BUTTON_STYLE,
@@ -32,7 +57,6 @@ class PcaBox(tk.Frame):
                                             bg="#dcdcdc",
                                             relief="groove")
         
-
         # Create data validation handlers
         self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
 
@@ -61,11 +85,10 @@ class PcaBox(tk.Frame):
         self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10)
         self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
 
-
+    def setup_layout(self):
+        # Configure component structure
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
-
-
 
         # PCA Parameters
         self.visualizepca_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
@@ -84,8 +107,25 @@ class PcaBox(tk.Frame):
 
 
 
+    #### 5. EVENT HANDLERS ####
+
+    def validate_positive_integer(self, proposed_value):
+        if proposed_value.isdigit() and int(proposed_value) > 0:
+            self.df_updated = True
+            return True
+        elif proposed_value == "":
+            return True  # Allow clearing before retyping
+        return False
+    
+    def on_focus_out(self, event):
+        value = self.components_entry.get()
+        if value.strip() == "":
+            self.components_entry.delete(0, tk.END)
+            self.components_entry.insert(0, "2")
 
 
+
+    #### 6. Data Handling ####
 
     def visualize_pca(self):
         """Create PCA visualization."""
@@ -123,20 +163,7 @@ class PcaBox(tk.Frame):
             print(error_str)
             messagebox.showerror("Visualization Error", str(e))
     
-    def validate_positive_integer(self, proposed_value):
-        if proposed_value.isdigit() and int(proposed_value) > 0:
-            self.df_updated = True
-            return True
-        elif proposed_value == "":
-            return True  # Allow clearing before retyping
-        return False
     
-    def on_focus_out(self, event):
-        value = self.components_entry.get()
-        if value.strip() == "":
-            self.components_entry.delete(0, tk.END)
-            self.components_entry.insert(0, "2")
-
 
 
 

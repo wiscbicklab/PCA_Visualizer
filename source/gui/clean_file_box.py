@@ -17,11 +17,41 @@ class CleanFileBox(tk.Frame):
     def __init__(self, main=None, df=None, **kwargs):
         super().__init__(main, **kwargs)
 
+
+        # Variables
+        self.missing_choice = None
+        self.bbch_choice = None
+        
+        self.init_vars()
+
+        # GUI Objects
+        self.clean_data_banner = None
+        self.clean_data_button = None
+
+        self.missing_label = None
+        self.impute_mean_radio = None
+        self.impute_median_radio = None
+        self.replace_nan_radio = None
+        self.leave_empty_radio = None
+
+        self.bbch_label = None
+        self.bbch_none_radio = None
+        self.bbch_59_radio = None
+        self.bbch_69_radio = None
+        self.bbch_85_radio = None
+
+        self.drop_label = None
+        self.drop_entry = None
+
+        self.create_components()
+        self.setup_layout()
+        
+
+    def init_vars(self):
         self.missing_choice = tk.StringVar(value="impute_mean")
         self.bbch_choice = tk.IntVar(value=-1)
-
-
-
+        
+    def create_components(self):
         self.clean_data_banner = tk.Label(self,
             text="Clean and/or Filter Data",
             font=("Helvetica", 12),
@@ -82,15 +112,18 @@ class CleanFileBox(tk.Frame):
                                             variable=self.bbch_choice,
                                             value=85,
                                             **LABEL_STYLE)
-
+        
         # Drop Columns Section
         self.drop_label = tk.Label(self,
                                    text="Columns to Drop (comma-separated):",
                                    **LABEL_STYLE)
         self.drop_entry = tk.Entry(self, width=30, **LABEL_STYLE)
-
-
-
+ 
+    def setup_layout(self):
+        # Configure component structure
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        
         # Clean Data Banner
         self.clean_data_banner.grid(row=0, column=0, columnspan=2,
                                     sticky="we", padx=5, pady=5)
@@ -116,6 +149,15 @@ class CleanFileBox(tk.Frame):
         self.drop_label.grid(row=9, column=0, padx=5, pady=5, sticky="e")
         self.drop_entry.grid(row=9, column=1, padx=5, pady=5, sticky="w")
 
+
+
+    # Update internal variables
+    def set_df(self, df):
+        self.df = df
+    
+
+
+    #### 6. Data Handling ####
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
@@ -189,10 +231,6 @@ class CleanFileBox(tk.Frame):
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Error", f"An error occurred during data cleaning: {e}")
-
-    def set_df(self, df):
-        self.df = df
-    
 
     def drop_cols(self) -> list:
         """
