@@ -19,11 +19,21 @@ class PcaBox(tk.Frame):
     def __init__(self, main=None, df=None, **kwargs):
         super().__init__(main, **kwargs)
 
+        # Variables
+        self.target_mode = None
+
+        self.init_vars()
+
         # Visualization button
         self.visualize_button = None
 
         # Banner
         self.visualizepca_banner = None
+
+        # Target Variable
+        self.target_label = None
+        self.target_dropdown = None
+        self.custom_target_entry = None
 
         # Data validation handler
         self.vcmd_pi = None
@@ -43,6 +53,11 @@ class PcaBox(tk.Frame):
         self.create_components()
         self.setup_layout()
 
+    def init_vars(self):
+        self.target_mode = tk.StringVar()
+        self.target_mode.set("None")  # Default option
+
+
     def create_components(self):
         # Visualization button
         self.visualize_button = tk.Button(self,
@@ -57,6 +72,15 @@ class PcaBox(tk.Frame):
                                             bg="#dcdcdc",
                                             relief="groove")
         
+        # Input box for custom target
+        # Dropdown for selecting predefined targets
+        self.target_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
+        target_options = ["None", "bbch", "Input Specific Target"]
+        self.target_dropdown = tk.OptionMenu(self, self.target_mode, *target_options)
+        self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
+                                    activebackground="#005f99", relief="flat")
+        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=20, state="disabled")
+
         # Create data validation handlers
         self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
 
@@ -92,6 +116,11 @@ class PcaBox(tk.Frame):
 
         # PCA Parameters
         self.visualizepca_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+    
+        # Target Selection Section
+        self.target_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        self.target_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.custom_target_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         self.components_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
         self.components_entry.grid(row=4, column=1, padx=5, pady=5, sticky="e")

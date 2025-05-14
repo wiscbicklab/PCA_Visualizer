@@ -25,6 +25,8 @@ class CleanFileBox(tk.Frame):
         self.init_vars()
 
         # GUI Objects
+        self.target_label = None
+
         self.clean_data_banner = None
         self.clean_data_button = None
 
@@ -52,12 +54,13 @@ class CleanFileBox(tk.Frame):
         self.bbch_choice = tk.IntVar(value=-1)
         
     def create_components(self):
+        
+        
         self.clean_data_banner = tk.Label(self,
             text="Clean and/or Filter Data",
             font=("Helvetica", 12),
             bg="#dcdcdc",
             relief="groove")
-        
         self.clean_data_button = tk.Button(self,
                                            text="Clean CSV",
                                            **BUTTON_STYLE,
@@ -123,7 +126,7 @@ class CleanFileBox(tk.Frame):
         # Configure component structure
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
-        
+
         # Clean Data Banner
         self.clean_data_banner.grid(row=0, column=0, columnspan=2,
                                     sticky="we", padx=5, pady=5)

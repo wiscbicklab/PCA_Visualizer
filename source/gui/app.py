@@ -147,16 +147,6 @@ class PCAAnalysisApp(tk.Tk):
         self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
         self.pca_box = PcaBox(self, bg="#f0f0f0")
 
-        
-
-        # Dropdown for selecting predefined targets
-        self.target_label = tk.Label(self, text="Target Variable:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.target_mode = tk.StringVar()
-        self.target_mode.set("None")  # Default option
-        target_options = ["None", "bbch", "Input Specific Target"]
-        self.target_dropdown = tk.OptionMenu(self, self.target_mode, *target_options)
-        self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
-                                    activebackground="#005f99", relief="flat")
 
         # Input box for custom target
         self.custom_target_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=20, state="disabled")
@@ -302,12 +292,6 @@ class PCAAnalysisApp(tk.Tk):
         self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
-
-
-        # Target Selection Section
-        self.target_label.grid(row=15, column=0, padx=5, pady=5, sticky="w")
-        self.target_dropdown.grid(row=15, column=1, padx=5, pady=5, sticky="w")
-        self.custom_target_entry.grid(row=16, column=1, padx=5, pady=5, sticky="w")
         
         # Results Section
         self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
