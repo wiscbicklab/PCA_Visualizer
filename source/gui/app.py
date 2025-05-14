@@ -28,6 +28,7 @@ from source.utils.helpers import generate_color_palette
 # Components Imports
 from source.gui.load_file_box import LoadFileBox
 from source.gui.clean_file_box import CleanFileBox
+from source.gui.pca_box import PcaBox
 
 import traceback
 
@@ -52,17 +53,11 @@ class PCAAnalysisApp(tk.Tk):
         # Create the custom component
         self.load_file_box = None
         self.clean_file_box = None
+        self.pca_box = None
     
-        # Create data validation handlers
-        self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
 
-
-        # PCA Parameters
-        self.components_label = None
-        self.components_entry = None
-
+    
         # Analysis Buttons
-        self.visualize_button = None
         self.biplot_button = None
         self.interactive_biplot_button = None
         self.scree_plot_button = None
@@ -88,7 +83,6 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_button = None
 
         # Banners
-        self.visualizepca_banner = None
         self.biplot_banner = None
         self.heatmap_banner = None
 
@@ -148,56 +142,12 @@ class PCAAnalysisApp(tk.Tk):
                                            **BUTTON_STYLE,
                                            command=self.select_output_directory)
 
-
+        # Intialize Custom components
         self.load_file_box = LoadFileBox(self, bg="#f0f0f0")
         self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
-
+        self.pca_box = PcaBox(self, bg="#f0f0f0")
 
         
-        # Replace Column Section
-        self.replace_label = tk.Label(self,
-                                      text="Replace Column Name (Correct typos):",
-                                      bg=LABEL_STYLE["bg"],
-                                      font=LABEL_STYLE["font"])
-
-        self.replace_old_entry = tk.Entry(self,
-                                          width=20,
-                                          font=LABEL_STYLE["font"])
-        self.replace_old_entry.insert(0, "Enter current name")  # Placeholder text
-
-        self.replace_new_entry = tk.Entry(self,
-                                          width=20,
-                                          font=LABEL_STYLE["font"])
-        self.replace_new_entry.insert(0, "Enter new name")  # Placeholder text
-
-        self.replace_button = tk.Button(self,
-                                        text="Replace Column Name",
-                                        **BUTTON_STYLE,
-                                        command=self.replace_column_name)
-
-        # PCA Parameters Section
-        self.components_label = tk.Label(self,
-                                         text="Number of PCA Components:",
-                                         **LABEL_STYLE)
-        self.components_entry = tk.Entry(self,
-                                         font=LABEL_STYLE["font"],
-                                         width=10,
-                                         validate="key",
-                                         validatecommand=self.vcmd_pi)
-        self.components_entry.insert(0, "2")
-
-        # Bind focus out event to reset empty input
-        self.components_entry.bind("<FocusOut>", self.on_focus_out)
-
-
-        self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10)
-        self.top_n_entry.insert(0, "10")  # Default to 10
-
-        self.text_distance_label = tk.Label(self, text="Text Distance for Labels:", bg=LABEL_STYLE["bg"],
-                                            font=LABEL_STYLE["font"])
-        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10)
-        self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
 
         # Dropdown for selecting predefined targets
         self.target_label = tk.Label(self, text="Target Variable:", bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
@@ -215,10 +165,6 @@ class PCAAnalysisApp(tk.Tk):
         self.target_mode.trace_add("write", self.update_target_input)
 
         # Analysis Buttons
-        self.visualize_button = tk.Button(self,
-                                          text="Visualize PCA",
-                                          **BUTTON_STYLE,
-                                          command=self.visualize_pca)
         self.biplot_button = tk.Button(self,
                                        text="Biplot with Groups",
                                        **BUTTON_STYLE,
@@ -323,11 +269,7 @@ class PCAAnalysisApp(tk.Tk):
 
 
         # Banners
-        self.visualizepca_banner = tk.Label(self,
-                                            text="Visualize PCA",
-                                            font=("Helvetica", 12),
-                                            bg="#dcdcdc",
-                                            relief="groove")
+        
         self.biplot_banner = tk.Label(self,
                                       text="Biplot Section",
                                       font=("Helvetica", 12),
@@ -356,8 +298,9 @@ class PCAAnalysisApp(tk.Tk):
         self.canvas.get_tk_widget().grid(row=0, column=2, rowspan=25,
                                          padx=10, pady=10, sticky="nsew")
         
-        self.load_file_box.grid(row=0, padx=10, pady=10, columnspan=2)
-        self.clean_file_box.grid(row=1, padx=10, pady=10, columnspan=2, sticky="we")
+        self.load_file_box.grid(row=0, column=0, padx=10, pady=10, columnspan=2)
+        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2)
+        self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
 
         
@@ -370,18 +313,7 @@ class PCAAnalysisApp(tk.Tk):
         self.target_label.grid(row=15, column=0, padx=5, pady=5, sticky="w")
         self.target_dropdown.grid(row=15, column=1, padx=5, pady=5, sticky="w")
         self.custom_target_entry.grid(row=16, column=1, padx=5, pady=5, sticky="w")
-        # PCA Parameters
-        self.components_label.grid(row=17, column=0, padx=5, pady=5, sticky="e")
-        self.components_entry.grid(row=17, column=1, padx=5, pady=5, sticky="w")
-
-        self.top_n_label.grid(row=18, column=0, padx=5, pady=5, sticky="e")
-        self.top_n_entry.grid(row=18, column=1, padx=5, pady=5, sticky="w")
-
-        self.text_distance_label.grid(row=19, column=0, padx=5, pady=5, sticky="e")
-        self.text_distance_entry.grid(row=19, column=1, padx=5, pady=5, sticky="w")
-
-        # Run Analysis Buttons
-        self.visualize_button.grid(row=20, column=0, padx=5, pady=5)
+        
 
         # Results Section
         self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
@@ -394,7 +326,6 @@ class PCAAnalysisApp(tk.Tk):
         self.top_features_button.grid(row=26, column=1, padx=5, pady=5)
 
         # Banners
-        self.visualizepca_banner.grid(row=14, column=0, columnspan=2, sticky="we", padx=5, pady=5)
         self.biplot_banner.grid(row=21, column=0, columnspan=2, sticky="we", padx=5, pady=5)
         self.heatmap_banner.grid(row=27, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
@@ -522,43 +453,7 @@ class PCAAnalysisApp(tk.Tk):
         # Update the canvas to use the cleared figure
         self.canvas.figure = self.fig
         self.canvas.draw()
-
-    def visualize_pca(self):
-        """Create PCA visualization."""
-        if not self.df_clean:
-            return
         
-        try:
-            # Ensures PCA has been run
-            self.run_analysis()
-
-            # Reset the canvas
-            self.reset_canvas()
-
-            # Get the target variable
-            target_variable = self.get_target_variable()
-            if target_variable and target_variable not in self.df.columns:
-                raise ValueError(f"Target variable '{target_variable}' not found in the dataset.")
-
-            # Perform PCA transformation
-            pca_visualizer = PCAVisualizer(self.fig, self.ax)
-            transformed_data = self.pca_results['transformed_data']
-
-            # Plot the PCA visualization, grouped by target
-            pca_visualizer.plot(
-                principal_components=transformed_data,
-                data=self.df,
-                target=target_variable,
-                target_mode=self.target_mode.get().strip().lower()
-            )
-
-            # Redraw the canvas
-            self.canvas.draw()
-
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Visualization Error", str(e))
 
     def create_scree_plot(self):
         """Create scree plot."""
@@ -981,19 +876,6 @@ class PCAAnalysisApp(tk.Tk):
 
     #### 6. DATA TYPE VALIDATION ####
 
-    def validate_positive_integer(self, proposed_value):
-        if proposed_value.isdigit() and int(proposed_value) > 0:
-            self.df_updated = True
-            return True
-        elif proposed_value == "":
-            return True  # Allow clearing before retyping
-        return False
-    
-    def on_focus_out(self, event):
-        value = self.components_entry.get()
-        if value.strip() == "":
-            self.components_entry.delete(0, tk.END)
-            self.components_entry.insert(0, "2")
 
 # Start App
 if __name__ == "__main__":   

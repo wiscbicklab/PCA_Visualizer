@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import traceback
+import numpy as np
 import pandas as pd
 
 from sklearn.impute import SimpleImputer
@@ -35,61 +36,58 @@ class CleanFileBox(tk.Frame):
         # Missing Values Section
         self.missing_label = tk.Label(self,
                                       text="Handle Missing Values:",
-                                      bg=LABEL_STYLE["bg"],
-                                      font=LABEL_STYLE["font"])
+                                      **LABEL_STYLE)
         self.impute_mean_radio = tk.Radiobutton(self,
                                                 text="Impute with Mean",
                                                 variable=self.missing_choice,
                                                 value="impute_mean",
-                                                bg=LABEL_STYLE["bg"])
+                                                **LABEL_STYLE)
         self.impute_median_radio = tk.Radiobutton(self,
                                                   text="Impute with Median",
                                                   variable=self.missing_choice,
                                                   value="impute_median",
-                                                  bg=LABEL_STYLE["bg"])
+                                                  **LABEL_STYLE)
         self.replace_nan_radio = tk.Radiobutton(self,
                                                 text="Replace NaN with 0",
                                                 variable=self.missing_choice,
                                                 value="replace_nan",
-                                                bg=LABEL_STYLE["bg"])
+                                                **LABEL_STYLE)
         self.leave_empty_radio = tk.Radiobutton(self,
                                                 text="Leave Empty (Null)",
                                                 variable=self.missing_choice,
                                                 value="leave_empty",
-                                                bg=LABEL_STYLE["bg"])
+                                                **LABEL_STYLE)
 
         # BBCH Selection
         self.bbch_label = tk.Label(self,
                                    text="Filter by BBCH Stage:",
-                                   bg=LABEL_STYLE["bg"],
-                                   font=LABEL_STYLE["font"])
+                                   **LABEL_STYLE)
         self.bbch_none_radio = tk.Radiobutton(self,
                                               text="All (no filter)",
                                               variable=self.bbch_choice,
                                               value=-1,
-                                              bg=LABEL_STYLE["bg"])
+                                              **LABEL_STYLE)
         self.bbch_59_radio = tk.Radiobutton(self,
                                             text="BBCH 59",
                                             variable=self.bbch_choice,
                                             value=59,
-                                            bg=LABEL_STYLE["bg"])
+                                            **LABEL_STYLE)
         self.bbch_69_radio = tk.Radiobutton(self,
                                             text="BBCH 69",
                                             variable=self.bbch_choice,
                                             value=69,
-                                            bg=LABEL_STYLE["bg"])
+                                            **LABEL_STYLE)
         self.bbch_85_radio = tk.Radiobutton(self,
                                             text="BBCH 85",
                                             variable=self.bbch_choice,
                                             value=85,
-                                            bg=LABEL_STYLE["bg"])
+                                            **LABEL_STYLE)
 
         # Drop Columns Section
         self.drop_label = tk.Label(self,
                                    text="Columns to Drop (comma-separated):",
-                                   bg=LABEL_STYLE["bg"],
-                                   font=LABEL_STYLE["font"])
-        self.drop_entry = tk.Entry(self, width=40, font=LABEL_STYLE["font"])
+                                   **LABEL_STYLE)
+        self.drop_entry = tk.Entry(self, width=30, **LABEL_STYLE)
 
 
 
