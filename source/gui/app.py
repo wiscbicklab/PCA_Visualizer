@@ -303,18 +303,12 @@ class PCAAnalysisApp(tk.Tk):
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
 
-        
-        # self.replace_label.grid(row=11, column=0, padx=5, pady=5, sticky="e")
-        # self.replace_old_entry.grid(row=11, column=1, padx=5, pady=5, sticky="w")
-        # self.replace_new_entry.grid(row=12, column=1, padx=5, pady=5, sticky="w")
-        # self.replace_button.grid(row=12, column=0, padx=5, pady=5, sticky="e")
 
         # Target Selection Section
         self.target_label.grid(row=15, column=0, padx=5, pady=5, sticky="w")
         self.target_dropdown.grid(row=15, column=1, padx=5, pady=5, sticky="w")
         self.custom_target_entry.grid(row=16, column=1, padx=5, pady=5, sticky="w")
         
-
         # Results Section
         self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
         self.data_insight_summary.grid(row=28, column=2, padx=5, pady=5, sticky="nsew")
@@ -392,8 +386,6 @@ class PCAAnalysisApp(tk.Tk):
 
 
 
-
-
     #### 1. DATA HANDLING METHODS ####
 
     def run_analysis(self):
@@ -454,7 +446,6 @@ class PCAAnalysisApp(tk.Tk):
         self.canvas.figure = self.fig
         self.canvas.draw()
         
-
     def create_scree_plot(self):
         """Create scree plot."""
         if not self.df_clean:
@@ -655,54 +646,9 @@ class PCAAnalysisApp(tk.Tk):
             print(error_str)
             messagebox.showerror("Error", f"Failed to plot top feature loadings: {str(e)}")
 
+
+
     #### 3. UTILITY METHODS ####
-
-    
-
-    def replace_column_name(self):
-        """Replace a column name in the loaded dataset."""
-        if not self.df_loaded:
-            return
-
-        try:
-            # Get the old and new column names from the input fields
-            old_name = self.replace_old_entry.get().strip()
-            new_name = self.replace_new_entry.get().strip()
-
-            # Ensure the column exists in the dataset
-            if old_name not in self.df.columns:
-                messagebox.showerror("Error", f"Column '{old_name}' not found in the dataset.")
-                return
-
-            # Ensure the new name is not empty
-            if not new_name:
-                messagebox.showerror("Error", "New column name cannot be empty.")
-                return
-
-            # Replace the column name
-            self.df.rename(columns={old_name: new_name}, inplace=True)
-
-            # Update the dataset info displayed in the GUI
-            self.update_data_info()
-
-            messagebox.showinfo("Success", f"Column '{old_name}' successfully renamed to '{new_name}'.")
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"Failed to replace column name: {str(e)}")
-
-    def get_target_variable(self) -> str:
-        """Get selected target variable."""
-        target_mode = self.target_mode.get().strip().lower()
-        if target_mode == "bbch":
-            return "bbch"
-        elif target_mode == "input specific target":
-            return self.custom_target_entry.get().strip().lower()
-        return None
-
-    def check_pca_loaded(self):
-        if not hasattr(self, 'pca_results') or self.pca_results is None:
-            raise ValueError("Please run PCA analysis first.")
 
     def upload_mapping_csv(self):
         """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
@@ -760,6 +706,8 @@ class PCAAnalysisApp(tk.Tk):
         Update logic or perform actions based on the checkbox state.
         """
         focus_value = self.focus_on_loadings.get()  # Retrieve the value (True/False)
+
+
 
     #### 4. UI UPDATE METHODS ####
 
@@ -854,8 +802,9 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
-    #### 5. EVENT HANDLERS ####
 
+
+    #### 5. EVENT HANDLERS ####
 
     def save_plot(self):
         """Save the current plot using the dynamic output directory."""
@@ -874,7 +823,6 @@ class PCAAnalysisApp(tk.Tk):
         plt.close('all')
         self.destroy()
 
-    #### 6. DATA TYPE VALIDATION ####
 
 
 # Start App
