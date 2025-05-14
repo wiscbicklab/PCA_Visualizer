@@ -57,7 +57,6 @@ class PcaBox(tk.Frame):
         self.target_mode = tk.StringVar()
         self.target_mode.set("None")  # Default option
 
-
     def create_components(self):
         # Visualization button
         self.visualize_button = tk.Button(self,

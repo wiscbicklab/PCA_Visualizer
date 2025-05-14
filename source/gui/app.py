@@ -29,7 +29,8 @@ from source.utils.helpers import generate_color_palette
 from source.gui.load_file_box import LoadFileBox
 from source.gui.clean_file_box import CleanFileBox
 from source.gui.pca_box import PcaBox
-from source.gui.biplot_box import Biplot
+from source.gui.biplot_box import BiplotBox
+from source.gui.heatmap_box import HeatmapBox
 
 import traceback
 
@@ -56,23 +57,13 @@ class PCAAnalysisApp(tk.Tk):
         self.clean_file_box = None
         self.pca_box = None
         self.biplot_box = None
+        self.heatmap_box = None
 
         self.focus_checkbox = None
 
         # Results Section
         self.data_insight_label = None
         self.data_insight_summary = None
-
-
-        # Heatmap Controls
-        self.focus_label = None
-        self.focus_entry = None
-        self.heatmap_mode_label = None
-        self.heatmap_mode_menu = None
-        self.heatmap_button = None
-
-        # Banners
-        self.heatmap_banner = None
 
         # Save Button
         self.save_button = None
@@ -114,6 +105,39 @@ class PCAAnalysisApp(tk.Tk):
             row=0, column=2, rowspan=25, padx=10, pady=10, sticky="nsew"
         )
 
+    def init_dependencies(self):
+        """
+        Intializes program dependencies
+
+        ARGS:
+            root: The main tkinter windows to build the application on
+        """
+        self.pca_analyzer = PCAAnalyzer()
+
+    def init_variables(self):
+        """
+        Initializes variables for storing data within the application
+        """
+        # Variables for tracking the data to run PCA on
+        self.df = None
+        self.df_updated = False
+        self.df_loaded = False
+        self.df_clean = False
+
+        # Variables for visualizing pca results
+        self.pca_results = None
+        self.feature_to_group = None
+        self.feature_groups_colors = None
+
+        # Variables to track user inputs from the GUI
+        self.target_var = tk.StringVar(value="None")
+        
+        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
+        self.target_mode = tk.StringVar(value="Select Target")
+
+        # Gets the name of the os
+        self.os_type = platform.system()
+
     def create_widgets(self):
         """Create all widgets"""
 
@@ -134,7 +158,8 @@ class PCAAnalysisApp(tk.Tk):
         self.load_file_box = LoadFileBox(self, bg="#f0f0f0")
         self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
         self.pca_box = PcaBox(self, bg="#f0f0f0")
-        self.biplot_box = Biplot(self, bg="#f0f0f0")
+        self.biplot_box = BiplotBox(self, bg="#f0f0f0")
+        self.heatmap_box = HeatmapBox(self, bg="#f0f0f0")
 
 
         # Input box for custom target
@@ -173,46 +198,6 @@ class PCAAnalysisApp(tk.Tk):
                                           font=LABEL_STYLE["font"],
                                           bg="white")
 
-        # Heatmap Controls
-        self.focus_label = tk.Label(self,
-                                    text="Columns to Focus On (comma-separated):",
-                                    bg=LABEL_STYLE["bg"],
-                                    font=LABEL_STYLE["font"])
-
-        self.focus_entry = tk.Entry(self,
-                                    width=20,
-                                    font=LABEL_STYLE["font"])
-
-        self.heatmap_mode_label = tk.Label(self,
-                                           text="Select Heatmap Mode:",
-                                           bg=LABEL_STYLE["bg"],
-                                           font=LABEL_STYLE["font"])
-
-        self.heatmap_mode_menu = tk.OptionMenu(
-            self,
-            self.heatmap_mode_var,
-            "Top 10 Features",
-            "Top 20 Features",
-            "Custom Features"
-        )
-
-        self.heatmap_button = tk.Button(
-            self,
-            text="Plot Heatmap",
-            command=self.plot_loadings_heatmap,
-            bg="#007ACC",
-            fg="white",
-            font=LABEL_STYLE["font"]
-        )
-
-
-        # Banners
-        self.heatmap_banner = tk.Label(self,
-                                       text="Heatmap Section",
-                                       font=("Helvetica", 12),
-                                       bg="#dcdcdc",
-                                       relief="groove")
-        
         # Save
         self.save_button = tk.Button(self,
                                      text="Save Plot",
@@ -235,27 +220,20 @@ class PCAAnalysisApp(tk.Tk):
         self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         self.biplot_box.grid(row=3, column=0, padx=10, pady=10, columnspan=2, sticky="we")
+        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
         # Results Section
         self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
         self.data_insight_summary.grid(row=28, column=2, padx=5, pady=5, sticky="nsew")
 
-        # Banners
-        self.heatmap_banner.grid(row=27, column=0, columnspan=2, sticky="we", padx=5, pady=5)
-
-        # Feature Grouping Section
-        
+        # Feature Grouping Section/ Palette Colors
         self.palette_label.grid(row=24, column=0, padx=5, pady=5, sticky="e")
         self.palette_menu.grid(row=24, column=1, padx=5, pady=5, sticky="w")
+
         # Initialize `focus_on_loadings` value
         self.focus_checkbox.grid(row=25, column=1, padx=5, pady=5, sticky="e")
 
-        # Heatmap Section
-        self.focus_label.grid(row=28, column=0, padx=5, pady=5, sticky="e")
-        self.focus_entry.grid(row=28, column=1, padx=5, pady=5, sticky="w")
-        self.heatmap_mode_label.grid(row=29, column=0, padx=5, pady=5, sticky="e")
-        self.heatmap_mode_menu.grid(row=29, column=1, padx=5, pady=5, sticky="w")
-        self.heatmap_button.grid(row=30, column=0, columnspan=2, padx=5, pady=5)
+        # Heatmap Section left over??? Probably to be fixed
         self.output_dir_label.grid(row=31, column=0, columnspan=2, sticky="w", padx=5, pady=5)
         self.output_dir_button.grid(row=31, column=2, padx=5, pady=5, sticky="e")
 
@@ -266,42 +244,7 @@ class PCAAnalysisApp(tk.Tk):
         for i in range(31):
             self.grid_rowconfigure(i, weight=1)
 
-    def init_dependencies(self):
-        """
-        Intializes program dependencies
-
-        ARGS:
-            root: The main tkinter windows to build the application on
-        """
-        self.pca_analyzer = PCAAnalyzer()
-
-
-
-    def init_variables(self):
-        """
-        Initializes variables for storing data within the application
-        """
-        # Variables for tracking the data to run PCA on
-        self.df = None
-        self.df_updated = False
-        self.df_loaded = False
-        self.df_clean = False
-
-        # Variables for visualizing pca results
-        self.pca_results = None
-        self.feature_to_group = None
-        self.feature_groups_colors = None
-
-        # Variables to track user inputs from the GUI
-        self.target_var = tk.StringVar(value="None")
-        
-        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
-        self.target_mode = tk.StringVar(value="Select Target")
-
-        # Gets the name of the os
-        self.os_type = platform.system()
-
-
+    
 
     #### 1. DATA HANDLING METHODS ####
 
@@ -345,8 +288,7 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showwarning("No Directory Selected", "Using the default output directory.")
 
     
-
-    
+    #### 2. VISUALIZATION METHODS ####
 
     def reset_canvas(self):
         """Clear the canvas and reinitialize the figure and axes."""
@@ -403,7 +345,6 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
 
 
-
     #### 3. UTILITY METHODS ####
    
     def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
@@ -438,7 +379,6 @@ class PCAAnalysisApp(tk.Tk):
         Update logic or perform actions based on the checkbox state.
         """
         focus_value = self.focus_on_loadings.get()  # Retrieve the value (True/False)
-
 
 
     #### 4. UI UPDATE METHODS ####
@@ -513,7 +453,6 @@ class PCAAnalysisApp(tk.Tk):
         else:
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
-
 
 
     #### 5. EVENT HANDLERS ####
