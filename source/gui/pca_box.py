@@ -30,7 +30,7 @@ class PcaBox(tk.Frame):
         # Banner
         self.visualizepca_banner = None
 
-        # Target Variable
+        # Select Target Variable Section
         self.target_label = None
         self.target_dropdown = None
         self.custom_target_entry = None
@@ -118,18 +118,18 @@ class PcaBox(tk.Frame):
         self.visualizepca_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
     
         # Target Selection Section
-        self.target_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
         self.target_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="w")
+        self.target_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.custom_target_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         self.components_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
-        self.components_entry.grid(row=4, column=1, padx=5, pady=5, sticky="e")
+        self.components_entry.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
         self.top_n_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
-        self.top_n_entry.grid(row=5, column=1, padx=5, pady=5, sticky="e")
+        self.top_n_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
         self.text_distance_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
-        self.text_distance_entry.grid(row=6, column=1, padx=5, pady=5, sticky="e")
+        self.text_distance_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
         # Run Analysis Buttons
         self.visualize_button.grid(row=7, column=0, columnspan=2, padx=5, pady=5)

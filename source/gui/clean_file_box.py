@@ -25,7 +25,6 @@ class CleanFileBox(tk.Frame):
         self.init_vars()
 
         # GUI Objects
-        self.target_label = None
 
         self.clean_data_banner = None
         self.clean_data_button = None
