@@ -1,0 +1,83 @@
+# self.replace_label.grid(row=11, column=0, padx=5, pady=5, sticky="e")
+# self.replace_old_entry.grid(row=11, column=1, padx=5, pady=5, sticky="w")
+# self.replace_new_entry.grid(row=12, column=1, padx=5, pady=5, sticky="w")
+# self.replace_button.grid(row=12, column=0, padx=5, pady=5, sticky="e")
+
+# Replace Column Section
+        self.replace_label = tk.Label(self.root,
+                                      text="Replace Column Name (Correct typos):",
+                                      bg=LABEL_STYLE["bg"],
+                                      font=LABEL_STYLE["font"])
+
+        self.replace_old_entry = tk.Entry(self.root,
+                                          width=20,
+                                          font=LABEL_STYLE["font"])
+        self.replace_old_entry.insert(0, "Enter current name")  # Placeholder text
+
+        self.replace_new_entry = tk.Entry(self.root,
+                                          width=20,
+                                          font=LABEL_STYLE["font"])
+        self.replace_new_entry.insert(0, "Enter new name")  # Placeholder text
+
+        self.replace_button = tk.Button(self.root,
+                                        text="Replace Column Name",
+                                        **BUTTON_STYLE,
+                                        command=self.replace_column_name)
+
+
+def replace_column_name(self):
+    """Replace a column name in the loaded dataset."""
+    if not self.df_loaded:
+        return
+
+    try:
+        # Get the old and new column names from the input fields
+        old_name = self.replace_old_entry.get().strip()
+        new_name = self.replace_new_entry.get().strip()
+
+        # Ensure the column exists in the dataset
+        if old_name not in self.df.columns:
+            messagebox.showerror("Error", f"Column '{old_name}' not found in the dataset.")
+            return
+
+        # Ensure the new name is not empty
+        if not new_name:
+            messagebox.showerror("Error", "New column name cannot be empty.")
+            return
+
+        # Replace the column name
+        self.df.rename(columns={old_name: new_name}, inplace=True)
+
+        # Update the dataset info displayed in the GUI
+        self.update_data_info()
+
+        messagebox.showinfo("Success", f"Column '{old_name}' successfully renamed to '{new_name}'.")
+    except Exception as e:
+        error_str = traceback.print_exc()  # Keep detailed error tracking
+        print(error_str)
+        messagebox.showerror("Error", f"Failed to replace column name: {str(e)}")
+
+def get_target_variable(self) -> str:
+    """Get selected target variable."""
+    target_mode = self.target_mode.get().strip().lower()
+    if target_mode == "bbch":
+        return "bbch"
+    elif target_mode == "input specific target":
+        return self.custom_target_entry.get().strip().lower()
+    return None
+
+def check_pca_loaded(self):
+    if not hasattr(self, 'pca_results') or self.pca_results is None:
+        raise ValueError("Please run PCA analysis first.")
+
+
+
+
+
+
+
+
+
+
+
+
