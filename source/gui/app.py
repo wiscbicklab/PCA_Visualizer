@@ -42,19 +42,17 @@ class PCAAnalysisApp(tk.Tk):
         Args:
             root: 
         """
+        # Sets up the window, object dependencies, and variables
         super().__init__()
         self.init_dependencies()
         self.init_variables()
-
         self.setup_window()
 
 
         # Create the custom component
         self.load_file_box = None
         self.clean_file_box = None
-        
-
-
+    
         # Create data validation handlers
         self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
 
