@@ -3,6 +3,7 @@ from tkinter import messagebox
 import traceback
 
 from matplotlib import pyplot as plt
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
@@ -149,92 +150,83 @@ class PcaBox(tk.Frame):
             return
         
         try:
-            # Ensures PCA has been run
-            self.main.run_analysis()
+            # Get the target variable and raise error if it's not in the data set
 
-            # Reset the canvas
-            self.reset_canvas()
+            # Get analysis parameters
+            n_components = int(self.components_entry.get())
 
-            # Get the target variable
-            target_variable = self.target_mode.get().strip().lower()
-            if target_variable not in self.df.columns and target_variable != "":
-                raise ValueError(f"Target variable '{target_variable}' not found in the dataset.")
+            # Run PCA and get the transformed data
+            self.main.run_analysis(n_components)
+            transformed_data = self.main.pca_results['transformed_data']
 
-            # Perform PCA transformation
-            pca_visualizer = PCAVisualizer(self.main.fig, self.main.ax)
-            transformed_data = self.pca_results['transformed_data']
-
-            # Plot the PCA visualization, grouped by target
-            pca_visualizer.plot(
-                principal_components=transformed_data,
-                data=self.df,
-                target=target_variable,
-                target_mode=self.target_mode.get().strip().lower()
+            # Convert principal_components to DataFrame
+            principal_df = pd.DataFrame(
+                transformed_data,
+                columns=[f'PC{i + 1}' for i in range(transformed_data.shape[1])],
             )
 
-            # Redraw the canvas
-            self.canvas.draw()
+            # Plot the PCA visualization, grouped by target
+            self.plot(principal_df)
+
+            # Redraw the Tkinter window, Updating the GUI
+            self.main.canvas.draw()
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Visualization Error", str(e))
     
-    def plot(self, components, data, target_mode, target=None):
+    def plot(self, principal_df: pd.DataFrame):
         """
         Visualize PCA results.
         """
-        self.clear_plot()
+        # Creats a new figure and ax
+        self.main.fig = Figure(figsize=(5, 5))
+        self.main.ax = self.main.fig.add_subplot(111)
 
+        # Set labels and grid
+        self.main.ax.set_xlabel("Principal Component 1")
+        self.main.ax.set_ylabel("Principal Component 2")
+        self.main.ax.set_title("PCA Visualization")
+        self.main.ax.grid(True)
+
+        # Gets the target mode
+        target_mode=self.target_mode.get().strip().lower()
+        if target_mode not in self.main.df.columns and target_mode != "":
+                raise ValueError(f"Target variable '{target_mode}' not found in the dataset.")
+        
+        # Determines target
+        if target_mode == "bbch":
+            target = "bbch"
+        elif target_mode == "input specific target":
+            if not target:
+                raise ValueError("Please enter a target variable.")
+        else:
+            target = None
+
+        # Plots the data onto the ax
         try:
-            # Convert principal_components to DataFrame
-            principal_df = pd.DataFrame(
-                components,
-                columns=[f'PC{i + 1}' for i in range(components.shape[1])],
-            )
-
-            # Determine target variable
-            if target_mode == "bbch":
-                target = "bbch"
-            elif target_mode == "input specific target":
-                if not target:
-                    raise ValueError("Please enter a target variable.")
-            else:
-                target = None
-
             # Plot grouped by target if available
-            if target and target in data.columns:
-                target_vals = data[target]
+            if target and target in self.main.df.columns:
+                target_vals = self.main.df[target]
                 unique_targets = sorted(target_vals.unique())
 
                 # Assign colors dynamically
                 colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
-
-
                 for i, t in enumerate(unique_targets):
                     mask = target_vals == t
                     color = colors[i] 
-                    self.ax.scatter(
-                        principal_df.loc[mask, "PC1"],
-                        principal_df.loc[mask, "PC2"],
-                        c=[color],
-                        label=str(t),
-                        alpha=0.7,
+                    self.main.ax.scatter(principal_df.loc[mask, "PC1"],
+                                         principal_df.loc[mask, "PC2"],
+                                         c=[color], label=str(t), alpha=0.7,
                     )
 
                 # Add legend
-                self.ax.legend(title=f"{target} Groups")
+                self.main.ax.legend(title=f"{target} Groups")
             else:
                 # Plot without grouping
-                self.ax.scatter(
+                self.main.ax.scatter(
                     principal_df["PC1"], principal_df["PC2"], alpha=0.7, label="Data Points"
                 )
-
-            # Set labels and grid
-            self.ax.set_xlabel("Principal Component 1")
-            self.ax.set_ylabel("Principal Component 2")
-            self.ax.set_title("PCA Visualization")
-            self.ax.grid(True)
-
         except Exception as e:
             raise Exception(f"Error during PCA visualization: {str(e)}")
 
