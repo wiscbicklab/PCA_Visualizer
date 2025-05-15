@@ -140,7 +140,7 @@ class PCAAnalysisApp(tk.Tk):
         self.load_file_box = LoadFileBox(self, bg="#f0f0f0")
         self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
         self.pca_box = PcaBox(self, bg="#f0f0f0")
-        self.biplot_box = BiplotBox(self, bg="#f0f0f0")
+        self.biplot_box = BiplotBox(self, self.fig, bg="#f0f0f0")
         self.heatmap_box = HeatmapBox(self, bg="#f0f0f0")
 
 

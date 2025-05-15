@@ -1,5 +1,8 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import Widget, filedialog, messagebox
+from typing import Optional
+
+from matplotlib.figure import Figure
 
 from source.utils.constant import *
 import source.utils.file_operations as file_ops
@@ -8,19 +11,27 @@ import source.utils.file_operations as file_ops
 
 class LoadFileBox(tk.Frame):
     """
-    Creates a space for a load csv file button
+    Creates a space for Biplot generation buttons.
+    
+    Parameters:
+        fig : matplotlib.figure.Figure
+            The figure to which the biplot will be added.
+        main : tk.Widget, optional
+            The parent widget for this frame.
+        **kwargs : dict
+            Additional keyword arguments passed to tk.Frame.
     """
-    def __init__(self, main=None, **kwargs):
+    def __init__(self, fig: Figure, main: Optional[Widget] = None, **kwargs: dict):
         super().__init__(main, **kwargs)
-
-        # Declare button and label
-        self.label = None
-        self.button = None
+        self.main = main
 
         self.create_components()
         self.setup_layout()
         
     def create_components(self):
+        """
+        Creates all the components to be used within this Widget
+        """
         self.label = tk.Label(self, text="Load CSV file:",
                                    **LABEL_STYLE)
         self.button = tk.Button(self, text="Browse",
@@ -28,44 +39,34 @@ class LoadFileBox(tk.Frame):
                                      command=self.load_data_file)
 
     def setup_layout(self):
-        # Adds the label and button to the Frame
+        """
+        Places components within the Widget
+        """
         self.label.grid(row=0, column=0, padx=5, pady=5)
         self.button.grid(row=0, column=1, padx=5, pady=5)
-
-
-
-    #### 5. EVENT HANDLERS ####
-
-    def handle_successful_load(self):
-        """Handle successful file load."""
-        self.df_updated = True
-        messagebox.showinfo("Success", f"File loaded successfully: ")
-
-    def handle_load_error(self, error: Exception):
-        """Handle file loading errors."""
-        messagebox.showerror("Error", f"Failed to load file: {str(error)}")
-
 
 
     #### 6. Data Handling ####
 
     def load_data_file(self):
-        """Load data from CSV file."""
-        self.df = file_ops.load_csv_file()
+        """
+        Load data from CSV file and update status variable in the main Widget
+        """
+        # Load Data from File
+        self.main.df = file_ops.load_csv_file()
 
-        if self.df is None or self.df.empty:
-            self.handle_load_error(ValueError("File not loaded, No File Selected"))
+        # Show Error message and set df status variables if the file failed to load
+        if self.main.df is None or self.main.df.empty:
+            messagebox.showerror("Error:\tFailed to load file!")
+            self.main.df_loaded = False
+            self.main.df_clean = False
             return
-        
-        self.df_loaded = True
-        self.handle_successful_load()
-
-
-
-
-
-
-
+            
+        # Show Success message and set df status variables after the file loads
+        messagebox.showinfo("Success", f"File loaded successfully: ")
+        self.main.df_updated = True
+        self.main.df_loaded = True
+        return True
 
 
 
