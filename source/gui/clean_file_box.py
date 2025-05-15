@@ -6,6 +6,8 @@ import pandas as pd
 
 from sklearn.impute import SimpleImputer
 
+from source.gui.sub_components.bbch import BbchSelector
+from source.gui.sub_components.missing import MissingSelector
 from source.utils.constant import *
 
 
@@ -18,139 +20,67 @@ class CleanFileBox(tk.Frame):
     def __init__(self, main: tk.TK, **kwargs):
         super().__init__(main, **kwargs)
         self.main = main
+        
+        # Banner
+        self.banner = None
 
-        # Variables
+        # Data Cleaning parameters
         self.missing_choice = tk.StringVar(value="impute_mean")
         self.bbch_choice = tk.IntVar(value=-1)
-        
-        self.init_vars()
 
-        # GUI Components
-        self.clean_data_banner = None
-        self.clean_data_button = None
+        # Data Cleaning Selectors
+        self.missing_selector = None
+        self.bbch_selector = None
 
-        self.missing_label = None
-        self.impute_mean_radio = None
-        self.impute_median_radio = None
-        self.replace_nan_radio = None
-        self.leave_empty_radio = None
-
-        self.bbch_label = None
-        self.bbch_none_radio = None
-        self.bbch_59_radio = None
-        self.bbch_69_radio = None
-        self.bbch_85_radio = None
-
+        # Column Dropping Selector
         self.drop_label = None
         self.drop_entry = None
 
+        # Data Cleaning Button
+        self.clean_bttn = None
+
+        # Intialize all Widgets in this frame and Setup Widget's in this Widget
         self.create_components()
         self.setup_layout()
         
     def create_components(self):
         """Create all tkinter widgets and components for the interface."""
-        self.clean_data_banner = tk.Label(self,
-            text="Clean and/or Filter Data",
-            font=("Helvetica", 12),
-            bg="#dcdcdc",
-            relief="groove")
-        self.clean_data_button = tk.Button(self,
-                                           text="Clean CSV",
-                                           **BUTTON_STYLE,
-                                           command=self.clean_data)
-
-        # Missing Values Section
-        self.missing_label = tk.Label(self,
-                                      text="Handle Missing Values:",
-                                      **LABEL_STYLE)
-        self.impute_mean_radio = tk.Radiobutton(self,
-                                                text="Impute with Mean",
-                                                variable=self.missing_choice,
-                                                value="impute_mean",
-                                                **LABEL_STYLE)
-        self.impute_median_radio = tk.Radiobutton(self,
-                                                  text="Impute with Median",
-                                                  variable=self.missing_choice,
-                                                  value="impute_median",
-                                                  **LABEL_STYLE)
-        self.replace_nan_radio = tk.Radiobutton(self,
-                                                text="Replace NaN with 0",
-                                                variable=self.missing_choice,
-                                                value="replace_nan",
-                                                **LABEL_STYLE)
-        self.leave_empty_radio = tk.Radiobutton(self,
-                                                text="Leave Empty (Null)",
-                                                variable=self.missing_choice,
-                                                value="leave_empty",
-                                                **LABEL_STYLE)
-
-        # BBCH Selection
-        self.bbch_label = tk.Label(self,
-                                   text="Filter by BBCH Stage:",
-                                   **LABEL_STYLE)
-        self.bbch_none_radio = tk.Radiobutton(self,
-                                              text="All (no filter)",
-                                              variable=self.bbch_choice,
-                                              value=-1,
-                                              **LABEL_STYLE)
-        self.bbch_59_radio = tk.Radiobutton(self,
-                                            text="BBCH 59",
-                                            variable=self.bbch_choice,
-                                            value=59,
-                                            **LABEL_STYLE)
-        self.bbch_69_radio = tk.Radiobutton(self,
-                                            text="BBCH 69",
-                                            variable=self.bbch_choice,
-                                            value=69,
-                                            **LABEL_STYLE)
-        self.bbch_85_radio = tk.Radiobutton(self,
-                                            text="BBCH 85",
-                                            variable=self.bbch_choice,
-                                            value=85,
-                                            **LABEL_STYLE)
+        # Banner
+        self.banner = tk.Label(self, text="Clean and/or Filter Data", 
+                               font=("Helvetica", 12), bg="#dcdcdc", relief="groove")
         
-        # Drop Columns Section
+        # Data Cleaning Selectors        
+        self.missing_selector = MissingSelector(self)
+        self.bbch_selector = BbchSelector(self)
+        
+        # Column Dropping Selector
         self.drop_label = tk.Label(self,
                                    text="Columns to Drop (comma-separated):",
                                    **LABEL_STYLE)
         self.drop_entry = tk.Entry(self, width=30, **LABEL_STYLE)
+
+        # Data Cleaning Button
+        self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, 
+                                    command=self.clean_data)
  
     def setup_layout(self):
         # Configure component structure
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        # Clean Data Banner
-        self.clean_data_banner.grid(row=0, column=0, columnspan=2,
-                                    sticky="we", padx=5, pady=5)
+        # Banner
+        self.banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
-        # Missing Values Section
-        self.missing_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.impute_mean_radio.grid(row=2, column=0, padx=5, pady=5, sticky="w")
-        self.impute_median_radio.grid(row=3, column=0, padx=5, pady=5, sticky="w")
-        self.replace_nan_radio.grid(row=4, column=0, padx=5, pady=5, sticky="w")
-        self.leave_empty_radio.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        # Data Cleaning Selectors 
+        self.missing_selector.grid(row=1, column=0, sticky="we", padx=5, pady=5)
+        self.bbch_selector.grid(row=1, column=1, sticky="we", padx=5, pady=5)
 
-        # BBCH Selection
-        self.bbch_label.grid(row=1, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_none_radio.grid(row=2, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_59_radio.grid(row=3, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_69_radio.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-        self.bbch_85_radio.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        # Column Dropping Selector
+        self.drop_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.drop_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
-        # Clean Data Button
-        self.clean_data_button.grid(row=10, column=0, columnspan=2, padx=5, pady=5)
-
-        # Drop Columns Section
-        self.drop_label.grid(row=9, column=0, padx=5, pady=5, sticky="e")
-        self.drop_entry.grid(row=9, column=1, padx=5, pady=5, sticky="w")
-
-
-
-    # Update internal variables
-    def set_df(self, df):
-        self.df = df
-    
+        # Data Cleaning Button
+        self.clean_bttn.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
 
 
     #### 6. Data Handling ####
@@ -159,41 +89,35 @@ class CleanFileBox(tk.Frame):
         """Clean the data and prepare it for PCA analysis."""
 
         '''
-        if not self.df_loaded:
+        if not self.main.df_loaded:
             messagebox.showinfo("Error", "Data must be loaded before it can be cleaned!")
             return  
         '''      
 
         try:
             # Convert int64 to float for PCA compatibility
-            for col in self.df.columns:
-                if self.df[col].dtype == 'int64':
-                    self.df[col] = self.df[col].astype(float)
+            for col in self.main.df.columns:
+                if self.main.df[col].dtype == 'int64':
+                    self.main.df[col] = self.main.df[col].astype(float)
 
             # Ensure BBCH column exists and is treated as string
-            if 'bbch' in self.df.columns:
-                self.df['bbch'] = self.df['bbch'].astype(str).str.strip()
+            if 'bbch' in self.main.df.columns:
+                self.main.df['bbch'] = self.main.df['bbch'].astype(str).str.strip()
 
             # Filter by BBCH stage
             selected_bbch = self.bbch_choice.get()
-            if selected_bbch == 59:
-                self.df = self.df[self.df['bbch'] == 'B59']
-            elif selected_bbch == 69:
-                self.df = self.df[self.df['bbch'] == 'B69']
-            elif selected_bbch == 85:
-                self.df = self.df[self.df['bbch'] == 'B85']
-            elif selected_bbch == -1:
-                pass  # No filter applied if selected is -1 (all stages)
+            if selected_bbch != -1:
+                self.main.df = self.main.df[self.main.df['bbch'] == f'B{selected_bbch}']
 
             # Drop user-specified columns
-            self.df.columns = self.df.columns.str.strip().str.lower()  # Standardize column names
+            self.main.df.columns = self.main.df.columns.str.strip().str.lower()  # Standardize column names
             self.drop_cols()
 
             # Drop non-numeric columns except BBCH
-            if 'bbch' in self.df.columns:
-                non_num_cols = self.df.select_dtypes(exclude=[float, int]).columns
+            if 'bbch' in self.main.df.columns:
+                non_num_cols = self.main.df.select_dtypes(exclude=[float, int]).columns
                 non_num_cols = non_num_cols.drop('bbch', errors='ignore')
-                self.df.drop(columns=non_num_cols, inplace=True, errors='ignore')
+                self.main.df.drop(columns=non_num_cols, inplace=True, errors='ignore')
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
@@ -209,19 +133,19 @@ class CleanFileBox(tk.Frame):
                 return
 
             # Impute missing values
-            if self.df.isnull().any().any():
-                x_imputed = imputer.fit_transform(self.df)
-                self.df = pd.DataFrame(x_imputed, columns=self.df.columns)
+            if self.main.df.isnull().any().any():
+                x_imputed = imputer.fit_transform(self.main.df)
+                self.main.df = pd.DataFrame(x_imputed, columns=self.main.df.columns)
+            
+            # Tells the container Widget do update the displayed data
+            self.main.update_data_info()
 
-            # Enable buttons and update UI
-            self.visualize_button.config(state="normal")
-            self.heatmap_button.config(state="normal")  # Enable heatmap button after cleaning
-            self.update_data_info()
+            # Show Success Message after cleaning data
             messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
 
             # Update Varibales tracking df status
-            self.df_updated = True
-            self.df_clean = True
+            self.main.df_updated = True
+            self.main.df_clean = True
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -238,18 +162,18 @@ class CleanFileBox(tk.Frame):
             missing_cols: A list of the columns that were requested to be 
                         dropped but could not be dropped
         """
-        # Grabs the user entered columns to drop
+        # Grabs the user entered columns to drop and cleans the input
         drop_cols =  [col.strip() for col in self.drop_entry.get().split(",") if col.strip()]
-        drop_cols = [col.strip().lower() for col in drop_cols]  # Ensure consistency
+        drop_cols = [col.strip().lower() for col in drop_cols]
 
-        # Filter valid columns to drop
-        valid_drop_cols = [col for col in drop_cols if col in self.df.columns]
-        missing_cols = set(drop_cols) - set(self.df.columns)
+        # Ensures the user columns exist and prints an error message with missing columns
+        valid_drop_cols = [col for col in drop_cols if col in self.main.df.columns]
+        missing_cols = set(drop_cols) - set(self.main.df.columns)
         if missing_cols:
-            print("Missing columns (not in dataset):", missing_cols)
+            messagebox.showerror("Missing columns (not in dataset):", missing_cols)
         
-        # Drop valid columns
-        self.df.drop(columns=valid_drop_cols, inplace=True)
+        # Drops the columns from the dataset
+        self.main.df.drop(columns=valid_drop_cols, inplace=True)
 
         return drop_cols
 

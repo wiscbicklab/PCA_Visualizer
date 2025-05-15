@@ -1,11 +1,8 @@
 import tkinter as tk
 from tkinter import  messagebox
 
-from matplotlib.figure import Figure
-
-from source.utils.constant import *
 import source.utils.file_operations as file_ops
-
+from source.utils.constant import *
 
 
 class LoadFileBox(tk.Frame):
@@ -24,6 +21,9 @@ class LoadFileBox(tk.Frame):
         super().__init__(main, **kwargs)
         self.main = main
 
+        self.label = None
+        self.button = None
+
         self.create_components()
         self.setup_layout()
         
@@ -31,11 +31,9 @@ class LoadFileBox(tk.Frame):
         """
         Creates all the components to be used within this Widget
         """
-        self.label = tk.Label(self, text="Load CSV file:",
-                                   **LABEL_STYLE)
-        self.button = tk.Button(self, text="Browse",
-                                     **BUTTON_STYLE, 
-                                     command=self.load_data_file)
+        self.label = tk.Label(self, text="Load CSV file:", **LABEL_STYLE)
+        self.button = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.load_data)
+                                     
 
     def setup_layout(self):
         """
@@ -47,7 +45,7 @@ class LoadFileBox(tk.Frame):
 
     #### 6. Data Handling ####
 
-    def load_data_file(self):
+    def load_data(self):
         """
         Load data from CSV file and update status variable in the main Widget
         """
@@ -66,6 +64,4 @@ class LoadFileBox(tk.Frame):
         self.main.df_updated = True
         self.main.df_loaded = True
         return True
-
-
 
