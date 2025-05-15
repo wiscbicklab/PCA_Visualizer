@@ -5,18 +5,14 @@ import chardet
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 import pandas as pd
 import numpy as np
 import platform
 
 from sklearn.impute import SimpleImputer
 
-# Visualization imports
-from source.visualization.pca_visualization import PCAVisualizer
-from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
-from source.visualization.scree import ScreePlotVisualizer
-from source.visualization.heatmap import LoadingsHeatmapVisualizer
+
 
 
 # Core functionality imports
@@ -47,12 +43,14 @@ class PCAAnalysisApp(tk.Tk):
         """
         # Sets up the window, object dependencies, and variables
         super().__init__()
-        self.init_dependencies()
         self.init_variables()
         self.setup_window()
 
+        self.fig = None
 
-        # Create the custom component
+        self.pca_analyzer = PCAAnalyzer()
+
+        # Declare the custom component
         self.load_file_box = None
         self.clean_file_box = None
         self.pca_box = None
@@ -73,7 +71,7 @@ class PCAAnalysisApp(tk.Tk):
 
 
         # Set up the application
-        self.initialize_matplotlib()
+        #self.initialize_matplotlib()
         self.create_widgets()
         self.setup_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -81,7 +79,8 @@ class PCAAnalysisApp(tk.Tk):
     def setup_window(self):
         """
         Configure the main window.
-            Set the window to fullscreen and sets a minimum application size
+            Set the window to fullscreen or to normal, dependent on os
+            Sets a minimum application size
             Sets a title and background color
         """
         self.title("PCA Analysis Tool")
@@ -94,25 +93,7 @@ class PCAAnalysisApp(tk.Tk):
         self.configure(bg="#f5f5f5")
         self.minsize(1000, 600)
 
-    def initialize_matplotlib(self):
-        """Initialize the Matplotlib figure, axes, and canvas."""
-        self.fig = Figure(figsize=(5, 5))
-        self.ax = self.fig.add_subplot(111)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
-        self.canvas_widget = self.canvas.get_tk_widget()
 
-        self.canvas_widget.grid(
-            row=0, column=2, rowspan=25, padx=10, pady=10, sticky="nsew"
-        )
-
-    def init_dependencies(self):
-        """
-        Intializes program dependencies
-
-        ARGS:
-            root: The main tkinter windows to build the application on
-        """
-        self.pca_analyzer = PCAAnalyzer()
 
     def init_variables(self):
         """
@@ -132,7 +113,6 @@ class PCAAnalysisApp(tk.Tk):
         # Variables to track user inputs from the GUI
         self.target_var = tk.StringVar(value="None")
         
-        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
         self.target_mode = tk.StringVar(value="Select Target")
 
         # Gets the name of the os
@@ -140,6 +120,8 @@ class PCAAnalysisApp(tk.Tk):
 
     def create_widgets(self):
         """Create all widgets"""
+
+        self.fig = Figure(figsize=(5, 5))
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
@@ -206,6 +188,10 @@ class PCAAnalysisApp(tk.Tk):
 
     def setup_layout(self):
         """Setup the layout of GUI components"""
+        # Adds plot 
+        self.canvas_widget.grid(
+            row=0, column=2, rowspan=25, padx=10, pady=10, sticky="nsew")
+
         # Configure grid weights
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(2, weight=5)
@@ -286,64 +272,8 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showinfo("Directory Selected", f"Output directory set to:\n{self.output_dir}")
         else:
             messagebox.showwarning("No Directory Selected", "Using the default output directory.")
-
+      
     
-    #### 2. VISUALIZATION METHODS ####
-
-    def reset_canvas(self):
-        """Clear the canvas and reinitialize the figure and axes."""
-        if self.fig is None or self.ax is None:
-            self.initialize_matplotlib()  # Reinitialize if needed
-
-        # Clear the entire figure
-        self.fig.clear()
-
-        # Create a fresh subplot
-        self.ax = self.fig.add_subplot(111)
-
-        # Update the canvas to use the cleared figure
-        self.canvas.figure = self.fig
-        self.canvas.draw()
-          
-    def plot_loadings_heatmap(self):
-        """Plot loadings heatmap using user-selected mode."""
-        if not self.df_clean:
-            return
-        
-        try:
-            # Ensures PCA has been run
-            self.run_analysis()
-
-            # Reset the canvas
-            self.reset_canvas()
-
-            # Retrieve heatmap mode (e.g., from a dropdown)
-            heatmap_mode = self.heatmap_mode_var.get()  # Ensure the actual value is retrieved
-            if not heatmap_mode:
-                raise ValueError("Heatmap mode is not defined.")
-
-            # Calculate PCA loadings
-            loadings = self.pca_results["model"].components_.T
-
-            # Determine focus columns
-            focus_columns = self.get_focus_columns(heatmap_mode, focus_entry=self.focus_entry.get())
-
-            # Create and display heatmap
-            heatmap_visualizer = LoadingsHeatmapVisualizer(self.fig, self.ax)
-            heatmap_visualizer.display_loadings_heatmap(
-                loadings=loadings,
-                data_columns=self.df.columns.tolist(),
-                focus_columns=focus_columns,
-                cmap="coolwarm"
-            )
-
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
-
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
-
 
     #### 3. UTILITY METHODS ####
    

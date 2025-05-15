@@ -37,8 +37,6 @@ class HeatmapBox(tk.Frame):
         self.create_components()
         self.setup_layout()
 
-
-
     def create_components(self):
         # Banner
         self.heatmap_banner = tk.Label(self,
@@ -73,9 +71,6 @@ class HeatmapBox(tk.Frame):
             font=LABEL_STYLE["font"]
         )
 
-        
-
-
     def setup_layout(self):
         # Configure component structure
         self.columnconfigure(0, weight=1)
@@ -93,6 +88,7 @@ class HeatmapBox(tk.Frame):
         self.heatmap_mode_menu.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         self.heatmap_button.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+
 
     #### 2. VISUALIZATION METHODS ####
 

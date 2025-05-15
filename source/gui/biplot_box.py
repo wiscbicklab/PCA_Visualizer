@@ -3,15 +3,19 @@ from tkinter import filedialog, messagebox
 import traceback
 import pandas as pd
 import numpy as np
+import os, time
 
 from sklearn.impute import SimpleImputer
+
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from source.visualization.pca_visualization import PCAVisualizer
 from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
 from source.visualization.loadings import LoadingsProcessor
 
 from source.utils.constant import *
-from source.visualization.scree import ScreePlotVisualizer
+
+import source.utils.file_operations as file_ops
 
 
 class BiplotBox(tk.Frame):
@@ -19,8 +23,14 @@ class BiplotBox(tk.Frame):
     Creats a space for Biplot generation buttons
     """
 
-    def __init__(self, main=None, **kwargs):
+    def __init__(self, fig, main=None, **kwargs):
         super().__init__(main, **kwargs)
+
+        self.main = main
+        self.fig = fig
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=main)
+        self.canvas_widget = self.canvas.get_tk_widget()
 
         # Sets up visualization dependencies
         self.biplot_visualizer = BiplotVisualizer()
@@ -118,11 +128,8 @@ class BiplotBox(tk.Frame):
 
     #### 2. VISUALIZATION METHODS ####
 
-    def reset_canvas(self):
-        """Clear the canvas and reinitialize the figure and axes."""
-        if self.fig is None or self.ax is None:
-            self.initialize_matplotlib()  # Reinitialize if needed
-
+    def reset_plot(self):
+        """Clear the canvas and reinitialize the figure and axes"""
         # Clear the entire figure
         self.fig.clear()
 
@@ -133,20 +140,41 @@ class BiplotBox(tk.Frame):
         self.canvas.figure = self.fig
         self.canvas.draw()
 
-    def create_scree_plot(self):
+    def create_scree_plot(self, pca_model):
         """Create scree plot."""
         if not self.df_clean:
             return
         
         try:
             # Ensures PCA has been run
-            self.run_analysis()
+            self.main.run_analysis()
 
             # Reset the canvas
-            self.reset_canvas()
+            self.reset_plot()
 
-            scree_visualizer = ScreePlotVisualizer(self.fig, self.ax)
-            scree_visualizer.create_scree_plot(self.pca_results["model"])
+            # Create scree plot - exact match to original
+            explained_variance = pca_model.explained_variance_ratio_
+
+            # Bar plot of individual explained variance
+            self.ax.bar(
+                range(1, len(explained_variance) + 1),
+                explained_variance,
+                alpha=0.7,
+                align='center'
+            )
+
+            # Step plot of cumulative explained variance
+            self.ax.step(
+                range(1, len(explained_variance) + 1),
+                np.cumsum(explained_variance),
+                where='mid',
+                label='Cumulative explained variance'
+            )
+
+            # Labels and title - exact match
+            self.ax.set_xlabel('Principal Component Index')
+            self.ax.set_ylabel('Explained Variance Ratio')
+            self.ax.set_title('Scree Plot')
 
             self.canvas.draw()  # This ensures the new plot appears on the canvas
 
@@ -162,25 +190,14 @@ class BiplotBox(tk.Frame):
         
         try:
             # Ensures PCA has been run
-            self.run_analysis()
-
-            # Ensure figure and canvas are properly initialized
-            if self.fig is None:
-                self.reset_canvas()
+            self.main.run_analysis()
 
             # Reset the canvas before plotting
-            self.reset_canvas()
+            self.reset_plot()
 
             # Validate and retrieve user inputs
-            try:
-                top_n = int(self.top_n_entry.get())
-            except ValueError:
-                top_n = 10  # Default to 10 if invalid input
-
-            try:
-                text_dist = float(self.text_distance_entry.get())
-            except ValueError:
-                text_dist = 1.1  # Default to 1.1 if invalid input
+            top_n = int(self.top_n_entry.get())
+            text_dist = float(self.text_distance_entry.get())
 
 
             # Delegate to BiplotVisualizer
@@ -249,7 +266,7 @@ class BiplotBox(tk.Frame):
             self.run_analysis()
 
             # Reset the canvas
-            self.reset_canvas()
+            self.reset_plot()
 
             # Initialize LoadingsProcessor
             loadings_processor = LoadingsProcessor(self.pca_results["model"], self.df)

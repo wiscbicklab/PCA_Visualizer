@@ -23,14 +23,17 @@ def load_csv_file():
         print("File not found.")
         
 
-def save_plot(fig, filename_prefix="plot", output_dir=OUTPUT_DIR):
-    """Save plot with timestamp to a specified directory."""
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    timestamp = time.strftime("%Y%m%d-%H%M%S")
-    plot_filename = f'{filename_prefix}_{timestamp}.png'
-    save_path = os.path.join(output_dir, plot_filename)
-    fig.savefig(save_path)
-    return save_path
+def save_plot(self, output_dir):
+        """Preserve original save functionality."""
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        plot_filename = f'plot_{timestamp}.png'
+        save_path = os.path.join(output_dir, plot_filename)
+        try:
+            self.fig.savefig(save_path)
+            return save_path
+        except Exception as e:
+            raise Exception(f"Could not save the plot: {str(e)}")
 
 
