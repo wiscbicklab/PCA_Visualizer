@@ -23,7 +23,7 @@ class BiplotBox(tk.Frame):
     Creats a space for Biplot generation buttons
     """
 
-    def __init__(self, fig, main=None, **kwargs):
+    def __init__(self, main, fig, **kwargs):
         super().__init__(main, **kwargs)
 
         self.main = main

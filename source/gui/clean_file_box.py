@@ -6,8 +6,8 @@ import pandas as pd
 
 from sklearn.impute import SimpleImputer
 
-from source.gui.sub_components.bbch import BbchSelector
-from source.gui.sub_components.missing import MissingSelector
+from source.gui.clean_widgets.bbch import BbchSelector
+from source.gui.clean_widgets.missing import MissingSelector
 from source.utils.constant import *
 
 
