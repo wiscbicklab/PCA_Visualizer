@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 import traceback
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ class CleanFileBox(tk.Frame):
     Allows users to handle missing values, filter by BBCH stage, and drop columns.
     """
 
-    def __init__(self, main: tk.TK, **kwargs):
+    def __init__(self, main: tk.Tk, **kwargs):
         super().__init__(main, **kwargs)
         self.main = main
         

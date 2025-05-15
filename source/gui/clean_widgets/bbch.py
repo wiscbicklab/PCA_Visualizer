@@ -4,7 +4,7 @@ from tkinter import Radiobutton as RadBttn
 from source.utils.constant import *
 
 
-class BbchSelector(tk.TK):
+class BbchSelector(tk.Tk):
     """Gui Frame for asking the user what type of filter to use """
     def __init__(self, main: tk.Tk, **kwargs):
         super(main, **kwargs)

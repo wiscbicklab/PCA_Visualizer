@@ -17,7 +17,7 @@ class LoadFileBox(tk.Frame):
         **kwargs : dict
             Additional keyword arguments passed to tk.Frame.
     """
-    def __init__(self, main: tk.TK, **kwargs: dict):
+    def __init__(self, main: tk.Tk, **kwargs: dict):
         super().__init__(main, **kwargs)
         self.main = main
 

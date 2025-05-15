@@ -9,7 +9,6 @@ from sklearn.impute import SimpleImputer
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from source.visualization.pca_visualization import PCAVisualizer
 from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
 from source.visualization.loadings import LoadingsProcessor
 

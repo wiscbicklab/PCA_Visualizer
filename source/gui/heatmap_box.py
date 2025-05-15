@@ -6,7 +6,6 @@ import numpy as np
 
 from sklearn.impute import SimpleImputer
 
-from source.visualization.pca_visualization import PCAVisualizer
 from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
 from source.visualization.loadings import LoadingsProcessor
 

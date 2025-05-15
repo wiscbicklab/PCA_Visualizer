@@ -7,7 +7,7 @@ from source.utils.constant import *
 
 class MissingSelector(tk.Frame):
     """Gui Frame for asking the user how they would like to deal with missing data."""
-    def __init__(self, main: tk.TK, **kwargs):
+    def __init__(self, main: tk.Tk, **kwargs):
         super().__init__(main, **kwargs)
         # Gets the parent class to update data on it
         self.main = main
@@ -25,13 +25,13 @@ class MissingSelector(tk.Frame):
         """Create all tkinter widgets and components for the interface."""
         self.label = tk.Label(self,text="Handle Missing Values:", **LABEL_STYLE)
         
-        self.mean_rad = tk.RadBttn(self, text="Impute with Mean", value="impute_mean",
+        self.mean_rad = RadBttn(self, text="Impute with Mean", value="impute_mean",
                                          variable=self.main.missing_choice,  **LABEL_STYLE)
-        self.median_rad = tk.RadBttn(self,text="Impute with Median", value="impute_median",
+        self.median_rad = RadBttn(self,text="Impute with Median", value="impute_median",
                                            variable=self.main.missing_choice, **LABEL_STYLE)
-        self.nan_rad = tk.RadBttn(self, text="Replace NaN with 0", value="replace_nan",
+        self.nan_rad = RadBttn(self, text="Replace NaN with 0", value="replace_nan",
                                         variable=self.main.missing_choice, **LABEL_STYLE)
-        self.empty_rad = tk.RadBttn(self, text="Leave Empty (Null)", value="leave_empty",
+        self.empty_rad = RadBttn(self, text="Leave Empty (Null)", value="leave_empty",
                                           variable=self.main.missing_choice, **LABEL_STYLE)
 
 

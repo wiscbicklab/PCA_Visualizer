@@ -15,7 +15,7 @@ class PcaBox(tk.Frame):
     Creates a space for PCA options
     """
 
-    def __init__(self, main: tk.TK, **kwargs):
+    def __init__(self, main: tk.Tk, **kwargs):
         super().__init__(main, **kwargs)
         self.main = main
 
