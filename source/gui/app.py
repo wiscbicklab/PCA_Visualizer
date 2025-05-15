@@ -234,16 +234,13 @@ class PCAAnalysisApp(tk.Tk):
 
     #### 1. DATA HANDLING METHODS ####
 
-    def run_analysis(self):
+    def run_analysis(self, n_components):
         """Execute PCA analysis."""
+        # Skip analysis if data isn't cleaned or if data has not changed
         if not self.df_clean or not self.df_updated:
             return
 
         try:
-            # Get analysis parameters
-            n_components = int(self.components_entry.get())
-            self.drop_cols()
-
             # Run analysis and store the result
             self.pca_results = self.pca_analyzer.analyze(
                 df=self.df,

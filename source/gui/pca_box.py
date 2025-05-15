@@ -7,9 +7,6 @@ from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
-from source.visualization.pca_visualization import PCAVisualizer
-
-
 from source.utils.constant import *
 
 
@@ -54,7 +51,6 @@ class PcaBox(tk.Frame):
 
         self.create_components()
         self.setup_layout()
-
 
     def create_components(self):
         # Visualization button
@@ -123,7 +119,6 @@ class PcaBox(tk.Frame):
         self.button.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
 
 
-
     #### 5. EVENT HANDLERS ####
 
     def validate_positive_integer(self, proposed_value):
@@ -139,7 +134,6 @@ class PcaBox(tk.Frame):
         if value.strip() == "":
             self.components_entry.delete(0, tk.END)
             self.components_entry.insert(0, "2")
-
 
 
     #### 6. Data Handling ####
@@ -229,6 +223,4 @@ class PcaBox(tk.Frame):
                 )
         except Exception as e:
             raise Exception(f"Error during PCA visualization: {str(e)}")
-
-
 
