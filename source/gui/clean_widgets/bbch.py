@@ -4,10 +4,10 @@ from tkinter import Radiobutton as RadBttn
 from source.utils.constant import *
 
 
-class BbchSelector(tk.Tk):
+class BbchSelector(tk.Frame):
     """Gui Frame for asking the user what type of filter to use """
     def __init__(self, main: tk.Tk, **kwargs):
-        super(main, **kwargs)
+        super().__init__(**kwargs)
         # Gets the parent class to update data on it
         self.main = main
 
@@ -24,13 +24,13 @@ class BbchSelector(tk.Tk):
         # BBCH Selection
         self.label = tk.Label(self, text="Filter by BBCH Stage:", **LABEL_STYLE)
 
-        self.none_rad = tk.RadBttn(self, text="All (no filter)", value=-1,
+        self.none_rad = RadBttn(self, text="All (no filter)", value=-1,
                                      variable=self.main.bbch_choice, **LABEL_STYLE)
-        self.b59_rad = tk.RadBttn(self, text="BBCH 59", value=59,
+        self.b59_rad = RadBttn(self, text="BBCH 59", value=59,
                                     variable=self.main.bbch_choice, **LABEL_STYLE)
-        self.b69_rad = tk.RadBttn(self, text="BBCH 69", value=69,
+        self.b69_rad = RadBttn(self, text="BBCH 69", value=69,
                                     variable=self.main.bbch_choice, **LABEL_STYLE)
-        self.b85_rad = tk.RadBttn(self, text="BBCH 85", value=85,
+        self.b85_rad = RadBttn(self, text="BBCH 85", value=85,
                                     variable=self.main.bbch_choice, **LABEL_STYLE)
 
 

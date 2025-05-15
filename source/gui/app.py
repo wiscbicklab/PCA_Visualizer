@@ -5,6 +5,7 @@ import chardet
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import pandas as pd
 import numpy as np
@@ -47,6 +48,11 @@ class PCAAnalysisApp(tk.Tk):
         self.setup_window()
 
         self.fig = None
+        self.ax = None
+
+        self.canvas = None
+        self.canvas_widget = None
+
 
         self.pca_analyzer = PCAAnalyzer()
 
@@ -122,6 +128,7 @@ class PCAAnalysisApp(tk.Tk):
         """Create all widgets"""
 
         self.fig = Figure(figsize=(5, 5))
+        self.ax = self.fig.add_subplot(111)
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
@@ -189,6 +196,8 @@ class PCAAnalysisApp(tk.Tk):
     def setup_layout(self):
         """Setup the layout of GUI components"""
         # Adds plot 
+        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(
             row=0, column=2, rowspan=25, padx=10, pady=10, sticky="nsew")
 
