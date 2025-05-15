@@ -11,21 +11,21 @@ from source.utils.constant import *
 
 class CleanFileBox(tk.Frame):
     """
-    Creates a space for file cleaning options
+    GUI Frame for cleaning and filtering a loaded dataset using tkinter widgets.
+    Allows users to handle missing values, filter by BBCH stage, and drop columns.
     """
 
-    def __init__(self, main=None, df=None, **kwargs):
+    def __init__(self, main: tk.TK, **kwargs):
         super().__init__(main, **kwargs)
-
+        self.main = main
 
         # Variables
-        self.missing_choice = None
-        self.bbch_choice = None
+        self.missing_choice = tk.StringVar(value="impute_mean")
+        self.bbch_choice = tk.IntVar(value=-1)
         
         self.init_vars()
 
-        # GUI Objects
-
+        # GUI Components
         self.clean_data_banner = None
         self.clean_data_button = None
 
@@ -47,14 +47,8 @@ class CleanFileBox(tk.Frame):
         self.create_components()
         self.setup_layout()
         
-
-    def init_vars(self):
-        self.missing_choice = tk.StringVar(value="impute_mean")
-        self.bbch_choice = tk.IntVar(value=-1)
-        
     def create_components(self):
-        
-        
+        """Create all tkinter widgets and components for the interface."""
         self.clean_data_banner = tk.Label(self,
             text="Clean and/or Filter Data",
             font=("Helvetica", 12),

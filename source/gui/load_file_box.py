@@ -1,6 +1,5 @@
 import tkinter as tk
-from tkinter import Widget, filedialog, messagebox
-from typing import Optional
+from tkinter import  messagebox
 
 from matplotlib.figure import Figure
 
@@ -21,7 +20,7 @@ class LoadFileBox(tk.Frame):
         **kwargs : dict
             Additional keyword arguments passed to tk.Frame.
     """
-    def __init__(self, fig: Figure, main: Optional[Widget] = None, **kwargs: dict):
+    def __init__(self, main: tk.TK, **kwargs: dict):
         super().__init__(main, **kwargs)
         self.main = main
 
