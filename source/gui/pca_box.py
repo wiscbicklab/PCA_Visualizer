@@ -185,7 +185,7 @@ class PcaBox(tk.Frame):
 
         # Gets the target mode
         target_mode=self.target_mode.get().strip().lower()
-        if target_mode not in self.main.df.columns and target_mode != "":
+        if target_mode not in self.main.df.columns and target_mode != "none":
                 raise ValueError(f"Target variable '{target_mode}' not found in the dataset.")
         
         # Determines target
