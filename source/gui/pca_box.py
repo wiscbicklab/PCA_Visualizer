@@ -31,9 +31,6 @@ class PcaBox(tk.Frame):
         self.target_dropdown = None
         self.custom_target_entry = None
 
-        # Data validation handler
-        self.vcmd_pi = None
-
         # PCA Parameters Section
         self.components_label = None
         self.components_entry = None
@@ -70,13 +67,14 @@ class PcaBox(tk.Frame):
                                     activebackground="#005f99", relief="flat")
         self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=20, state="disabled")
 
-        # Validate Posititive Integer Command
-        self.vcmd_pi = (self.register(self.validate_positive_integer), '%P')
+        # Creates Validation commands for the text boxes
+        self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
+        self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
 
         # PCA Parameters Section
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
-        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10,
-                                         validate="key", validatecommand=self.vcmd_pi)
+        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key",
+                                          validatecommand=self.vcmd_pos_int)
         self.components_entry.insert(0, "2")
 
         # Bind focus out event to reset empty input
@@ -84,13 +82,14 @@ class PcaBox(tk.Frame):
 
         # Top N Feature User Input
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
-        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10)
+        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key", 
+                                    validatecommand=self.vcmd_pos_int)
         self.top_n_entry.insert(0, "10")  # Default to 10
 
         # Test Distance for Lables User Input
         self.text_distance_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
-        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10,
-                                            validate="key", validatecommand=self.vcmd_pi)
+        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key",
+                                            validatecommand=self.vcmd_pos_num)
         self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
 
     def setup_layout(self):
@@ -121,13 +120,27 @@ class PcaBox(tk.Frame):
 
     #### 5. EVENT HANDLERS ####
 
-    def validate_positive_integer(self, proposed_value):
+    def validate_pos_int(self, proposed_value):
         if proposed_value.isdigit() and int(proposed_value) > 0:
             self.df_updated = True
             return True
         elif proposed_value == "":
             return True  # Allow clearing before retyping
         return False
+    
+    def validate_pos_num(self, proposed_value):
+        if proposed_value == "":
+            return True  # Allow user to clear input
+        try:
+            value = float(proposed_value)
+            if value > 0:
+                self.df_updated = True
+                return True
+        except ValueError:
+            pass
+        return False
+
+
     
     def on_focus_out(self, event):
         value = self.components_entry.get()
@@ -221,6 +234,9 @@ class PcaBox(tk.Frame):
                 self.main.ax.scatter(
                     principal_df["PC1"], principal_df["PC2"], alpha=0.7, label="Data Points"
                 )
+            # Update the canvas to use the cleared figure
+            self.main.canvas.figure = self.main.fig
+            self.main.canvas.draw()
         except Exception as e:
             raise Exception(f"Error during PCA visualization: {str(e)}")
 
