@@ -61,7 +61,10 @@ class LoadFileBox(tk.Frame):
             
         # Show Success message and set df status variables after the file loads
         messagebox.showinfo("Success", f"File loaded successfully: ")
+
         self.main.df_updated = True
         self.main.df_loaded = True
+        self.main.update_data_info()
+        
         return True
 

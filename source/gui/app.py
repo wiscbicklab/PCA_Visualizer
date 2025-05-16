@@ -199,17 +199,13 @@ class PCAAnalysisApp(tk.Tk):
         self.canvas = FigureCanvasTkAgg(self.fig, master=self)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(
-            row=0, column=2, rowspan=25, padx=10, pady=10, sticky="nsew")
+            row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
 
         # Configure grid weights
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(2, weight=5)
         self.grid_columnconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-
-        # Place canvas on right side
-        self.canvas.get_tk_widget().grid(row=0, column=2, rowspan=25,
-                                         padx=10, pady=10, sticky="nsew")
         
         self.load_file_box.grid(row=0, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky="we")
@@ -218,22 +214,22 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, columnspan=2, sticky="we")
         
         # Results Section
-        self.data_insight_label.grid(row=27, column=2, padx=5, pady=5, sticky="")
-        self.data_insight_summary.grid(row=28, column=2, padx=5, pady=5, sticky="nsew")
+        self.data_insight_label.grid(row=3, column=2, padx=5, pady=5, sticky="ew")
+        self.data_insight_summary.grid(row=3, column=2, padx=5, pady=5, sticky="ew")
 
         # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=24, column=0, padx=5, pady=5, sticky="e")
-        self.palette_menu.grid(row=24, column=1, padx=5, pady=5, sticky="w")
+        self.palette_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        self.palette_menu.grid(row=7, column=1, padx=5, pady=5, sticky="w")
 
         # Initialize `focus_on_loadings` value
-        self.focus_checkbox.grid(row=25, column=1, padx=5, pady=5, sticky="e")
+        self.focus_checkbox.grid(row=7, column=1, padx=5, pady=5, sticky="e")
 
         # Heatmap Section left over??? Probably to be fixed
-        self.output_dir_label.grid(row=31, column=0, columnspan=2, sticky="w", padx=5, pady=5)
-        self.output_dir_button.grid(row=31, column=2, padx=5, pady=5, sticky="e")
+        self.output_dir_label.grid(row=8, column=0, columnspan=2, sticky="w", padx=5, pady=5)
+        self.output_dir_button.grid(row=8, column=2, padx=5, pady=5, sticky="e")
 
         # Save Button
-        self.save_button.grid(row=31, column=2, padx=5, pady=5)
+        self.save_button.grid(row=8, column=2, padx=5, pady=5)
 
         # Configure remaining row weights
         for i in range(31):
