@@ -7,7 +7,7 @@ from source.utils.constant import *
 class BbchSelector(tk.Frame):
     """Gui Frame for asking the user what type of filter to use """
     def __init__(self, main: tk.Tk, **kwargs):
-        super().__init__(**kwargs)
+        super().__init__(main, **kwargs)
         # Gets the parent class to update data on it
         self.main = main
 

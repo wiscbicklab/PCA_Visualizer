@@ -16,7 +16,6 @@ class MissingSelector(tk.Frame):
         self.mean_rad = None
         self.median_rad = None
         self.nan_rad = None
-        self.empty_rad = None
 
         self.create_components()
         self.setup_layout()
@@ -31,8 +30,6 @@ class MissingSelector(tk.Frame):
                                            variable=self.main.missing_choice, **LABEL_STYLE)
         self.nan_rad = RadBttn(self, text="Replace NaN with 0", value="replace_nan",
                                         variable=self.main.missing_choice, **LABEL_STYLE)
-        self.empty_rad = RadBttn(self, text="Leave Empty (Null)", value="leave_empty",
-                                          variable=self.main.missing_choice, **LABEL_STYLE)
 
 
     def setup_layout(self):
@@ -41,7 +38,4 @@ class MissingSelector(tk.Frame):
         self.mean_rad.grid(row=1, padx=5, pady=5, sticky="w")
         self.median_rad.grid(row=2, padx=5, pady=5, sticky="w")
         self.nan_rad.grid(row=3, padx=5, pady=5, sticky="w")
-        self.empty_rad.grid(row=4, padx=5, pady=5, sticky="w")
-
-
 

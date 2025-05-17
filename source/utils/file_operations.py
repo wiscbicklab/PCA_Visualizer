@@ -11,8 +11,7 @@ def load_csv_file():
     """Load and validate CSV file."""
     file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
     if not file_path:
-        print("No file selected")
-        return None
+        return
 
     try:
         with open(file_path, 'rb') as file:
@@ -20,7 +19,7 @@ def load_csv_file():
         encoding = result['encoding']
         return pd.read_csv(file_path, encoding=encoding)
     except FileNotFoundError:
-        print("File not found.")
+        pass
         
 
 def save_plot(self, output_dir):

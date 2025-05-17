@@ -87,27 +87,25 @@ class CleanFileBox(tk.Frame):
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
-
-        '''
         if not self.main.df_loaded:
-            messagebox.showinfo("Error", "Data must be loaded before it can be cleaned!")
+            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return  
-        '''      
-
+            
         try:
             # Convert int64 to float for PCA compatibility
             for col in self.main.df.columns:
                 if self.main.df[col].dtype == 'int64':
                     self.main.df[col] = self.main.df[col].astype(float)
 
-            # Ensure BBCH column exists and is treated as string
-            if 'bbch' in self.main.df.columns:
-                self.main.df['bbch'] = self.main.df['bbch'].astype(str).str.strip()
-
             # Filter by BBCH stage
             selected_bbch = self.bbch_choice.get()
             if selected_bbch != -1:
-                self.main.df = self.main.df[self.main.df['bbch'] == f'B{selected_bbch}']
+                # Ensure BBCH column exists and is treated as string
+                if 'bbch' in self.main.df.columns:
+                    self.main.df['bbch'] = self.main.df['bbch'].astype(str).str.strip()
+                    self.main.df = self.main.df[self.main.df['bbch'] == f'B{selected_bbch}']
+                else:
+                    messagebox.showerror("Error", "Could not clean data, bbch could not be found")
 
             # Drop user-specified columns
             self.main.df.columns = self.main.df.columns.str.strip().str.lower()  # Standardize column names
@@ -126,11 +124,6 @@ class CleanFileBox(tk.Frame):
                 imputer = SimpleImputer(strategy='median')
             elif self.missing_choice.get() == "replace_nan":
                 imputer = SimpleImputer(strategy='constant', fill_value=0)
-            elif self.missing_choice.get() == "leave_empty":
-                imputer = SimpleImputer(strategy='constant', fill_value=np.nan)
-            else:
-                messagebox.showerror("Error", "Please select a valid missing value handling strategy.")
-                return
 
             # Impute missing values
             if self.main.df.isnull().any().any():
