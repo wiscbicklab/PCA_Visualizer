@@ -50,47 +50,58 @@ class PcaBox(tk.Frame):
         self.setup_layout()
 
     def create_components(self):
-        # Visualization button
-        self.button = tk.Button(self, text="Visualize PCA", **BUTTON_STYLE, 
-                                command=self.visualize_pca)
-                                
-        # Banner
+        # Creates Validation commands for the text boxes
+        self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
+        self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
+
+
+        # Creates the Banner
         self.banner = tk.Label(self, text="Visualize PCA", font=("Helvetica", 12),
                                bg="#dcdcdc", relief="groove")
         
-        # Input box for custom target
-        # Dropdown for selecting predefined targets
+        
+        # Creates a dropdown value to select a PCA target
         self.target_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
         target_options = ["None", "bbch", "Input Specific Target"]
         self.target_dropdown = tk.OptionMenu(self, self.target_mode, *target_options)
         self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
                                     activebackground="#005f99", relief="flat")
-        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=20, state="disabled")
+        # Creates an entry box to let the user enter a custom Target
+        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=25, state="disabled")
+        self.target_mode.trace_add("write", self.toggle_entry)
 
-        # Creates Validation commands for the text boxes
-        self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
-        self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
 
-        # PCA Parameters Section
+        # Creates an input section for the Number of PCA Components
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
-        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key",
+        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
                                           validatecommand=self.vcmd_pos_int)
-        self.components_entry.insert(0, "2")
+        # Sets the default value and resets the box is left empty
+        self.components_entry.insert(0, "2") 
+        self.components_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.components_entry, "2"))
 
-        # Bind focus out event to reset empty input
-        self.components_entry.bind("<FocusOut>", self.on_focus_out)
-
-        # Top N Feature User Input
+        
+        # Creates and input section for the Number of features to include in the Biplot
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
-        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key", 
+        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key", 
                                     validatecommand=self.vcmd_pos_int)
-        self.top_n_entry.insert(0, "10")  # Default to 10
+        # Sets the default value and resets the box is left empty
+        self.top_n_entry.insert(0, "10")
+        self.top_n_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.top_n_entry, "10"))
 
-        # Test Distance for Lables User Input
+
+        # Creates and input section for the Distance between text labels on generated plots
         self.text_distance_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
-        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=10, validate="key",
+        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
                                             validatecommand=self.vcmd_pos_num)
+        # Sets the default value and resets the box is left empty
         self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
+        self.text_distance_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.text_distance_entry, "1.1"))
+
+
+        # Visualization button
+        self.button = tk.Button(self, text="Visualize PCA", **BUTTON_STYLE, 
+                                command=self.visualize_pca)
+        
 
     def setup_layout(self):
         # Configure component structure
@@ -121,122 +132,100 @@ class PcaBox(tk.Frame):
     #### 5. EVENT HANDLERS ####
 
     def validate_pos_int(self, proposed_value):
-        if proposed_value.isdigit() and int(proposed_value) > 0:
-            self.df_updated = True
+        # Allow user to clear input
+        if proposed_value == "":
+            return True 
+        # Allows user to enter digits
+        elif proposed_value.isdigit() and int(proposed_value) > 0:
+            self.main.df_updated = True
             return True
-        elif proposed_value == "":
-            return True  # Allow clearing before retyping
         return False
     
     def validate_pos_num(self, proposed_value):
+        # Allow user to clear input
         if proposed_value == "":
-            return True  # Allow user to clear input
+            return True 
+        # Allows user to enter float 0 or greater 
         try:
             value = float(proposed_value)
-            if value > 0:
-                self.df_updated = True
+            if value >= 0:
                 return True
         except ValueError:
             pass
         return False
-
-
     
-    def on_focus_out(self, event):
-        value = self.components_entry.get()
-        if value.strip() == "":
-            self.components_entry.delete(0, tk.END)
-            self.components_entry.insert(0, "2")
+    def toggle_entry(self, *args):
+        if self.target_mode.get() == "Input Specific Target":
+            self.custom_target_entry.config(state="normal")
+        else:
+            self.custom_target_entry.config(state="disabled")
+
+    def on_entry_exit(self, event, widget, default_value):
+        current_value = widget.get().strip()
+        if current_value == "" or float(current_value) == 0.0:
+            widget.delete(0, tk.END)
+            widget.insert(0, default_value)
+            self.main.df_updated = True
 
 
     #### 6. Data Handling ####
 
     def visualize_pca(self):
-        """Create PCA visualization."""
-        if not self.main.df_clean:
-            return
-        
+        """Creates a PCA visualization based on the given inputs and updates GUI plot"""
         try:
-            # Get the target variable and raise error if it's not in the data set
+            if not self.main.df_clean:
+                raise Exception("Data Must be cleaned first")
+            # Creats a new figure and ax with labels and grid
+            self.main.fig = Figure(figsize=(5, 5))
+            self.main.ax = self.main.fig.add_subplot(111)
+            self.main.ax.set_xlabel("Principal Component 1")
+            self.main.ax.set_ylabel("Principal Component 2")
+            self.main.ax.set_title("PCA Visualization")
+            self.main.ax.grid(True)
 
-            # Get analysis parameters
-            n_components = int(self.components_entry.get())
-
-            # Run PCA and get the transformed data
-            self.main.run_analysis(n_components)
-            transformed_data = self.main.pca_results['transformed_data']
-
-            # Convert principal_components to DataFrame
-            principal_df = pd.DataFrame(
-                transformed_data,
-                columns=[f'PC{i + 1}' for i in range(transformed_data.shape[1])],
-            )
-
-            # Plot the PCA visualization, grouped by target
-            self.plot(principal_df)
-
-            # Redraw the Tkinter window, Updating the GUI
-            self.main.canvas.draw()
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Visualization Error", str(e))
-    
-    def plot(self, principal_df: pd.DataFrame):
-        """
-        Visualize PCA results.
-        """
-        # Creats a new figure and ax
-        self.main.fig = Figure(figsize=(5, 5))
-        self.main.ax = self.main.fig.add_subplot(111)
-
-        # Set labels and grid
-        self.main.ax.set_xlabel("Principal Component 1")
-        self.main.ax.set_ylabel("Principal Component 2")
-        self.main.ax.set_title("PCA Visualization")
-        self.main.ax.grid(True)
-
-        # Gets the target mode
-        target_mode=self.target_mode.get().strip().lower()
-        if target_mode not in self.main.df.columns and target_mode != "none":
+            # Gets the user selected target variable
+            target_mode=self.target_mode.get().strip().lower()
+            if target_mode == "none":
+                target = None
+            elif target_mode not in self.main.df.columns:
                 raise ValueError(f"Target variable '{target_mode}' not found in the dataset.")
-        
-        # Determines target
-        if target_mode == "bbch":
-            target = "bbch"
-        elif target_mode == "input specific target":
-            if not target:
+            elif target_mode == "input specific target" and not target:
                 raise ValueError("Please enter a target variable.")
-        else:
-            target = None
+            elif target_mode == "bbch":
+                target = "bbch"
+           
+            # Runs PCA Analysis and get important results
+            self.main.run_analysis(int(self.components_entry.get()))
+            transformed_data = self.main.pca_results['transformed_data']
+            transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
+            transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
 
-        # Plots the data onto the ax
-        try:
             # Plot grouped by target if available
             if target and target in self.main.df.columns:
+                # Gets targets
                 target_vals = self.main.df[target]
                 unique_targets = sorted(target_vals.unique())
 
-                # Assign colors dynamically
+                # Assign colors and adds a legend
                 colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
                 for i, t in enumerate(unique_targets):
                     mask = target_vals == t
                     color = colors[i] 
-                    self.main.ax.scatter(principal_df.loc[mask, "PC1"],
-                                         principal_df.loc[mask, "PC2"],
-                                         c=[color], label=str(t), alpha=0.7,
+                    self.main.ax.scatter(transformed_df.loc[mask, "PC1"],
+                                        transformed_df.loc[mask, "PC2"],
+                                        c=[color], label=str(t), alpha=0.7,
                     )
-
-                # Add legend
                 self.main.ax.legend(title=f"{target} Groups")
             else:
                 # Plot without grouping
                 self.main.ax.scatter(
-                    principal_df["PC1"], principal_df["PC2"], alpha=0.7, label="Data Points"
+                    transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
                 )
-            # Update the canvas to use the cleared figure
+            # Update the canvas to use the newly created figure
             self.main.canvas.figure = self.main.fig
             self.main.canvas.draw()
+        
         except Exception as e:
-            raise Exception(f"Error during PCA visualization: {str(e)}")
-
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
+            messagebox.showerror("Visualization Error", str(e))
