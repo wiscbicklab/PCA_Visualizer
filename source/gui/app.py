@@ -207,7 +207,7 @@ class PCAAnalysisApp(tk.Tk):
 
     #### 1. DATA HANDLING METHODS ####
 
-    def run_analysis(self, n_components):
+    def run_analysis(self):
         """Execute PCA analysis."""
         # Skip analysis if data isn't cleaned or if data has not changed
         if not self.app_state.df_cleaned or not self.app_state.df_updated:
@@ -217,7 +217,7 @@ class PCAAnalysisApp(tk.Tk):
             # Run analysis and store the result
             self.app_state.pca_results = self.pca_analyzer.analyze(
                 df=self.app_state.df,
-                n_components=n_components,
+                n_components=self.app_state.num_pca_components.get(),
             )
 
             # Update display
@@ -362,17 +362,12 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.config(state="disabled")
 
     def update_figure(self):
-        # Remove canvas widget from GUI if it exists
-        if hasattr(self.app_state, 'fig') and self.app_state.fig:
-            self.app_state.main.canvas.get_tk_widget().grid_forget()
-            self.app_state.main.canvas.get_tk_widget().destroy()
+        # Recreate canvas and add to GUI
+        self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
+        self.app_state.main.canvas.draw()
 
-            # Recreate canvas and add to GUI
-            self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
-            self.app_state.main.canvas.draw()
-
-            self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
-            self.app_state.main.canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
+        self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
+        self.app_state.main.canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
 
 
     #### 5. EVENT HANDLERS ####

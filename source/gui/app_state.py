@@ -26,7 +26,7 @@ class AppState:
         # Variables to track user inputs from the GUI
         self.num_pca_components = tk.IntVar(main, value=2)
         self.top_n_feat = tk.IntVar(main, value=10)
-        self.test_dist = tk.DoubleVar(main, value=1.1)
+        self.text_dist = tk.DoubleVar(main, value=1.1)
 
         # Gets the name of the os
         self.os_type = platform.system()

@@ -27,24 +27,14 @@ class BiplotBox(tk.Frame):
     def __init__(self, main, app_state: AppState, **kwargs):
         super().__init__(main, **kwargs)
 
-        self.main = main
         self.app_state = app_state
-        self.app_state.ax = self.app_state.fig.add_subplot(111)
-        self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=main)
-        self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
 
         # Sets up visualization dependencies
         self.biplot_visualizer = BiplotVisualizer()
         self.biplot_manager = BiplotManager()
 
         # Variables
-        self.enable_feature_grouping = None
-
-        self.init_variables()
-
-        #TODO This will need to be updated
-        # Feature Results
-        self.feature_results_summary = None
+        self.enable_feature_grouping = tk.BooleanVar(value=False)
 
         # Biplot Banner
         self.biplot_banner = None
@@ -63,52 +53,30 @@ class BiplotBox(tk.Frame):
         self.create_components()
         self.setup_layout()
 
-    def init_variables(self):
-        self.enable_feature_grouping = tk.BooleanVar(value=False)
-
     def create_components(self):
         # Banner
-        self.biplot_banner = tk.Label(self,
-                                      text="Biplot Section",
-                                      font=("Helvetica", 12),
-                                      bg="#dcdcdc",
-                                      relief="groove")
+        self.biplot_banner = tk.Label(self, **BANNER_STYLE)
         
         # Feature Grouping Section
-        self.grouping_checkbox = tk.Checkbutton(
-            self,
-            text="Enable Feature Grouping",
-            variable=self.enable_feature_grouping,
-            bg=LABEL_STYLE["bg"],
-            font=LABEL_STYLE["font"],
-            command=self.toggle_feature_grouping
+        self.grouping_checkbox = tk.Checkbutton(self, text="Enable Feature Grouping",
+                                                variable=self.enable_feature_grouping,
+                                                **LABEL_STYLE,
+                                                command=self.toggle_feature_grouping
         )
-        self.mapping_label = tk.Label(self,
-                                      text="Feature-to-Group Mapping (Optional):",
-                                      bg=LABEL_STYLE["bg"],
-                                      font=LABEL_STYLE["font"])
-        self.mapping_button = tk.Button(self,
-                                        text="Upload Mapping CSV",
-                                        **BUTTON_STYLE,
+        self.mapping_label = tk.Label(self, **LABEL_STYLE,
+                                      text="Feature-to-Group Mapping (Optional):")
+        self.mapping_button = tk.Button(self, text="Upload Mapping CSV", **BUTTON_STYLE,
                                         command=self.upload_mapping_csv)
         self.mapping_button.config(state="normal")
 
         # Analysis Buttons
-        self.biplot_button = tk.Button(self,
-                                       text="Biplot with Groups",
-                                       **BUTTON_STYLE,
+        self.biplot_button = tk.Button(self, text="Biplot with Groups", **BUTTON_STYLE,
                                        command=self.create_biplot)
-        self.interactive_biplot_button = tk.Button(self,
-                                                   text="Interactive Biplot",
-                                                   **BUTTON_STYLE,
+        self.interactive_biplot_button = tk.Button(self, text="Interactive Biplot", **BUTTON_STYLE,
                                                    command=self.create_interactive_biplot)
-        self.scree_plot_button = tk.Button(self,
-                                           text="Show Scree Plot",
-                                           **BUTTON_STYLE,
+        self.scree_plot_button = tk.Button(self, text="Show Scree Plot", **BUTTON_STYLE,
                                            command=self.create_scree_plot)
-        self.top_features_button = tk.Button(self,
-                                             text="Top Features Loadings",
-                                             **BUTTON_STYLE,
+        self.top_features_button = tk.Button(self, text="Top Features Loadings", **BUTTON_STYLE,
                                              command=self.plot_top_features_loadings)
 
     def setup_layout(self):
@@ -129,35 +97,23 @@ class BiplotBox(tk.Frame):
 
     #### 2. VISUALIZATION METHODS ####
 
-    def reset_plot(self):
-        """Clear the canvas and reinitialize the figure and axes"""
-        # Clear the entire figure
-        self.app_state.fig.clear()
-
-        # Create a fresh subplot
-        self.app_state.main.ax = self.app_state.fig.add_subplot(111)
-
-        # Update the canvas to use the cleared figure
-        self.app_state.canvas.figure = self.app_state.fig
-        self.app_state.canvas.draw()
-
     def create_scree_plot(self):
         """Create scree plot."""
-        if not self.app_state.df_clean:
+        if not self.app_state.df_cleaned:
             return
         
         try:
             # Ensures PCA has been run
-            self.app_state.run_analysis(self.app_state.num_pca_components)
-
-            # Reset the canvas
-            self.reset_plot()
+            self.app_state.main.run_analysis()
 
             # Create scree plot - exact match to original
-            explained_variance = self.app_state.pca_model.explained_variance_ratio_
+            explained_variance = self.app_state.pca_results["explained_variance"]
+
+            # Remove the old plot
+            self.app_state.ax.clear()
 
             # Bar plot of individual explained variance
-            self.app_state.main.ax.bar(
+            self.app_state.ax.bar(
                 range(1, len(explained_variance) + 1),
                 explained_variance,
                 alpha=0.7,
@@ -165,7 +121,7 @@ class BiplotBox(tk.Frame):
             )
 
             # Step plot of cumulative explained variance
-            self.app_state.main.ax.step(
+            self.app_state.ax.step(
                 range(1, len(explained_variance) + 1),
                 np.cumsum(explained_variance),
                 where='mid',
@@ -173,11 +129,12 @@ class BiplotBox(tk.Frame):
             )
 
             # Labels and title - exact match
-            self.app_state.main.ax.set_xlabel('Principal Component Index')
-            self.app_state.main.ax.set_ylabel('Explained Variance Ratio')
-            self.app_state.main.ax.set_title('Scree Plot')
+            self.app_state.ax.set_xlabel('Principal Component Index')
+            self.app_state.ax.set_ylabel('Explained Variance Ratio')
+            self.app_state.ax.set_title('Scree Plot')
 
-            self.app_state.canvas.draw()  # This ensures the new plot appears on the canvas
+            # Updates the figure on the GUI
+            self.app_state.main.update_figure()
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -186,40 +143,32 @@ class BiplotBox(tk.Frame):
 
     def create_biplot(self):
         """Create biplot visualization."""
-        if not self.app_state.df_clean:
+        if not self.app_state.df_cleaned:
             return
         
         try:
             # Ensures PCA has been run
-            self.app_state.run_analysis()
-
-            # Reset the canvas before plotting
-            self.reset_plot()
-
-            # Validate and retrieve user inputs
-            top_n = int(self.top_n_entry.get())
-            text_dist = float(self.text_distance_entry.get())
-
+            self.app_state.main.run_analysis()
 
             # Delegate to BiplotVisualizer
-            biplot_visualizer = BiplotVisualizer(self.app_state.fig, self.app_state.main.ax)
+            biplot_visualizer = BiplotVisualizer(self.app_state.fig, self.app_state.ax)
             biplot_visualizer.create_biplot(
-                pca_model=self.pca_results["model"],
-                x_standardized=self.pca_results['standardized_data'],
-                df=self.df,
-                feature_to_group=self.feature_to_group,
+                pca_model=self.app_state.pca_results["model"],
+                x_standardized=self.app_state.pca_results['standardized_data'],
+                df=self.app_state.df,
+                feature_to_group=self.app_state.feature_to_group,
                 enable_feature_grouping=self.enable_feature_grouping.get(),
-                top_n=top_n,
-                text_dist=text_dist,
-                focus_on_loadings=self.focus_on_loadings.get()
+                top_n=self.app_state.top_n_feat.get(),
+                text_dist=self.app_state.text_dist.get(),
             )
 
             # Apply clarity improvements
-            self.app_state.main.ax.grid(True, linestyle='--', alpha=0.3)
-            self.app_state.main.ax.set_facecolor('#f8f9fa')
-            self.app_state.main.ax.set_aspect('equal', adjustable='box')
+            self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
+            self.app_state.ax.set_facecolor('#f8f9fa')
+            self.app_state.ax.set_aspect('equal', adjustable='box')
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            # Updates the figure on the GUI
+            self.app_state.main.update_figure()
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -228,22 +177,20 @@ class BiplotBox(tk.Frame):
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
-        if not self.df_clean:
+        if not self.app_state.df_cleaned:
             return
 
         # Ensures PCA has been run
-        self.run_analysis()
+        self.app_state.main.run_analysis()
 
         try:
-            
-
             interactive_visualizer = InteractiveBiplotVisualizer()
             fig = interactive_visualizer.create_interactive_biplot(
-                pca_model=self.pca_results["model"],
-                x_standardized=self.pca_results["standardized_data"],
-                data=self.df,
-                top_n_entry=self.components_entry,  # Replace with actual entry for top N
-                text_distance_entry=self.components_entry,  # Replace with actual entry for text distance
+                pca_model=self.app_state.pca_results["model"],
+                x_standardized=self.app_state.pca_results["standardized_data"],
+                data=self.app_state.df,
+                top_n_entry=self.app_state.top_n_feat,  # Replace with actual entry for top N
+                text_distance_entry=self.app_state.text_dist,  # Replace with actual entry for text distance
                 enable_feature_grouping=self.enable_feature_grouping.get(),
                 feature_to_group=self.feature_to_group,
             )
@@ -259,24 +206,18 @@ class BiplotBox(tk.Frame):
 
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
-        if not self.df_clean:
+        if not self.app_state.df_cleaned:
             return
         
         try:
             # Ensures PCA has been run
-            self.run_analysis()
-
-            # Reset the canvas
-            self.reset_plot()
+            self.app_state.main.run_analysis()
 
             # Initialize LoadingsProcessor
-            loadings_processor = LoadingsProcessor(self.pca_results["model"], self.df)
+            loadings_processor = LoadingsProcessor(self.app_state.pca_results["model"], self.app_state.df)
 
             # Get top N features from user input
-            try:
-                top_n = int(self.top_n_entry.get())
-            except ValueError:
-                top_n = 10  # Default value if user input is invalid
+            top_n = self.app_state.top_n_feat.get()
 
             # Validate and retrieve loadings
             loadings, focus_columns = loadings_processor.validate_and_get_loadings(
@@ -288,23 +229,23 @@ class BiplotBox(tk.Frame):
 
             # Clear the canvas and reinitialize the figure and axes
             self.app_state.fig.clear()  # Clears the existing figure
-            self.app_state.main.ax = self.app_state.fig.add_subplot(111)  # Create a new subplot
+            self.app_state.ax = self.app_state.fig.add_subplot(111)  # Create a new subplot
 
             # Plot top feature loadings
-            self.app_state.main.ax.barh(
+            self.app_state.ax.barh(
                 focus_columns,
                 np.abs(loadings[:len(focus_columns), 0]),  # Example: loadings for PC1
                 color='steelblue',
                 alpha=0.8
             )
-            self.app_state.main.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
-            self.app_state.main.ax.set_xlabel("Absolute Loadings", fontsize=12)
-            self.app_state.main.ax.set_ylabel("Features", fontsize=12)
-            self.app_state.main.ax.tick_params(axis='x', labelsize=10)
-            self.app_state.main.ax.tick_params(axis='y', labelsize=10)
+            self.app_state.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
+            self.app_state.ax.set_xlabel("Absolute Loadings", fontsize=12)
+            self.app_state.ax.set_ylabel("Features", fontsize=12)
+            self.app_state.ax.tick_params(axis='x', labelsize=10)
+            self.app_state.ax.tick_params(axis='y', labelsize=10)
 
-            # Update the canvas to reflect the new plot
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            # Updates the figure on the GUI
+            self.app_state.main.update_figure()
             messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
 
         except Exception as e:

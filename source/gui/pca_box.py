@@ -78,28 +78,28 @@ class PcaBox(tk.Frame):
         # Creates an input section for the Number of PCA Components
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
         self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
-                                          validatecommand=self.vcmd_2_or_more)
+                                          validatecommand=self.vcmd_2_or_more,
+                                          textvariable=self.app_state.num_pca_components)
         # Sets the default value and resets the box is left empty
-        self.components_entry.insert(0, "2") 
         self.components_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.components_entry, "2", "num_pca_components"))
 
         
         # Creates and input section for the Number of features to include in the Biplot
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
         self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key", 
-                                    validatecommand=self.vcmd_pos_int)
+                                    validatecommand=self.vcmd_pos_int,
+                                    textvariable=self.app_state.top_n_feat)
         # Sets the default value and resets the box is left empty
-        self.top_n_entry.insert(0, "10")
         self.top_n_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.top_n_entry, "10", "top_n_feat"))
 
 
         # Creates and input section for the Distance between text labels on generated plots
         self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
         self.text_dist_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, 
-                                            validate="key", validatecommand=self.vcmd_pos_num)
+                                            validate="key", validatecommand=self.vcmd_pos_num,
+                                            textvariable=self.app_state.text_dist)
         # Sets the default value and resets the box is left empty
-        self.text_dist_entry.insert(0, "1.1")  # Default to 1.1
-        self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.text_dist_entry, "1.1", "test_dist"))
+        self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.text_dist_entry, "1.1", "text_dist"))
 
 
         # Visualization button
@@ -181,8 +181,6 @@ class PcaBox(tk.Frame):
             widget.insert(0, default_value)
             self.app_state.df_updated = True
 
-        setattr(self.main, attr_name, float(current_value))
-
 
     #### 6. Data Handling ####
 
@@ -211,7 +209,7 @@ class PcaBox(tk.Frame):
                 target = "bbch"
            
             # Runs PCA Analysis and get important results
-            self.app_state.main.run_analysis(int(self.components_entry.get()))
+            self.app_state.main.run_analysis()
             transformed_data = self.app_state.pca_results['transformed_data']
             transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
             transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
