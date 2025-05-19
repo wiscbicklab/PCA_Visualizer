@@ -96,6 +96,9 @@ class CleanFileBox(tk.Frame):
             for col in self.main.df.columns:
                 if self.main.df[col].dtype == 'int64':
                     self.main.df[col] = self.main.df[col].astype(float)
+            
+            # Standardize column names
+            self.main.df.columns = self.main.df.columns.str.strip().str.lower() 
 
             # Filter by BBCH stage
             selected_bbch = self.bbch_choice.get()
@@ -103,24 +106,30 @@ class CleanFileBox(tk.Frame):
                 # Ensure BBCH column exists and is treated as string
                 if 'bbch' in self.main.df.columns:
                     self.main.df['bbch'] = self.main.df['bbch'].astype(str).str.strip()
-                    self.main.df = self.main.df[self.main.df['bbch'] == f'B{selected_bbch}']
+                    self.main.df = self.main.df[self.main.df['bbch'] == f"{float(selected_bbch):.1f}"]
                 else:
                     messagebox.showerror("Error", "Could not clean data, bbch could not be found")
+                    return
+                
+            
+
 
             # Drop user-specified columns
-            self.main.df.columns = self.main.df.columns.str.strip().str.lower()  # Standardize column names
             self.drop_cols()
 
             # Drop non-numeric columns except BBCH
             if 'bbch' in self.main.df.columns:
                 non_num_cols = self.main.df.select_dtypes(exclude=[float, int]).columns
-                non_num_cols = non_num_cols.drop('bbch', errors='ignore')
-                self.main.df.drop(columns=non_num_cols, inplace=True, errors='ignore')
+                non_num_cols = non_num_cols.drop('bbch')
+                self.main.df.drop(columns=non_num_cols, inplace=True)
+            
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
+                self.main.df.dropna(axis=1, how='all', inplace=True)
                 imputer = SimpleImputer(strategy='mean')
             elif self.missing_choice.get() == "impute_median":
+                self.main.df.dropna(axis=1, how='all', inplace=True)
                 imputer = SimpleImputer(strategy='median')
             elif self.missing_choice.get() == "replace_nan":
                 imputer = SimpleImputer(strategy='constant', fill_value=0)

@@ -228,4 +228,4 @@ class PcaBox(tk.Frame):
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
-            messagebox.showerror("Visualization Error", str(e))
+            messagebox.showerror("Visualization Error", error_str)
