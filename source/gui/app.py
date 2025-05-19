@@ -332,6 +332,7 @@ class PCAAnalysisApp(tk.Tk):
             # Update the results summary box
             self.data_insight_summary.delete(1.0, tk.END)
             self.data_insight_summary.insert(tk.END, info_text)
+            self.clear_figure()
 
     def update_results_display(self, results: dict):
         """Update results display with simplified formatting."""
@@ -386,6 +387,11 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
+    def clear_figure(self):
+        self.fig = Figure(figsize=(5, 5))
+        self.ax = self.fig.add_subplot(111)
+        self.canvas.figure = self.fig
+        self.canvas.draw()
 
     #### 5. EVENT HANDLERS ####
 

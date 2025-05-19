@@ -58,11 +58,12 @@ class LoadFileBox(tk.Frame):
             self.main.df_loaded = False
             self.main.df_clean = False
             return
-            
-        # Show Success message and set df status variables after the file loads
-        messagebox.showinfo("Success", "File loaded successfully")
 
         self.main.df_updated = True
         self.main.df_loaded = True
+        # Tells the container Widget do update the displayed data
         self.main.update_data_info()
+
+        # Show Success message and set df status variables after the file loads
+        messagebox.showinfo("Success", "File loaded successfully")
 

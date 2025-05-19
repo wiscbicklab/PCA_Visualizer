@@ -1,6 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 import traceback
+from matplotlib.figure import Figure
 import numpy as np
 import pandas as pd
 
@@ -111,25 +112,27 @@ class CleanFileBox(tk.Frame):
                     messagebox.showerror("Error", "Could not clean data, bbch could not be found")
                     return
                 
-            
+            print(self.main.df.columns)
 
 
             # Drop user-specified columns
-            self.drop_cols()
+            self.drop_user_cols()
+
+            print(self.main.df.columns)
 
             # Drop non-numeric columns except BBCH
             if 'bbch' in self.main.df.columns:
                 non_num_cols = self.main.df.select_dtypes(exclude=[float, int]).columns
-                non_num_cols = non_num_cols.drop('bbch')
+                non_num_cols = non_num_cols.drop('bbch', errors="ignore")
                 self.main.df.drop(columns=non_num_cols, inplace=True)
-            
+
+            # Drop Columns with no values
+            self.main.df.dropna(axis=1, how='all', inplace=True)
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
-                self.main.df.dropna(axis=1, how='all', inplace=True)
                 imputer = SimpleImputer(strategy='mean')
             elif self.missing_choice.get() == "impute_median":
-                self.main.df.dropna(axis=1, how='all', inplace=True)
                 imputer = SimpleImputer(strategy='median')
             elif self.missing_choice.get() == "replace_nan":
                 imputer = SimpleImputer(strategy='constant', fill_value=0)
@@ -139,22 +142,22 @@ class CleanFileBox(tk.Frame):
                 x_imputed = imputer.fit_transform(self.main.df)
                 self.main.df = pd.DataFrame(x_imputed, columns=self.main.df.columns)
             
-            # Tells the container Widget do update the displayed data
-            self.main.update_data_info()
-
-            # Show Success Message after cleaning data
-            messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
-
             # Update Varibales tracking df status
             self.main.df_updated = True
             self.main.df_clean = True
+            # Tells the container Widget do update the displayed data
+            self.main.update_data_info()
+
+                        # Show Success Message after cleaning data
+            messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
+
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Error", f"An error occurred during data cleaning: {e}")
 
-    def drop_cols(self) -> list:
+    def drop_user_cols(self) -> list:
         """
         Gets the user entered columns to drop and drops them from the df.
         Prints a messages about requested columns that couldn't nbe dropped
