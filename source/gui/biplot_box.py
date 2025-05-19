@@ -11,6 +11,8 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
 from source.visualization.loadings import LoadingsProcessor
+from source.gui.app_state  import AppState
+
 
 from source.utils.constant import *
 
@@ -22,14 +24,14 @@ class BiplotBox(tk.Frame):
     Creats a space for Biplot generation buttons
     """
 
-    def __init__(self, main, fig, **kwargs):
+    def __init__(self, main, app_state: AppState, **kwargs):
         super().__init__(main, **kwargs)
 
         self.main = main
-        self.fig = fig
-        self.ax = self.fig.add_subplot(111)
-        self.canvas = FigureCanvasTkAgg(self.fig, master=main)
-        self.canvas_widget = self.canvas.get_tk_widget()
+        self.app_state = app_state
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
+        self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=main)
+        self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
 
         # Sets up visualization dependencies
         self.biplot_visualizer = BiplotVisualizer()
@@ -130,32 +132,32 @@ class BiplotBox(tk.Frame):
     def reset_plot(self):
         """Clear the canvas and reinitialize the figure and axes"""
         # Clear the entire figure
-        self.fig.clear()
+        self.app_state.fig.clear()
 
         # Create a fresh subplot
-        self.ax = self.fig.add_subplot(111)
+        self.app_state.main.ax = self.app_state.fig.add_subplot(111)
 
         # Update the canvas to use the cleared figure
-        self.canvas.figure = self.fig
-        self.canvas.draw()
+        self.app_state.canvas.figure = self.app_state.fig
+        self.app_state.canvas.draw()
 
-    def create_scree_plot(self, pca_model):
+    def create_scree_plot(self):
         """Create scree plot."""
-        if not self.df_clean:
+        if not self.app_state.df_clean:
             return
         
         try:
             # Ensures PCA has been run
-            self.main.run_analysis()
+            self.app_state.run_analysis(self.app_state.num_pca_components)
 
             # Reset the canvas
             self.reset_plot()
 
             # Create scree plot - exact match to original
-            explained_variance = pca_model.explained_variance_ratio_
+            explained_variance = self.app_state.pca_model.explained_variance_ratio_
 
             # Bar plot of individual explained variance
-            self.ax.bar(
+            self.app_state.main.ax.bar(
                 range(1, len(explained_variance) + 1),
                 explained_variance,
                 alpha=0.7,
@@ -163,7 +165,7 @@ class BiplotBox(tk.Frame):
             )
 
             # Step plot of cumulative explained variance
-            self.ax.step(
+            self.app_state.main.ax.step(
                 range(1, len(explained_variance) + 1),
                 np.cumsum(explained_variance),
                 where='mid',
@@ -171,11 +173,11 @@ class BiplotBox(tk.Frame):
             )
 
             # Labels and title - exact match
-            self.ax.set_xlabel('Principal Component Index')
-            self.ax.set_ylabel('Explained Variance Ratio')
-            self.ax.set_title('Scree Plot')
+            self.app_state.main.ax.set_xlabel('Principal Component Index')
+            self.app_state.main.ax.set_ylabel('Explained Variance Ratio')
+            self.app_state.main.ax.set_title('Scree Plot')
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.app_state.canvas.draw()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -184,12 +186,12 @@ class BiplotBox(tk.Frame):
 
     def create_biplot(self):
         """Create biplot visualization."""
-        if not self.df_clean:
+        if not self.app_state.df_clean:
             return
         
         try:
             # Ensures PCA has been run
-            self.main.run_analysis()
+            self.app_state.run_analysis()
 
             # Reset the canvas before plotting
             self.reset_plot()
@@ -200,7 +202,7 @@ class BiplotBox(tk.Frame):
 
 
             # Delegate to BiplotVisualizer
-            biplot_visualizer = BiplotVisualizer(self.fig, self.ax)
+            biplot_visualizer = BiplotVisualizer(self.app_state.fig, self.app_state.main.ax)
             biplot_visualizer.create_biplot(
                 pca_model=self.pca_results["model"],
                 x_standardized=self.pca_results['standardized_data'],
@@ -213,9 +215,9 @@ class BiplotBox(tk.Frame):
             )
 
             # Apply clarity improvements
-            self.ax.grid(True, linestyle='--', alpha=0.3)
-            self.ax.set_facecolor('#f8f9fa')
-            self.ax.set_aspect('equal', adjustable='box')
+            self.app_state.main.ax.grid(True, linestyle='--', alpha=0.3)
+            self.app_state.main.ax.set_facecolor('#f8f9fa')
+            self.app_state.main.ax.set_aspect('equal', adjustable='box')
 
             self.canvas.draw()  # This ensures the new plot appears on the canvas
 
@@ -285,21 +287,21 @@ class BiplotBox(tk.Frame):
                 return  # Error already handled in LoadingsProcessor
 
             # Clear the canvas and reinitialize the figure and axes
-            self.fig.clear()  # Clears the existing figure
-            self.ax = self.fig.add_subplot(111)  # Create a new subplot
+            self.app_state.fig.clear()  # Clears the existing figure
+            self.app_state.main.ax = self.app_state.fig.add_subplot(111)  # Create a new subplot
 
             # Plot top feature loadings
-            self.ax.barh(
+            self.app_state.main.ax.barh(
                 focus_columns,
                 np.abs(loadings[:len(focus_columns), 0]),  # Example: loadings for PC1
                 color='steelblue',
                 alpha=0.8
             )
-            self.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
-            self.ax.set_xlabel("Absolute Loadings", fontsize=12)
-            self.ax.set_ylabel("Features", fontsize=12)
-            self.ax.tick_params(axis='x', labelsize=10)
-            self.ax.tick_params(axis='y', labelsize=10)
+            self.app_state.main.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
+            self.app_state.main.ax.set_xlabel("Absolute Loadings", fontsize=12)
+            self.app_state.main.ax.set_ylabel("Features", fontsize=12)
+            self.app_state.main.ax.tick_params(axis='x', labelsize=10)
+            self.app_state.main.ax.tick_params(axis='y', labelsize=10)
 
             # Update the canvas to reflect the new plot
             self.canvas.draw()  # This ensures the new plot appears on the canvas

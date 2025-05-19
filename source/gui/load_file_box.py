@@ -4,6 +4,8 @@ from tkinter import  messagebox
 import source.utils.file_operations as file_ops
 from source.utils.constant import *
 
+from source.gui.app_state  import AppState
+
 
 class LoadFileBox(tk.Frame):
     """
@@ -17,9 +19,11 @@ class LoadFileBox(tk.Frame):
         **kwargs : dict
             Additional keyword arguments passed to tk.Frame.
     """
-    def __init__(self, main: tk.Tk, **kwargs: dict):
+    def __init__(self, main: tk.Tk, app_state: AppState, **kwargs: dict):
         super().__init__(main, **kwargs)
         self.main = main
+        self.app_state = app_state
+
 
         self.label = None
         self.button = None
@@ -50,17 +54,19 @@ class LoadFileBox(tk.Frame):
         Load data from CSV file and update status variable in the main Widget
         """
         # Load Data from File
-        self.main.df = file_ops.load_csv_file()
+        self.app_state.df = file_ops.load_csv_file()
 
         # Show Error message and set df status variables if the file failed to load
-        if self.main.df is None or self.main.df.empty:
+        if self.app_state.df is None or self.app_state.df.empty:
             messagebox.showerror("Error", "Failed to load file!")
-            self.main.df_loaded = False
-            self.main.df_clean = False
+            self.app_state.df_loaded = False
+            self.app_state.df_cleaned = False
             return
 
-        self.main.df_updated = True
-        self.main.df_loaded = True
+        self.app_state.df_updated = True
+        self.app_state.df_loaded = True
+        self.app_state.df_cleaned = False
+        
         # Tells the container Widget do update the displayed data
         self.main.update_data_info()
 

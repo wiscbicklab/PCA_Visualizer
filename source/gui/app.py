@@ -28,6 +28,7 @@ from source.gui.clean_file_box import CleanFileBox
 from source.gui.pca_box import PcaBox
 from source.gui.biplot_box import BiplotBox
 from source.gui.heatmap_box import HeatmapBox
+from source.gui.app_state  import AppState
 
 import traceback
 
@@ -44,15 +45,14 @@ class PCAAnalysisApp(tk.Tk):
         """
         # Sets up the window, object dependencies, and variables
         super().__init__()
-        self.init_variables()
-        self.setup_window()
 
-        self.fig = None
-        self.ax = None
+        # Creates the state of the app and adds state variable to the element
+        self.app_state = AppState(self)
+
+        self.setup_window()
 
         self.canvas = None
         self.canvas_widget = None
-
 
         self.pca_analyzer = PCAAnalyzer()
 
@@ -92,43 +92,18 @@ class PCAAnalysisApp(tk.Tk):
         self.title("PCA Analysis Tool")
 
         # Sets state maximized if possible
-        if self.os_type == "Windows" or self.os_type == "Darwin":
+        if self.app_state.os_type == "Windows" or self.app_state.os_type == "Darwin":
             self.state("-zoomed")
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
         self.minsize(1000, 600)
 
-
-
-    def init_variables(self):
-        """
-        Initializes variables for storing data within the application
-        """
-        # Variables for tracking the data to run PCA on
-        self.df = None
-        self.df_updated = False
-        self.df_loaded = False
-        self.df_clean = False
-
-        # Variables for visualizing pca results
-        self.pca_results = None
-        self.feature_to_group = None
-        self.feature_groups_colors = None
-
-        # Variables to track user inputs from the GUI
-        self.target_var = tk.StringVar(value="None")
-        
-        self.target_mode = tk.StringVar(value="Select Target")
-
-        # Gets the name of the os
-        self.os_type = platform.system()
-
     def create_widgets(self):
         """Create all widgets"""
 
-        self.fig = Figure(figsize=(5, 5))
-        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
+        self.canvas_widget = self.canvas.get_tk_widget()
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
@@ -144,18 +119,11 @@ class PCAAnalysisApp(tk.Tk):
                                            command=self.select_output_directory)
 
         # Intialize Custom components
-        self.load_file_box = LoadFileBox(self, bg="#f0f0f0")
-        self.clean_file_box = CleanFileBox(self, bg="#f0f0f0")
-        self.pca_box = PcaBox(self, bg="#f0f0f0")
-        self.biplot_box = BiplotBox(self, self.fig, bg="#f0f0f0")
+        self.load_file_box = LoadFileBox(self, self.app_state, bg="#f0f0f0")
+        self.clean_file_box = CleanFileBox(self, self.app_state, bg="#f0f0f0")
+        self.pca_box = PcaBox(self, self.app_state, bg="#f0f0f0")
+        self.biplot_box = BiplotBox(self, self.app_state, bg="#f0f0f0")
         self.heatmap_box = HeatmapBox(self, bg="#f0f0f0")
-
-
-        # Input box for custom target
-        self.custom_target_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=20, state="disabled")
-
-        # Trace dropdown to enable/disable custom target input
-        self.target_mode.trace_add("write", self.update_target_input)
 
         # Color Palette Selection
         self.palette_label = tk.Label(self,
@@ -196,7 +164,7 @@ class PCAAnalysisApp(tk.Tk):
     def setup_layout(self):
         """Setup the layout of GUI components"""
         # Adds plot 
-        self.canvas = FigureCanvasTkAgg(self.fig, master=self)
+        self.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
         self.canvas_widget = self.canvas.get_tk_widget()
         self.canvas_widget.grid(
             row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
@@ -242,21 +210,21 @@ class PCAAnalysisApp(tk.Tk):
     def run_analysis(self, n_components):
         """Execute PCA analysis."""
         # Skip analysis if data isn't cleaned or if data has not changed
-        if not self.df_clean or not self.df_updated:
+        if not self.app_state.df_cleaned or not self.app_state.df_updated:
             return
 
         try:
             # Run analysis and store the result
-            self.pca_results = self.pca_analyzer.analyze(
-                df=self.df,
+            self.app_state.pca_results = self.pca_analyzer.analyze(
+                df=self.app_state.df,
                 n_components=n_components,
             )
 
             # Update display
-            self.update_results_display(self.pca_results)
+            self.update_results_display(self.app_state.pca_results)
 
             # Update df status variables
-            self.df_updated = False
+            self.app_state.df_updated = False
 
         except ValueError as ve:
             messagebox.showerror("Analysis Error", str(ve))
@@ -283,16 +251,16 @@ class PCAAnalysisApp(tk.Tk):
         """Determine columns to focus on based on heatmap mode."""
         try:
             if heatmap_mode_var == "Top 10 Features":
-                return self.df.columns[:10].tolist()  # Top 10 features by default
+                return self.app_state.df.columns[:10].tolist()  # Top 10 features by default
             elif heatmap_mode_var == "Top 20 Features":
-                return self.df.columns[:20].tolist()  # Top 20 features by default
+                return self.app_state.df.columns[:20].tolist()  # Top 20 features by default
             elif heatmap_mode_var == "Custom Features":
                 if focus_entry:
                     columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
                     if not columns:
                         raise ValueError("No valid columns specified for custom heatmap.")
                     # Ensure specified columns exist in the data
-                    missing_columns = [col for col in columns if col not in self.df.columns]
+                    missing_columns = [col for col in columns if col not in self.app_state.df.columns]
                     if missing_columns:
                         raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
                     return columns
@@ -317,22 +285,28 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_data_info(self):
         """Update display with simplified data information."""
-        if self.df_loaded:
+        if self.app_state.df_loaded:
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"
-            info_text += f"Dataset Shape: {self.df.shape[0]} rows × {self.df.shape[1]} columns\n\n"
+            info_text += f"Dataset Shape: {self.app_state.df.shape[0]} rows × {self.app_state.df.shape[1]} columns\n\n"
             info_text += "Columns:\n"
 
             # Simple column listing
-            columns = self.df.columns.tolist()
+            columns = self.app_state.df.columns.tolist()
             for i, col in enumerate(columns, 1):
                 info_text += f"{i}. {col}\n"
 
             # Update the results summary box
             self.data_insight_summary.delete(1.0, tk.END)
             self.data_insight_summary.insert(tk.END, info_text)
-            self.clear_figure()
+            
+            # Generate new Blank figure
+            self.app_state.fig = Figure()
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
+            self.app_state.ax.grid(True)
+
+            self.app_state.main.update_figure() 
 
     def update_results_display(self, results: dict):
         """Update results display with simplified formatting."""
@@ -387,11 +361,19 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
-    def clear_figure(self):
-        self.fig = Figure(figsize=(5, 5))
-        self.ax = self.fig.add_subplot(111)
-        self.canvas.figure = self.fig
-        self.canvas.draw()
+    def update_figure(self):
+        # Remove canvas widget from GUI if it exists
+        if hasattr(self.app_state, 'fig') and self.app_state.fig:
+            self.app_state.main.canvas.get_tk_widget().grid_forget()
+            self.app_state.main.canvas.get_tk_widget().destroy()
+
+            # Recreate canvas and add to GUI
+            self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
+            self.app_state.main.canvas.draw()
+
+            self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
+            self.app_state.main.canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
+
 
     #### 5. EVENT HANDLERS ####
 

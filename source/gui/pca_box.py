@@ -4,8 +4,11 @@ import traceback
 
 from matplotlib import pyplot as plt
 from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import numpy as np
 import pandas as pd
+
+from source.gui.app_state  import AppState
 
 from source.utils.constant import *
 
@@ -15,9 +18,10 @@ class PcaBox(tk.Frame):
     Creates a space for PCA options
     """
 
-    def __init__(self, main: tk.Tk, **kwargs):
+    def __init__(self, main: tk.Tk, app_state: AppState, **kwargs):
         super().__init__(main, **kwargs)
         self.main = main
+        self.app_state = app_state
 
         # Sets the PCA analysis Target
         self.target_mode = tk.StringVar()
@@ -40,8 +44,8 @@ class PcaBox(tk.Frame):
         self.top_n_entry = None
 
         # Text Distance for Labels User Input
-        self.text_distance_label = None
-        self.text_distance_entry = None
+        self.text_dist_label = None
+        self.text_dist_entry = None
 
         # Visualization button
         self.button = None
@@ -54,7 +58,6 @@ class PcaBox(tk.Frame):
         self.vcmd_2_or_more = (self.register(self.validate_2_or_more), '%P')
         self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
         self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
-
 
         # Creates the Banner
         self.banner = tk.Label(self, text="Visualize PCA", font=("Helvetica", 12),
@@ -78,7 +81,7 @@ class PcaBox(tk.Frame):
                                           validatecommand=self.vcmd_2_or_more)
         # Sets the default value and resets the box is left empty
         self.components_entry.insert(0, "2") 
-        self.components_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.components_entry, "2"))
+        self.components_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.components_entry, "2", "num_pca_components"))
 
         
         # Creates and input section for the Number of features to include in the Biplot
@@ -87,16 +90,16 @@ class PcaBox(tk.Frame):
                                     validatecommand=self.vcmd_pos_int)
         # Sets the default value and resets the box is left empty
         self.top_n_entry.insert(0, "10")
-        self.top_n_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.top_n_entry, "10"))
+        self.top_n_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.top_n_entry, "10", "top_n_feat"))
 
 
         # Creates and input section for the Distance between text labels on generated plots
-        self.text_distance_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
-        self.text_distance_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
-                                            validatecommand=self.vcmd_pos_num)
+        self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
+        self.text_dist_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, 
+                                            validate="key", validatecommand=self.vcmd_pos_num)
         # Sets the default value and resets the box is left empty
-        self.text_distance_entry.insert(0, "1.1")  # Default to 1.1
-        self.text_distance_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.text_distance_entry, "1.1"))
+        self.text_dist_entry.insert(0, "1.1")  # Default to 1.1
+        self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.text_dist_entry, "1.1", "test_dist"))
 
 
         # Visualization button
@@ -123,8 +126,8 @@ class PcaBox(tk.Frame):
         self.top_n_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         self.top_n_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
-        self.text_distance_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
-        self.text_distance_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
+        self.text_dist_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        self.text_dist_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
         # Run Analysis Buttons
         self.button.grid(row=7, column=0, columnspan=2, padx=5, pady=5)
@@ -138,7 +141,7 @@ class PcaBox(tk.Frame):
             return True 
         # Allows user to enter digits
         elif proposed_value.isdigit() and int(proposed_value) >= 2:
-            self.main.df_updated = True
+            self.app_state.df_updated = True
             return True
         return False
 
@@ -148,7 +151,7 @@ class PcaBox(tk.Frame):
             return True 
         # Allows user to enter digits
         elif proposed_value.isdigit() and int(proposed_value) > 0:
-            self.main.df_updated = True
+            self.app_state.df_updated = True
             return True
         return False
     
@@ -171,12 +174,14 @@ class PcaBox(tk.Frame):
         else:
             self.custom_target_entry.config(state="disabled")
 
-    def on_entry_exit(self, event, widget, default_value):
+    def on_entry_exit(self, widget, default_value, attr_name):
         current_value = widget.get().strip()
         if current_value == "" or float(current_value) == 0.0:
             widget.delete(0, tk.END)
             widget.insert(0, default_value)
-            self.main.df_updated = True
+            self.app_state.df_updated = True
+
+        setattr(self.main, attr_name, float(current_value))
 
 
     #### 6. Data Handling ####
@@ -184,21 +189,21 @@ class PcaBox(tk.Frame):
     def visualize_pca(self):
         """Creates a PCA visualization based on the given inputs and updates GUI plot"""
         try:
-            if not self.main.df_clean:
+            if not self.app_state.df_cleaned:
                 raise Exception("Data Must be cleaned first")
             # Creats a new figure and ax with labels and grid
-            self.main.fig = Figure(figsize=(5, 5))
-            self.main.ax = self.main.fig.add_subplot(111)
-            self.main.ax.set_xlabel("Principal Component 1")
-            self.main.ax.set_ylabel("Principal Component 2")
-            self.main.ax.set_title("PCA Visualization")
-            self.main.ax.grid(True)
+            self.app_state.fig = Figure()
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
+            self.app_state.ax.set_xlabel("Principal Component 1")
+            self.app_state.ax.set_ylabel("Principal Component 2")
+            self.app_state.ax.set_title("PCA Visualization")
+            self.app_state.ax.grid(True)
 
             # Gets the user selected target variable
             target_mode=self.target_mode.get().strip().lower()
             if target_mode == "none":
                 target = None
-            elif target_mode not in self.main.df.columns:
+            elif target_mode not in self.app_state.df.columns:
                 raise ValueError(f"Target variable '{target_mode}' not found in the dataset.")
             elif target_mode == "input specific target" and not target:
                 raise ValueError("Please enter a target variable.")
@@ -206,15 +211,18 @@ class PcaBox(tk.Frame):
                 target = "bbch"
            
             # Runs PCA Analysis and get important results
-            self.main.run_analysis(int(self.components_entry.get()))
-            transformed_data = self.main.pca_results['transformed_data']
+            self.app_state.main.run_analysis(int(self.components_entry.get()))
+            transformed_data = self.app_state.pca_results['transformed_data']
             transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
             transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
 
+            print(transformed_df)
+
+
             # Plot grouped by target if available
-            if target and target in self.main.df.columns:
+            if target and target in self.app_state.df.columns:
                 # Gets targets
-                target_vals = self.main.df[target]
+                target_vals = self.app_state.df[target].reset_index(drop=True)
                 unique_targets = sorted(target_vals.unique())
 
                 # Assign colors and adds a legend
@@ -222,19 +230,19 @@ class PcaBox(tk.Frame):
                 for i, t in enumerate(unique_targets):
                     mask = target_vals == t
                     color = colors[i] 
-                    self.main.ax.scatter(transformed_df.loc[mask, "PC1"],
+                    self.app_state.ax.scatter(transformed_df.loc[mask, "PC1"],
                                         transformed_df.loc[mask, "PC2"],
                                         c=[color], label=str(t), alpha=0.7,
                     )
-                self.main.ax.legend(title=f"{target} Groups")
+                self.app_state.ax.legend(title=f"{target} Groups")
             else:
                 # Plot without grouping
-                self.main.ax.scatter(
+                self.app_state.ax.scatter(
                     transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
                 )
-            # Update the canvas to use the newly created figure
-            self.main.canvas.figure = self.main.fig
-            self.main.canvas.draw()
+
+            self.app_state.main.update_figure()
+
         
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking

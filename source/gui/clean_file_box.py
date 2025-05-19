@@ -9,6 +9,8 @@ from sklearn.impute import SimpleImputer
 
 from source.gui.clean_widgets.bbch import BbchSelector
 from source.gui.clean_widgets.missing import MissingSelector
+from source.gui.app_state  import AppState
+
 from source.utils.constant import *
 
 
@@ -18,9 +20,10 @@ class CleanFileBox(tk.Frame):
     Allows users to handle missing values, filter by BBCH stage, and drop columns.
     """
 
-    def __init__(self, main: tk.Tk, **kwargs):
+    def __init__(self, main: tk.Tk,app_state: AppState, **kwargs):
         super().__init__(main, **kwargs)
         self.main = main
+        self.app_state = app_state
         
         # Banner
         self.banner = None
@@ -88,26 +91,26 @@ class CleanFileBox(tk.Frame):
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
-        if not self.main.df_loaded:
+        if not self.app_state.df_loaded:
             messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return  
             
         try:
             # Convert int64 to float for PCA compatibility
-            for col in self.main.df.columns:
-                if self.main.df[col].dtype == 'int64':
-                    self.main.df[col] = self.main.df[col].astype(float)
+            for col in self.app_state.df.columns:
+                if self.app_state.df[col].dtype == 'int64':
+                    self.app_state.df[col] = self.app_state.df[col].astype(float)
             
             # Standardize column names
-            self.main.df.columns = self.main.df.columns.str.strip().str.lower() 
+            self.app_state.df.columns = self.app_state.df.columns.str.strip().str.lower() 
 
             # Filter by BBCH stage
             selected_bbch = self.bbch_choice.get()
             if selected_bbch != -1:
                 # Ensure BBCH column exists and is treated as string
-                if 'bbch' in self.main.df.columns:
-                    self.main.df['bbch'] = self.main.df['bbch'].astype(str).str.strip()
-                    self.main.df = self.main.df[self.main.df['bbch'] == f"{float(selected_bbch):.1f}"]
+                if 'bbch' in self.app_state.df.columns:
+                    self.app_state.df['bbch'] = self.app_state.df['bbch'].astype(str).str.strip()
+                    self.app_state.df = self.app_state.df[self.app_state.df['bbch'] == f"{float(selected_bbch):.1f}"]
                 else:
                     messagebox.showerror("Error", "Could not clean data, bbch could not be found")
                     return
@@ -116,13 +119,13 @@ class CleanFileBox(tk.Frame):
             self.drop_user_cols()
 
             # Drop non-numeric columns except BBCH
-            if 'bbch' in self.main.df.columns:
-                non_num_cols = self.main.df.select_dtypes(exclude=[float, int]).columns
+            if 'bbch' in self.app_state.df.columns:
+                non_num_cols = self.app_state.df.select_dtypes(exclude=[float, int]).columns
                 non_num_cols = non_num_cols.drop('bbch', errors="ignore")
-                self.main.df.drop(columns=non_num_cols, inplace=True)
+                self.app_state.df.drop(columns=non_num_cols, inplace=True)
 
             # Drop Columns with no values
-            self.main.df.dropna(axis=1, how='all', inplace=True)
+            self.app_state.df.dropna(axis=1, how='all', inplace=True)
 
             # Handle missing values
             if self.missing_choice.get() == "impute_mean":
@@ -133,15 +136,15 @@ class CleanFileBox(tk.Frame):
                 imputer = SimpleImputer(strategy='constant', fill_value=0)
 
             # Impute missing values
-            if self.main.df.isnull().any().any():
-                x_imputed = imputer.fit_transform(self.main.df)
-                self.main.df = pd.DataFrame(x_imputed, columns=self.main.df.columns)
+            if self.app_state.df.isnull().any().any():
+                x_imputed = imputer.fit_transform(self.app_state.df)
+                self.app_state.df = pd.DataFrame(x_imputed, columns=self.app_state.df.columns)
             
             # Update Varibales tracking df status
-            self.main.df_updated = True
-            self.main.df_clean = True
+            self.app_state.df_updated = True
+            self.app_state.df_cleaned = True
             # Tells the container Widget do update the displayed data
-            self.main.update_data_info()
+            self.app_state.main.update_data_info()
 
                         # Show Success Message after cleaning data
             messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
@@ -167,13 +170,13 @@ class CleanFileBox(tk.Frame):
         drop_cols = [col.strip().lower() for col in drop_cols]
 
         # Ensures the user columns exist and prints an error message with missing columns
-        valid_drop_cols = [col for col in drop_cols if col in self.main.df.columns]
-        missing_cols = set(drop_cols) - set(self.main.df.columns)
+        valid_drop_cols = [col for col in drop_cols if col in self.app_state.df.columns]
+        missing_cols = set(drop_cols) - set(self.app_state.df.columns)
         if missing_cols:
             messagebox.showerror("Missing columns (not in dataset):", missing_cols)
         
         # Drops the columns from the dataset
-        self.main.df.drop(columns=valid_drop_cols, inplace=True)
+        self.app_state.df.drop(columns=valid_drop_cols, inplace=True)
 
         return drop_cols
 
