@@ -51,6 +51,7 @@ class PcaBox(tk.Frame):
 
     def create_components(self):
         # Creates Validation commands for the text boxes
+        self.vcmd_2_or_more = (self.register(self.validate_2_or_more), '%P')
         self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
         self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
 
@@ -74,7 +75,7 @@ class PcaBox(tk.Frame):
         # Creates an input section for the Number of PCA Components
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
         self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
-                                          validatecommand=self.vcmd_pos_int)
+                                          validatecommand=self.vcmd_2_or_more)
         # Sets the default value and resets the box is left empty
         self.components_entry.insert(0, "2") 
         self.components_entry.bind("<FocusOut>", lambda event: self.on_entry_exit(event, self.components_entry, "2"))
@@ -130,6 +131,16 @@ class PcaBox(tk.Frame):
 
 
     #### 5. EVENT HANDLERS ####
+
+    def validate_2_or_more(self, proposed_value):
+        # Allow user to clear input
+        if proposed_value == "":
+            return True 
+        # Allows user to enter digits
+        elif proposed_value.isdigit() and int(proposed_value) >= 2:
+            self.main.df_updated = True
+            return True
+        return False
 
     def validate_pos_int(self, proposed_value):
         # Allow user to clear input
@@ -228,4 +239,4 @@ class PcaBox(tk.Frame):
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
-            messagebox.showerror("Visualization Error", error_str)
+            messagebox.showerror("Visualization Error", str(e))

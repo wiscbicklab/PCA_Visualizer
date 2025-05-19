@@ -111,14 +111,9 @@ class CleanFileBox(tk.Frame):
                 else:
                     messagebox.showerror("Error", "Could not clean data, bbch could not be found")
                     return
-                
-            print(self.main.df.columns)
-
-
+            
             # Drop user-specified columns
             self.drop_user_cols()
-
-            print(self.main.df.columns)
 
             # Drop non-numeric columns except BBCH
             if 'bbch' in self.main.df.columns:
