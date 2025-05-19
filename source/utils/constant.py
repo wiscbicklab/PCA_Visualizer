@@ -1,5 +1,5 @@
 # constants.py
-OUTPUT_DIR = 'KUpca_plots_output'
+OUTPUT_DIR = "KUpca_plots_output"
 
 FEATURE_GROUPS_COLORS = {
     "FAB": "black",
@@ -10,33 +10,40 @@ FEATURE_GROUPS_COLORS = {
 }
 
 DEFAULT_COLUMNS_TO_DROP = [
-    'Site', 'SampleNum', 'Type', 'farm', 'EventId', 'SampleID',
-    'trees.assessed', 'flower.clusters.assessed', 'Year', 'treat',
-    'Rep', 'SideFlowerStrip', 'SideFlowerStrip_E',
-    'SideFlowerStrip_W', 'SideFlowerStrip_preflow'
+    "Site", "SampleNum", "Type", "farm", "EventId", "SampleID",
+    "trees.assessed", "flower.clusters.assessed", "Year", "treat",
+    "Rep", "SideFlowerStrip", "SideFlowerStrip_E",
+    "SideFlowerStrip_W", "SideFlowerStrip_preflow"
 ]
 
 LABEL_STYLE = {
-    "font":   ('Helvetica', 10),
+    "font":   ("Helvetica", 10),
     "bg":     "#f5f5f5",
 
 }
 
+BANNER_STYLE = {
+    "text": "Biplot Section",
+    "font": ("Helvetica", 12),
+    "bg": "#dcdcdc",
+    "relief": "groove",
+}
+
 # Style constants
 BUTTON_STYLE = {
-    'font': ('Helvetica', 10),
-    'bg': '#007ACC',
-    'fg': 'white',
-    'activebackground': '#005f99',
-    'relief': 'raised',
-    'width': 18
+    "font": ("Helvetica", 10),
+    "bg": "#007ACC",
+    "fg": "white",
+    "activebackground": "#005f99",
+    "relief": "raised",
+    "width": 18,
 }
 
 RAD_BUTTON_STYLE = {
-    'font': ('Helvetica', 10),
-    'bg': '#e8e8e8',              # Slightly darker than #f0f0f0
-    'fg': 'black',
-    'activebackground': '#d0d0d0', # Slightly darker on hover
+    "font": ("Helvetica", 10),
+    "bg": "#e8e8e8",
+    "fg": "black",
+    "activebackground": "#d0d0d0",
 }
 
 
