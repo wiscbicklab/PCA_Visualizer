@@ -25,11 +25,11 @@ class MissingSelector(tk.Frame):
         self.label = tk.Label(self,text="Handle Missing Values:", **LABEL_STYLE)
         
         self.mean_rad = RadBttn(self, text="Impute with Mean", value="impute_mean",
-                                         variable=self.main.missing_choice,  **LABEL_STYLE)
+                                         variable=self.main.missing_choice,  **RAD_BUTTON_STYLE)
         self.median_rad = RadBttn(self,text="Impute with Median", value="impute_median",
-                                           variable=self.main.missing_choice, **LABEL_STYLE)
+                                           variable=self.main.missing_choice, **RAD_BUTTON_STYLE)
         self.nan_rad = RadBttn(self, text="Replace NaN with 0", value="replace_nan",
-                                        variable=self.main.missing_choice, **LABEL_STYLE)
+                                        variable=self.main.missing_choice, **RAD_BUTTON_STYLE)
 
 
     def setup_layout(self):

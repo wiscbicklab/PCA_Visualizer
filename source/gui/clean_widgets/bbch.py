@@ -25,13 +25,13 @@ class BbchSelector(tk.Frame):
         self.label = tk.Label(self, text="Filter by BBCH Stage:", **LABEL_STYLE)
 
         self.none_rad = RadBttn(self, text="All (no filter)", value=-1,
-                                     variable=self.main.bbch_choice, **LABEL_STYLE)
+                                     variable=self.main.bbch_choice, **RAD_BUTTON_STYLE)
         self.b59_rad = RadBttn(self, text="BBCH 59", value=59,
-                                    variable=self.main.bbch_choice, **LABEL_STYLE)
+                                    variable=self.main.bbch_choice, **RAD_BUTTON_STYLE)
         self.b69_rad = RadBttn(self, text="BBCH 69", value=69,
-                                    variable=self.main.bbch_choice, **LABEL_STYLE)
+                                    variable=self.main.bbch_choice, **RAD_BUTTON_STYLE)
         self.b85_rad = RadBttn(self, text="BBCH 85", value=85,
-                                    variable=self.main.bbch_choice, **LABEL_STYLE)
+                                    variable=self.main.bbch_choice, **RAD_BUTTON_STYLE)
 
 
     def setup_layout(self):

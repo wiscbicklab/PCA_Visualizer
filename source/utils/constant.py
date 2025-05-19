@@ -32,6 +32,15 @@ BUTTON_STYLE = {
     'width': 18
 }
 
+RAD_BUTTON_STYLE = {
+    'font': ('Helvetica', 10),
+    'bg': '#e8e8e8',              # Slightly darker than #f0f0f0
+    'fg': 'black',
+    'activebackground': '#d0d0d0', # Slightly darker on hover
+}
+
+
+
 COLOR_PALETTES = {
     "Default": {
         "FAB": "black",

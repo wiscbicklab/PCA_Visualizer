@@ -50,8 +50,8 @@ class CleanFileBox(tk.Frame):
                                font=("Helvetica", 12), bg="#dcdcdc", relief="groove")
         
         # Data Cleaning Selectors        
-        self.missing_selector = MissingSelector(self)
-        self.bbch_selector = BbchSelector(self)
+        self.missing_selector = MissingSelector(self, bg="#f0f0f0")
+        self.bbch_selector = BbchSelector(self,bg="#f0f0f0")
         
         # Column Dropping Selector
         self.drop_label = tk.Label(self,
