@@ -72,12 +72,12 @@ class CleanFileBox(tk.Frame):
         self.banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
         # Data Cleaning Selectors 
-        self.missing_selector.grid(row=1, column=0, padx=5, pady=5, sticky="w")
-        self.bbch_selector.grid(row=1, column=1, padx=5, pady=5, sticky="e")
+        self.missing_selector.grid(row=1, column=0, padx=5, pady=5, sticky="nswe")
+        self.bbch_selector.grid(row=1, column=1, padx=5, pady=5, sticky="nswe")
 
         # Column Dropping Selector
-        self.drop_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        self.drop_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.drop_label.grid(row=2, column=0, padx=5, pady=5, sticky="nswe")
+        self.drop_entry.grid(row=2, column=1, padx=5, pady=5, sticky="nswe")
 
         # Data Cleaning Button
         self.clean_bttn.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
