@@ -43,17 +43,12 @@ class PCAAnalysisApp(tk.Tk):
         Args:
             root: 
         """
-        # Sets up the window, object dependencies, and variables
+        # Sets up the window, and creates a way to track the app state
         super().__init__()
-
-        # Creates the state of the app and adds state variable to the element
         self.app_state = AppState(self)
-
         self.setup_window()
 
-        self.canvas = None
-        self.canvas_widget = None
-
+        # Object for running PCA analysis
         self.pca_analyzer = PCAAnalyzer()
 
         # Declare the custom component
@@ -63,7 +58,9 @@ class PCAAnalysisApp(tk.Tk):
         self.biplot_box = None
         self.heatmap_box = None
 
-        self.focus_checkbox = None
+        # Declare space for the figure to be stored
+        self.canvas = None
+        self.canvas_widget = None
 
         # Results Section
         self.data_insight_label = None
@@ -138,13 +135,6 @@ class PCAAnalysisApp(tk.Tk):
         # Create a BooleanVar for the checkbox
         self.focus_on_loadings = tk.BooleanVar(value=True)
 
-        # Add the "Focus on Loadings" checkbox
-        self.focus_checkbox = tk.Checkbutton(
-            self,
-            text="Focus on Loadings",
-            variable=self.focus_on_loadings,
-            command=self.update_focus_on_loadings)  # Update logic when toggled
-
         # Results Section
         self.data_insight_label = tk.Label(self,
                                          text="Data Insights Box:",
@@ -188,9 +178,6 @@ class PCAAnalysisApp(tk.Tk):
         # Feature Grouping Section/ Palette Colors
         self.palette_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
         self.palette_menu.grid(row=7, column=1, padx=5, pady=5, sticky="w")
-
-        # Initialize `focus_on_loadings` value
-        self.focus_checkbox.grid(row=7, column=1, padx=5, pady=5, sticky="e")
 
         # Heatmap Section left over??? Probably to be fixed
         self.output_dir_label.grid(row=8, column=0, columnspan=2, sticky="w", padx=5, pady=5)
@@ -274,13 +261,7 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
 
-    def update_focus_on_loadings(self):
-        """
-        Update logic or perform actions based on the checkbox state.
-        """
-        focus_value = self.focus_on_loadings.get()  # Retrieve the value (True/False)
-
-
+  
     #### 4. UI UPDATE METHODS ####
 
     def update_data_info(self):

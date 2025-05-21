@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import traceback
+from matplotlib import cm, pyplot as plt
+from matplotlib.colors import to_hex
 import pandas as pd
 import numpy as np
 import os, time
@@ -9,8 +11,7 @@ from sklearn.impute import SimpleImputer
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
-from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
-from source.visualization.loadings import LoadingsProcessor
+from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer
 from source.gui.app_state  import AppState
 
 
@@ -31,7 +32,6 @@ class BiplotBox(tk.Frame):
 
         # Sets up visualization dependencies
         self.biplot_visualizer = BiplotVisualizer()
-        self.biplot_manager = BiplotManager()
 
         # Variables
         self.enable_feature_grouping = tk.BooleanVar(value=False)
@@ -84,8 +84,8 @@ class BiplotBox(tk.Frame):
         self.biplot_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
         # Feature Grouping
-        self.grouping_checkbox.grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        self.mapping_label.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+        self.grouping_checkbox.grid(row=1, column=1, sticky="w", padx=5, pady=5)
+        self.mapping_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
         self.mapping_button.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="w")
 
         # Visualization Buttons
@@ -213,19 +213,13 @@ class BiplotBox(tk.Frame):
             # Ensures PCA has been run
             self.app_state.main.run_analysis()
 
-            # Initialize LoadingsProcessor
-            loadings_processor = LoadingsProcessor(self.app_state.pca_results["model"], self.app_state.df)
-
             # Get top N features from user input
             top_n = self.app_state.top_n_feat.get()
 
             # Validate and retrieve loadings
-            loadings, focus_columns = loadings_processor.validate_and_get_loadings(
+            loadings, focus_columns = self.validate_and_get_loadings(
                 heatmap_mode=f"Top {top_n} Features"  # Adjust dynamically
             )
-
-            if loadings is None or not focus_columns:
-                return  # Error already handled in LoadingsProcessor
 
             # Clear the canvas and reinitialize the figure and axes
             self.app_state.fig.clear()  # Clears the existing figure
@@ -267,8 +261,8 @@ class BiplotBox(tk.Frame):
             # Load the CSV into a DataFrame
             df = pd.read_csv(file_path)
 
-            # Load mapping into BiplotManager
-            self.biplot_manager.load_group_mapping(df)
+            # Load mapping
+            self.load_group_mapping(df)
 
             # Pass mappings to the visualizer
             self.biplot_visualizer.feature_to_group = self.biplot_manager.feature_to_group
@@ -302,4 +296,72 @@ class BiplotBox(tk.Frame):
                 self.feature_results_summary.config(state="disabled")
 
             messagebox.showinfo("Feature Grouping Disabled", "Feature grouping has been disabled.")
+
+
+    #### 5. Other Functions    ####
+
+    def validate_and_get_loadings(self, heatmap_mode, focus_entry=None):
+        """
+        Validates PCA model and retrieves loadings based on mode.
+
+        Args:
+            heatmap_mode (str): Mode to determine which features to focus on.
+            focus_entry (str): Comma-separated column names for custom focus (optional).
+
+        Returns:
+            Tuple[np.ndarray, List[str]]: Loadings array and list of focus columns.
+        """
+        # Validate PCA model
+        pca_results = self.app_state.pca_results
+        if pca_results is None or not hasattr(pca_results, 'components_'):
+            messagebox.showerror("Error", "Please run PCA analysis first.")
+            return None, None
+
+        try:
+            # Extract loadings
+            loadings = pca_results["loadings"]
+            feature_scores = np.abs(loadings[:, 0])  # Example: PC1 loadings
+
+            # Determine focus columns based on mode
+            if "Top" in heatmap_mode:
+                top_n = int(heatmap_mode.split()[1])  # Extract number from mode
+                top_indices = np.argsort(feature_scores)[::-1][:top_n]
+                focus_columns = [self.app_state.df.columns[i] for i in top_indices]
+            elif heatmap_mode == "Custom" and focus_entry:
+                focus_columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
+                if not all(col in self.app_state.df.columns for col in focus_columns):
+                    raise ValueError("Some specified columns do not exist in the dataset.")
+            else:
+                raise ValueError("Invalid heatmap mode or missing focus entry.")
+
+            return loadings, focus_columns
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error processing loadings: {str(e)}")
+            return None, None
+        
+    def load_group_mapping(self, df):
+        """
+        Load feature-to-group mapping from a DataFrame.
+
+        :param df: DataFrame with columns 'Feature' and 'Group'.
+        """
+        # Validate input DataFrame
+        if 'Feature' not in df.columns or 'Group' not in df.columns:
+            raise ValueError("Mapping CSV must contain 'Feature' and 'Group' columns.")
+
+        # Create feature-to-group mapping and standardize to lowercase
+        self.feature_to_group = {key.lower(): value for key, value in zip(df['Feature'], df['Group'])}
+
+        # Get unique groups
+        unique_groups = sorted(df['Group'].unique())
+
+        # Generate a dynamic color palette for groups
+        colormap = cm.get_cmap('tab10', len(unique_groups))  # Use a colormap with sufficient distinct colors
+        self.group_colors = {
+            group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
+        }
+
+
+
 

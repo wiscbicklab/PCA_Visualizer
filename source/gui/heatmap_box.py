@@ -6,8 +6,7 @@ import numpy as np
 
 from sklearn.impute import SimpleImputer
 
-from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer, BiplotManager
-from source.visualization.loadings import LoadingsProcessor
+from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer
 
 from source.utils.constant import *
 

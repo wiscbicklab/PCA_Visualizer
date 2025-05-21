@@ -214,8 +214,6 @@ class PcaBox(tk.Frame):
             transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
             transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
 
-            print(transformed_df)
-
 
             # Plot grouped by target if available
             if target and target in self.app_state.df.columns:

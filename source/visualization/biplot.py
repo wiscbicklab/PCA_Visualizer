@@ -104,15 +104,20 @@ class BiplotVisualizer(BasePlotter):
                 color = feature_groups_colors.get(group, "gray")
 
                 # Plot the arrow
-                arrow = FancyArrowPatch(
-                    (0, 0),
-                    (scaled_loadings[idx, 0], scaled_loadings[idx, 1]),
+                self.ax.quiver(
+                    0, 0,
+                    scaled_loadings[idx, 0],
+                    scaled_loadings[idx, 1],
+                    angles='xy',
+                    scale_units='xy',
+                    scale=1,
                     color=color,
-                    arrowstyle='->',
-                    mutation_scale=15,
-                    alpha=0.8
+                    alpha=0.8,
+                    width=0.005,
+                    headwidth=3,
+                    headlength=5
                 )
-                self.ax.add_patch(arrow)
+
                 
                 # Add the feature label
                 text = self.ax.text(
@@ -143,15 +148,20 @@ class BiplotVisualizer(BasePlotter):
                     continue
 
                 # Add arrow and label
-                arrow = FancyArrowPatch(
-                    (0, 0),
-                    (scaled_loadings[idx, 0], scaled_loadings[idx, 1]),
+                self.ax.quiver(
+                    0, 0,
+                    scaled_loadings[idx, 0],
+                    scaled_loadings[idx, 1],
+                    angles='xy',
+                    scale_units='xy',
+                    scale=1,
                     color=color,
-                    arrowstyle='->',
-                    mutation_scale=15,
-                    alpha=0.8
+                    alpha=0.8,
+                    width=0.005,
+                    headwidth=3,
+                    headlength=5
                 )
-                self.ax.add_patch(arrow)
+
                 text = self.ax.text(
                     scaled_loadings[idx, 0] * text_dist,
                     scaled_loadings[idx, 1] * text_dist,
@@ -378,54 +388,5 @@ class InteractiveBiplotVisualizer:
         return save_path
 
 
-class BiplotManager:
-    """
-    Manages feature-to-group mappings for PCA biplots.
-    """
 
-    def __init__(self):
-        self.feature_to_group = {}  # Mapping of features to groups
-        self.group_colors = {}  # Colors for groups
-
-
-    def load_group_mapping(self, df):
-        """
-        Load feature-to-group mapping from a DataFrame.
-
-        :param df: DataFrame with columns 'Feature' and 'Group'.
-        """
-        # Validate input DataFrame
-        if 'Feature' not in df.columns or 'Group' not in df.columns:
-            raise ValueError("Mapping CSV must contain 'Feature' and 'Group' columns.")
-
-        # Create feature-to-group mapping and standardize to lowercase
-        self.feature_to_group = {key.lower(): value for key, value in zip(df['Feature'], df['Group'])}
-
-        # Get unique groups
-        unique_groups = sorted(df['Group'].unique())
-
-        # Generate a dynamic color palette for groups
-        colormap = cm.get_cmap('tab10', len(unique_groups))  # Use a colormap with sufficient distinct colors
-        self.group_colors = {
-            group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
-        }
-
-
-
-    def get_group(self, feature):
-        """
-        Get the group of a given feature.
-
-        :param feature: Feature name.
-        :return: Group name.
-        """
-        return self.feature_to_group.get(feature, "Unknown")
-
-    def get_color(self, group):
-        """
-        Get the color assigned to a given group.
-
-        :param group: Group name.
-        :return: Color.
-        """
-        return self.group_colors.get(group, 'gray')
+    
