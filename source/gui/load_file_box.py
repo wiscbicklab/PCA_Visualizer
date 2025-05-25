@@ -21,7 +21,6 @@ class LoadFileBox(tk.Frame):
     """
     def __init__(self, main: tk.Tk, app_state: AppState, **kwargs: dict):
         super().__init__(main, **kwargs)
-        self.main = main
         self.app_state = app_state
 
 
@@ -43,6 +42,9 @@ class LoadFileBox(tk.Frame):
         """
         Places components within the Widget
         """
+        # Configure column expansion
+        self.columnconfigure(1, weight=1)
+
         self.label.grid(row=0, column=0, padx=5, pady=5)
         self.button.grid(row=0, column=1, padx=5, pady=5)
 
@@ -68,7 +70,7 @@ class LoadFileBox(tk.Frame):
         self.app_state.df_cleaned = False
         
         # Tells the container Widget do update the displayed data
-        self.main.update_data_info()
+        self.app_state.main.update_data_info()
 
         # Show Success message and set df status variables after the file loads
         messagebox.showinfo("Success", "File loaded successfully")

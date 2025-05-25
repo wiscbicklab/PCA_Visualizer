@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
 import chardet
 from matplotlib import pyplot as plt
@@ -51,6 +51,12 @@ class PCAAnalysisApp(tk.Tk):
         # Object for running PCA analysis
         self.pca_analyzer = PCAAnalyzer()
 
+        # Creates a scroll bar
+        self.options_scroll = None
+        self.options_canvas = None
+        self.options_window = None
+        self.options_frame = None
+
         # Declare the custom component
         self.load_file_box = None
         self.clean_file_box = None
@@ -59,11 +65,10 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_box = None
 
         # Declare space for the figure to be stored
-        self.canvas = None
-        self.canvas_widget = None
+        self.plot_canvas = None
+        self.plot_canvas_widget = None
 
         # Results Section
-        self.data_insight_label = None
         self.data_insight_summary = None
 
         # Save Button
@@ -94,13 +99,37 @@ class PCAAnalysisApp(tk.Tk):
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
-        self.minsize(1000, 600)
+        self.minsize(1300, 700)
 
     def create_widgets(self):
         """Create all widgets"""
 
-        self.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
-        self.canvas_widget = self.canvas.get_tk_widget()
+        self.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
+        self.plot_canvas_widget = self.plot_canvas.get_tk_widget()
+
+        # Sets up scrollable window
+        self.options_canvas = tk.Canvas(self)
+        self.options_scroll = Scrollbar(self, orient=VERTICAL, command=self.options_canvas.yview)
+        self.options_canvas.configure(yscrollcommand=self.options_scroll.set)
+        self.options_frame = tk.Frame(self.options_canvas, bg="#f0f0f0")
+        self.options_window = self.options_canvas.create_window(
+            (0, 0),
+            window=self.options_frame,
+            anchor="nw",
+            tags="options_frame"
+        )
+        self.options_canvas.bind(
+            "<Configure>",
+            lambda e: [
+                self.options_canvas.configure(scrollregion=self.options_canvas.bbox("all")),
+                self.options_canvas.itemconfig("options_frame", width=e.width)
+            ]
+        )
+        # Bind mouse wheel scrolling (cross-platform)
+        self.options_canvas.bind("<Enter>", lambda e: self._bind_mousewheel())
+        self.options_canvas.bind("<Leave>", lambda e: self._unbind_mousewheel())
+
+
 
         # Output Directory Section
         self.output_dir = OUTPUT_DIR  # Default directory
@@ -116,17 +145,17 @@ class PCAAnalysisApp(tk.Tk):
                                            command=self.select_output_directory)
 
         # Intialize Custom components
-        self.load_file_box = LoadFileBox(self, self.app_state, bg="#f0f0f0")
-        self.clean_file_box = CleanFileBox(self, self.app_state, bg="#f0f0f0")
-        self.pca_box = PcaBox(self, self.app_state, bg="#f0f0f0")
-        self.biplot_box = BiplotBox(self, self.app_state, bg="#f0f0f0")
-        self.heatmap_box = HeatmapBox(self, bg="#f0f0f0")
+        self.load_file_box = LoadFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.pca_box = PcaBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.biplot_box = BiplotBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.heatmap_box = HeatmapBox(self.options_frame, bg="#f0f0f0")
 
         # Color Palette Selection
-        self.palette_label = tk.Label(self,
+        self.palette_label = tk.Label(self.options_frame,
                                       text="Select Color Palette:",
                                       bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.palette_menu = tk.OptionMenu(self,
+        self.palette_menu = tk.OptionMenu(self.options_frame,
                                           self.selected_palette,
                                           *COLOR_PALETTES.keys(),
                                           command=self.update_color_palette)
@@ -136,9 +165,6 @@ class PCAAnalysisApp(tk.Tk):
         self.focus_on_loadings = tk.BooleanVar(value=True)
 
         # Results Section
-        self.data_insight_label = tk.Label(self,
-                                         text="Data Insights Box:",
-                                         **LABEL_STYLE)
         self.data_insight_summary = tk.Text(self,
                                           height=8,
                                           width=50,
@@ -153,42 +179,41 @@ class PCAAnalysisApp(tk.Tk):
 
     def setup_layout(self):
         """Setup the layout of GUI components"""
-        # Adds plot 
-        self.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
-        self.canvas_widget = self.canvas.get_tk_widget()
-        self.canvas_widget.grid(
-            row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
-
         # Configure grid weights
-        self.grid_rowconfigure(0, weight=1)
-        self.grid_columnconfigure(2, weight=5)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_columnconfigure(1, weight=1)
+        for i in range(5):
+            self.grid_rowconfigure(i, weight=1)
+        self.grid_columnconfigure(0, weight=2)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=1)
+
+        # Adds plot and scrollable
+        self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nsew")
+        self.options_scroll.grid(row=0, column=1, rowspan=5, sticky="nsew")
+        self.plot_canvas_widget.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsew")
         
-        self.load_file_box.grid(row=0, column=0, padx=10, pady=10, columnspan=2, sticky="we")
-        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky="we")
-        self.pca_box.grid(row=2, column=0, padx=10, pady=10, columnspan=2, sticky="we")
-        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, columnspan=2, sticky="we")
-        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, columnspan=2, sticky="we")
-        
-        # Results Section
-        self.data_insight_label.grid(row=3, column=2, padx=5, pady=5, sticky="ew")
-        self.data_insight_summary.grid(row=3, column=2, padx=5, pady=5, sticky="ew")
+        # Sets up custom Components
+        self.load_file_box.grid(row=0, column=0, padx=10, pady=10, sticky="we")
+        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
+        self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
+        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
+        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
 
         # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
-        self.palette_menu.grid(row=7, column=1, padx=5, pady=5, sticky="w")
-
-        # Heatmap Section left over??? Probably to be fixed
-        self.output_dir_label.grid(row=8, column=0, columnspan=2, sticky="w", padx=5, pady=5)
-        self.output_dir_button.grid(row=8, column=2, padx=5, pady=5, sticky="e")
+        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.palette_menu.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        
+        # Results Section
+        self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
 
         # Save Button
-        self.save_button.grid(row=8, column=2, padx=5, pady=5)
+        self.save_button.grid(row=4, column=2, padx=5, pady=5, sticky="w")
 
-        # Configure remaining row weights
-        for i in range(31):
-            self.grid_rowconfigure(i, weight=1)
+        # Output Directory
+        self.output_dir_label.grid(row=4, column=3, padx=5, pady=5, sticky="w")
+        self.output_dir_button.grid(row=4, column=3, padx=5, pady=5, sticky="e")
+
+        
 
     
 
@@ -344,11 +369,11 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_figure(self):
         # Recreate canvas and add to GUI
-        self.app_state.main.canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
-        self.app_state.main.canvas.draw()
+        self.app_state.main.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
+        self.app_state.main.plot_canvas.draw()
 
-        self.app_state.main.canvas_widget = self.app_state.main.canvas.get_tk_widget()
-        self.app_state.main.canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
+        self.app_state.main.plot_canvas_widget = self.app_state.main.plot_canvas.get_tk_widget()
+        self.app_state.main.plot_canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
 
 
     #### 5. EVENT HANDLERS ####
@@ -365,11 +390,30 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
 
     def on_close(self):
-        if self.canvas:
-            self.canvas.get_tk_widget().destroy()
+        if self.plot_canvas:
+            self.plot_canvas.get_tk_widget().destroy()
         plt.close('all')
         self.destroy()
 
+    def _bind_mousewheel(self):
+        # Windows and macOS
+        self.options_canvas.bind_all("<MouseWheel>", self._on_mousewheel)
+        # Linux
+        self.options_canvas.bind_all("<Button-4>", self._on_mousewheel)
+        self.options_canvas.bind_all("<Button-5>", self._on_mousewheel)
+
+    def _unbind_mousewheel(self):
+        self.options_canvas.unbind_all("<MouseWheel>")
+        self.options_canvas.unbind_all("<Button-4>")
+        self.options_canvas.unbind_all("<Button-5>")
+
+    def _on_mousewheel(self, event):
+        if event.num == 4:  # Linux scroll up
+            self.options_canvas.yview_scroll(-1, "units")
+        elif event.num == 5:  # Linux scroll down
+            self.options_canvas.yview_scroll(1, "units")
+        else:  # Windows/macOS
+            self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
 
 # Start App

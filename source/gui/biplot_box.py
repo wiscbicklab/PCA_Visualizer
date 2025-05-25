@@ -80,6 +80,10 @@ class BiplotBox(tk.Frame):
                                              command=self.plot_top_features_loadings)
 
     def setup_layout(self):
+        # Configure component structure
+        self.columnconfigure(0, weight=1)
+        self.columnconfigure(1, weight=1)
+        
         # Banners
         self.biplot_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 

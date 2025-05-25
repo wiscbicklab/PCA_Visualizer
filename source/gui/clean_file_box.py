@@ -61,7 +61,7 @@ class CleanFileBox(tk.Frame):
         self.drop_label = tk.Label(self,
                                    text="Columns to Drop (comma-separated):",
                                    **LABEL_STYLE)
-        self.drop_entry = tk.Entry(self, width=30, **LABEL_STYLE)
+        self.drop_entry = tk.Entry(self, **LABEL_STYLE)
 
         # Data Cleaning Button
         self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, 
@@ -80,11 +80,11 @@ class CleanFileBox(tk.Frame):
         self.bbch_selector.grid(row=1, column=1, padx=5, pady=5, sticky="nswe")
 
         # Column Dropping Selector
-        self.drop_label.grid(row=2, column=0, padx=5, pady=5, sticky="nswe")
-        self.drop_entry.grid(row=2, column=1, padx=5, pady=5, sticky="nswe")
+        self.drop_label.grid(row=2, column=0, columnspan=2, padx=5, pady=5, sticky="nswe")
+        self.drop_entry.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky="nswe")
 
         # Data Cleaning Button
-        self.clean_bttn.grid(row=3, column=0, columnspan=2, padx=5, pady=5)
+        self.clean_bttn.grid(row=4, column=0, columnspan=2, padx=5, pady=5)
 
 
     #### 6. Data Handling ####

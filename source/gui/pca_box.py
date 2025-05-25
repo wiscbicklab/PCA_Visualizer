@@ -71,13 +71,13 @@ class PcaBox(tk.Frame):
         self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
                                     activebackground="#005f99", relief="flat")
         # Creates an entry box to let the user enter a custom Target
-        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=25, state="disabled")
+        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=22, state="disabled")
         self.target_mode.trace_add("write", self.toggle_entry)
 
 
         # Creates an input section for the Number of PCA Components
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
-        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key",
+        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, validate="key",
                                           validatecommand=self.vcmd_2_or_more,
                                           textvariable=self.app_state.num_pca_components)
         # Sets the default value and resets the box is left empty
@@ -86,7 +86,7 @@ class PcaBox(tk.Frame):
         
         # Creates and input section for the Number of features to include in the Biplot
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
-        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, validate="key", 
+        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, validate="key", 
                                     validatecommand=self.vcmd_pos_int,
                                     textvariable=self.app_state.top_n_feat)
         # Sets the default value and resets the box is left empty
@@ -95,7 +95,7 @@ class PcaBox(tk.Frame):
 
         # Creates and input section for the Distance between text labels on generated plots
         self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
-        self.text_dist_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=25, 
+        self.text_dist_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, 
                                             validate="key", validatecommand=self.vcmd_pos_num,
                                             textvariable=self.app_state.text_dist)
         # Sets the default value and resets the box is left empty
