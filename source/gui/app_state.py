@@ -18,10 +18,13 @@ class AppState:
         self.df_updated = tk.BooleanVar(main, value=False)
         self.df_cleaned = tk.BooleanVar(main, value=False)
 
-        # Variables for visualizing pca results
+        # PCA Results
         self.pca_results = None
-        self.feature_to_group = None
-        self.feature_groups_colors = None
+
+        # Variables for tracking feature mapping
+        self.mapping_uploaded = tk.BooleanVar(main, value=False)
+        self.feat_map = None
+        self.feat_colors = None
 
         # Variables to track user inputs from the GUI
         self.num_pca_components = tk.IntVar(main, value=2)

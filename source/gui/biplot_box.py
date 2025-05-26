@@ -4,16 +4,20 @@ import traceback
 from matplotlib import cm, pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib.figure import Figure
+from matplotlib.patches import Ellipse
 import pandas as pd
 import numpy as np
 import os, time
 
+from scipy import stats
 from sklearn.impute import SimpleImputer
 
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer
 from source.gui.app_state  import AppState
+
+from adjustText import adjust_text
 
 
 from source.utils.constant import *
@@ -30,9 +34,6 @@ class BiplotBox(tk.Frame):
         super().__init__(main, **kwargs)
 
         self.app_state = app_state
-
-        # Sets up visualization dependencies
-        self.biplot_visualizer = BiplotVisualizer()
 
         # Variables
         self.enable_feature_grouping = tk.BooleanVar(value=False)
@@ -105,6 +106,7 @@ class BiplotBox(tk.Frame):
     def create_scree_plot(self):
         """Create scree plot."""
         if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return
         
         try:
@@ -153,29 +155,137 @@ class BiplotBox(tk.Frame):
 
     def create_biplot(self):
         """Create biplot visualization."""
+        # Check for clean data
         if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return
         
+        # Check for feature mapping
+        if self.enable_feature_grouping.get() and not self.app_state.mapping_uploaded.get():
+            messagebox.showerror("Error", "Feature Groups is enabled, but a feature group has not been uploaded!")
+            return 
+        
+        # Ensures PCA has been run and gets results
+        self.app_state.main.run_analysis()
+        pca_results = self.app_state.pca_results
+        scores = pca_results['transformed_data']
+
+        # Gets user information for plot
+        num_feat = self.app_state.top_n_feat.get()
+        text_dist = self.app_state.text_dist.get()
+
+        # Calculates other need information based on the PCA Resulats
+        loading_magnitudes = np.sqrt(pca_results['loadings'][:, 0] ** 2 + pca_results['loadings'][:, 1] ** 2)
+        top_indices = np.argsort(loading_magnitudes)[::-1][:num_feat]
+        top_feat = self.app_state.df.columns[top_indices]
+        eigenvals = pca_results['explained_variance'][:2]
+
         try:
-            # Ensures PCA has been run
-            self.app_state.main.run_analysis()
-
-            # Delegate to BiplotVisualizer
-            biplot_visualizer = BiplotVisualizer(self.app_state.fig, self.app_state.ax)
-            biplot_visualizer.create_biplot(
-                pca_model=self.app_state.pca_results["model"],
-                x_standardized=self.app_state.pca_results['standardized_data'],
-                df=self.app_state.df,
-                feature_to_group=self.app_state.feature_to_group,
-                enable_feature_grouping=self.enable_feature_grouping.get(),
-                top_n=self.app_state.top_n_feat.get(),
-                text_dist=self.app_state.text_dist.get(),
-            )
-
-            # Apply clarity improvements
+            # Generates and configures plot appearance
+            self.app_state.fig = Figure()
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
             self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
             self.app_state.ax.set_facecolor('#f8f9fa')
+            self.app_state.ax.set_xlabel(f"PC1 ({pca_results['explained_variance'][0]:.1%} explained var.)")
+            self.app_state.ax.set_ylabel(f"PC2 ({pca_results['explained_variance'][1]:.1%} explained var.)")
+            self.app_state.ax.set_title(f"Biplot with Top {num_feat} Significant Features")
             self.app_state.ax.set_aspect('equal', adjustable='box')
+
+            # Calculate axis limits with margin
+            variance_scale = np.sqrt(eigenvals)
+            scaled_loadings = pca_results['loadings'][:, :2] * variance_scale
+            x_min, x_max = np.min(scaled_loadings[top_indices, 0]), np.max(scaled_loadings[top_indices, 0])
+            y_min, y_max = np.min(scaled_loadings[top_indices, 1]), np.max(scaled_loadings[top_indices, 1])
+            margin = 0.2 * max(x_max - x_min, y_max - y_min)  # 20% margin of the larger range
+            self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
+            self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
+
+
+            # Scatter plot for samples
+            self.app_state.ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
+
+            # Creates an elipse to represent confidence
+            confidence_ellipse = stats.chi2.ppf(0.95, df=2)
+            ellipse = Ellipse(
+                (0, 0),
+                width=2 * np.sqrt(eigenvals[0] * confidence_ellipse),
+                height=2 * np.sqrt(eigenvals[1] * confidence_ellipse),
+                alpha=0.1, color='gray', linestyle='--'
+            )
+            # Adds elipse to the figure
+            self.app_state.ax.add_patch(ellipse)
+
+            # Text annotations
+            texts = []
+
+            # Generates a generic color mapping if one hasn't been uploaded
+            if not self.app_state.mapping_uploaded.get():
+                colormap = cm.get_cmap('tab20', len(top_feat))
+                self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
+                self.app_state.feat_colors = {
+                    feature: to_hex(colormap(i)) for i, feature in enumerate(top_feat)
+                }
+
+            # Use the color mapping to add arrows to the plot
+            for idx in top_indices:
+                feature = pca_results['feature_names'][idx].lower()
+                magnitude = loading_magnitudes[idx]
+
+                if magnitude < 0.2:
+                    continue
+
+                group = self.app_state.feat_map.get(feature, feature)  # fallback to self-mapped feature if no mapping
+                color = self.app_state.feat_colors.get(group, '#333333')  # fallback color just in case
+
+                self.app_state.ax.quiver(
+                    0, 0,
+                    scaled_loadings[idx, 0],
+                    scaled_loadings[idx, 1],
+                    angles='xy',
+                    scale_units='xy',
+                    scale=1,
+                    color=color,
+                    alpha=0.8,
+                    width=0.005,
+                    headwidth=3,
+                    headlength=5
+                )
+
+                text = self.app_state.ax.text(
+                    scaled_loadings[idx, 0] * text_dist,
+                    scaled_loadings[idx, 1] * text_dist,
+                    feature,
+                    fontsize=10,
+                    color=color,
+                    ha='center',
+                    va='center'
+                )
+                texts.append(text)
+
+            
+            # Add legend for groups
+            for group, color in self.app_state.feat_colors.items():
+                self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
+            self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+
+            # Settings to control the text around arrows on the plot?
+            adjust_text(
+                texts,
+                arrowprops=dict(
+                    arrowstyle='->',
+                    color='gray',
+                    alpha=0.5,
+                    lw=0.5,
+                    shrinkA=5,  # Moves arrowhead away from text
+                    shrinkB=5  # Moves arrow tail away from origin
+                ),
+                force_text=1.5,  # Increased repulsion force to avoid overlaps
+                force_points=0.8,  # Avoid overlapping with points
+                expand_text=(1.5, 1.5),  # More spacing between labels
+                expand_points=(1.2, 1.2),  # Ensure spacing from points
+                lim=500  # Higher limit for iterations if overlaps persist
+            )
+
 
             # Updates the figure on the GUI
             self.app_state.main.update_figure()
@@ -271,14 +381,29 @@ class BiplotBox(tk.Frame):
             # Load the CSV into a DataFrame
             df = pd.read_csv(file_path)
 
-            # Load mapping
-            self.load_group_mapping(df)
+            # Validate input DataFrame
+            if 'Feature' not in df.columns.to_list() or 'Group' not in df.columns.to_list():
+                messagebox.showerror("Error", "Invalid Feature File, 'Feature' or 'Group' column not found")
+                return
 
-            # Pass mappings to the visualizer
-            self.biplot_visualizer.feature_to_group = self.biplot_manager.feature_to_group
-            self.biplot_visualizer.group_colors = self.biplot_manager.group_colors
+            # Create feature-to-group mapping and standardize to lowercase
+            self.app_state.feat_map = {
+                key.lower(): value for key, value in zip(df['Feature'], df['Group'])
+            }
+
+            # Get unique groups
+            unique_groups = sorted(df['Group'].unique())
+
+            # Generate a dynamic color palette for groups
+            colormap = cm.get_cmap('tab20', len(unique_groups))  # Use a colormap with sufficient distinct colors
+            self.app_state.feat_colors = {
+                group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
+            }
+
+            self.app_state.mapping_uploaded.set(True)
 
             messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
+        
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
@@ -296,8 +421,9 @@ class BiplotBox(tk.Frame):
                                 "Feature grouping is now enabled. Please upload a mapping file.")
         else:
             # Disable the mapping upload button and reset group-related variables
-            self.feature_to_group = None
-            self.feature_groups_colors = None
+            self.app_state.mapping_uploaded.set(False)
+            self.app_state.feat_map = None
+            self.app_state.feat_colors = None
 
             # Clear results or mapping display
             if hasattr(self, 'feature_results_summary') and self.feature_results_summary is not None:
@@ -350,28 +476,6 @@ class BiplotBox(tk.Frame):
             messagebox.showerror("Error", f"Error processing loadings: {str(e)}")
             return None, None
         
-    def load_group_mapping(self, df):
-        """
-        Load feature-to-group mapping from a DataFrame.
-
-        :param df: DataFrame with columns 'Feature' and 'Group'.
-        """
-        # Validate input DataFrame
-        if 'Feature' not in df.columns or 'Group' not in df.columns:
-            raise ValueError("Mapping CSV must contain 'Feature' and 'Group' columns.")
-
-        # Create feature-to-group mapping and standardize to lowercase
-        self.feature_to_group = {key.lower(): value for key, value in zip(df['Feature'], df['Group'])}
-
-        # Get unique groups
-        unique_groups = sorted(df['Group'].unique())
-
-        # Generate a dynamic color palette for groups
-        colormap = cm.get_cmap('tab10', len(unique_groups))  # Use a colormap with sufficient distinct colors
-        self.group_colors = {
-            group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
-        }
-
 
 
 

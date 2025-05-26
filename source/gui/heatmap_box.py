@@ -92,7 +92,8 @@ class HeatmapBox(tk.Frame):
 
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
-        if not self.df_clean:
+        if not self.df_cleaned:
+            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return
         
         try:
