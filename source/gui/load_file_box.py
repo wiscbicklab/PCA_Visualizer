@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import  messagebox
 
+from matplotlib.figure import Figure
+
 import source.utils.file_operations as file_ops
 from source.utils.constant import *
 
@@ -68,6 +70,11 @@ class LoadFileBox(tk.Frame):
         self.app_state.df_updated = True
         self.app_state.df_loaded = True
         self.app_state.df_cleaned = False
+
+        # Generate new Blank figure
+        self.app_state.fig = Figure()
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
+        self.app_state.ax.grid(True)
         
         # Tells the container Widget do update the displayed data
         self.app_state.main.update_data_info()

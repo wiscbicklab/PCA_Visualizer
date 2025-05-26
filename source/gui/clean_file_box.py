@@ -94,6 +94,8 @@ class CleanFileBox(tk.Frame):
         if not self.app_state.df_loaded:
             messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return  
+        
+        print(self.app_state.df_loaded)
             
         try:
             # Convert int64 to float for PCA compatibility
@@ -143,6 +145,12 @@ class CleanFileBox(tk.Frame):
             # Update Varibales tracking df status
             self.app_state.df_updated = True
             self.app_state.df_cleaned = True
+
+            # Generate new Blank figure
+            self.app_state.fig = Figure()
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
+            self.app_state.ax.grid(True)
+
             # Tells the container Widget do update the displayed data
             self.app_state.main.update_data_info()
 

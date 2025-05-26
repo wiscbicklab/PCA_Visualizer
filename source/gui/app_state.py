@@ -34,8 +34,7 @@ class AppState:
         # Variables for tracking the figure
         self.fig = Figure()
         self.ax = self.fig.add_subplot(111)
-        # Adds a grid to the figure
         self.ax.grid(True)
 
         # Holds PCA Results
-        self.pca_results
+        self.pca_results = None

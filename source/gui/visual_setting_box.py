@@ -13,7 +13,7 @@ from source.gui.app_state  import AppState
 from source.utils.constant import *
 
 
-class PcaBox(tk.Frame):
+class visual_setting_Box(tk.Frame):
     """
     Creates a space for PCA options
     """

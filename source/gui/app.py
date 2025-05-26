@@ -25,7 +25,7 @@ from source.utils.helpers import generate_color_palette
 # Components Imports
 from source.gui.load_file_box import LoadFileBox
 from source.gui.clean_file_box import CleanFileBox
-from source.gui.pca_box import PcaBox
+from source.gui.visual_setting_box import visual_setting_Box
 from source.gui.biplot_box import BiplotBox
 from source.gui.heatmap_box import HeatmapBox
 from source.gui.app_state  import AppState
@@ -99,7 +99,7 @@ class PCAAnalysisApp(tk.Tk):
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
-        self.minsize(1300, 700)
+        self.minsize(1200, 700)
 
     def create_widgets(self):
         """Create all widgets"""
@@ -147,7 +147,7 @@ class PCAAnalysisApp(tk.Tk):
         # Intialize Custom components
         self.load_file_box = LoadFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
         self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.pca_box = PcaBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.pca_box = visual_setting_Box(self.options_frame, self.app_state, bg="#f0f0f0")
         self.biplot_box = BiplotBox(self.options_frame, self.app_state, bg="#f0f0f0")
         self.heatmap_box = HeatmapBox(self.options_frame, bg="#f0f0f0")
 
@@ -190,7 +190,7 @@ class PCAAnalysisApp(tk.Tk):
         # Adds plot and scrollable
         self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nswe")
         self.options_scroll.grid(row=0, column=1, rowspan=5, sticky="nsew")
-        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsw")
+        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
         self.load_file_box.grid(row=0, column=0, padx=10, pady=10, sticky="we")
@@ -306,14 +306,8 @@ class PCAAnalysisApp(tk.Tk):
             # Update the results summary box
             self.data_insight_summary.delete(1.0, tk.END)
             self.data_insight_summary.insert(tk.END, info_text)
-            
-            # Generate new Blank figure
-            old_figsize = self.app_state.fig.get_size_inches()
-            self.app_state.fig = Figure(figsize=old_figsize)
-            self.app_state.ax = self.app_state.fig.add_subplot(111)
-            self.app_state.ax.grid(True)
 
-            self.app_state.main.update_figure() 
+            self.update_figure()
 
     def update_results_display(self, results: dict):
         """Update results display with simplified formatting."""
@@ -368,10 +362,9 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
-
     def update_figure(self):
-        # Destroy old canvas widget if it exists
-        self.app_state.main.plot_canvas_figure.delete("all")
+        # Destroy old canvas
+        self.app_state.main.plot_canvas_figure.destroy()
 
         # Create new canvas with updated figure
         self.app_state.main.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
@@ -379,7 +372,7 @@ class PCAAnalysisApp(tk.Tk):
 
         # Get the Tkinter widget and add it to the grid
         self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
-        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsw")
+        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
 
 
 
@@ -421,6 +414,9 @@ class PCAAnalysisApp(tk.Tk):
             self.options_canvas.yview_scroll(1, "units")
         else:  # Windows/macOS
             self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
+
+
+        
 
 
 # Start App

@@ -3,6 +3,7 @@ from tkinter import filedialog, messagebox
 import traceback
 from matplotlib import cm, pyplot as plt
 from matplotlib.colors import to_hex
+from matplotlib.figure import Figure
 import pandas as pd
 import numpy as np
 import os, time
@@ -110,8 +111,13 @@ class BiplotBox(tk.Frame):
             # Ensures PCA has been run
             self.app_state.main.run_analysis()
 
-            # Create scree plot - exact match to original
+            # Get the explained varience
             explained_variance = self.app_state.pca_results["explained_variance"]
+            
+            # Create scree plot - exact match to original
+            old_figsize = self.app_state.fig.get_size_inches()
+            self.app_state.fig = Figure()
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
 
             # Remove the old plot
             self.app_state.ax.clear()
