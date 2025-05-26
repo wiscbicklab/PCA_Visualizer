@@ -26,6 +26,8 @@ class visual_setting_Box(tk.Frame):
         # Sets the PCA analysis Target
         self.target_mode = tk.StringVar()
         self.target_mode.set("None")  # Default option
+        self.custom_target = tk.StringVar()
+        self.custom_target.set("")
 
         # Banner
         self.banner = None
@@ -68,10 +70,21 @@ class visual_setting_Box(tk.Frame):
         self.target_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
         target_options = ["None", "bbch", "Input Specific Target"]
         self.target_dropdown = tk.OptionMenu(self, self.target_mode, *target_options)
-        self.target_dropdown.config(font=LABEL_STYLE["font"], bg="#007ACC", fg="white",
-                                    activebackground="#005f99", relief="flat")
+        self.target_dropdown.config(
+            font=LABEL_STYLE["font"],
+            bg="#007ACC",
+            fg="white",
+            activebackground="#005f99",
+            relief="flat"
+        )
         # Creates an entry box to let the user enter a custom Target
-        self.custom_target_entry = tk.Entry(self, **LABEL_STYLE, width=22, state="disabled")
+        self.custom_target_entry = tk.Entry(
+            self,
+            textvariable=self.custom_target,
+            **LABEL_STYLE,
+            width=22,
+            state="disabled"
+        )
         self.target_mode.trace_add("write", self.toggle_entry)
 
 
@@ -191,6 +204,21 @@ class visual_setting_Box(tk.Frame):
             return  
         
         try:
+            # Gets the user selected target variable
+            target_mode = self.target_mode.get().strip().lower()
+
+            if target_mode == "none":
+                target = None
+            elif target_mode == "bbch":
+                target = "bbch"
+            elif target_mode == "input specific target":
+                target = self.custom_target.get()
+                if not target or target.isspace():
+                    messagebox.showerror("Error", f"You must enter a target variable!")
+                    return
+                if target not in self.app_state.df.columns.to_list():
+                    messagebox.showerror("Error", f"Target variable '{target}' not found in the dataset!")
+                    return
             
             # Creats a new figure and ax with labels and grid
             self.app_state.fig = Figure()
@@ -199,17 +227,6 @@ class visual_setting_Box(tk.Frame):
             self.app_state.ax.set_ylabel("Principal Component 2")
             self.app_state.ax.set_title("PCA Visualization")
             self.app_state.ax.grid(True)
-
-            # Gets the user selected target variable
-            target_mode=self.target_mode.get().strip().lower()
-            if target_mode == "none":
-                target = None
-            elif target_mode not in self.app_state.df.columns:
-                raise ValueError(f"Target variable '{target_mode}' not found in the dataset.")
-            elif target_mode == "input specific target" and not target:
-                raise ValueError("Please enter a target variable.")
-            elif target_mode == "bbch":
-                target = "bbch"
            
             # Runs PCA Analysis and get important results
             self.app_state.main.run_analysis()
