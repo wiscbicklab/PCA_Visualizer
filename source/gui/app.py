@@ -66,7 +66,7 @@ class PCAAnalysisApp(tk.Tk):
 
         # Declare space for the figure to be stored
         self.plot_canvas = None
-        self.plot_canvas_widget = None
+        self.plot_canvas_figure = None
 
         # Results Section
         self.data_insight_summary = None
@@ -105,7 +105,7 @@ class PCAAnalysisApp(tk.Tk):
         """Create all widgets"""
 
         self.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
-        self.plot_canvas_widget = self.plot_canvas.get_tk_widget()
+        self.plot_canvas_figure = self.plot_canvas.get_tk_widget()
 
         # Sets up scrollable window
         self.options_canvas = tk.Canvas(self)
@@ -188,9 +188,9 @@ class PCAAnalysisApp(tk.Tk):
         self.grid_columnconfigure(3, weight=1)
 
         # Adds plot and scrollable
-        self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nsew")
+        self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nswe")
         self.options_scroll.grid(row=0, column=1, rowspan=5, sticky="nsew")
-        self.plot_canvas_widget.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsew")
+        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsw")
         
         # Sets up custom Components
         self.load_file_box.grid(row=0, column=0, padx=10, pady=10, sticky="we")
@@ -308,7 +308,8 @@ class PCAAnalysisApp(tk.Tk):
             self.data_insight_summary.insert(tk.END, info_text)
             
             # Generate new Blank figure
-            self.app_state.fig = Figure()
+            old_figsize = self.app_state.fig.get_size_inches()
+            self.app_state.fig = Figure(figsize=old_figsize)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
             self.app_state.ax.grid(True)
 
@@ -367,13 +368,19 @@ class PCAAnalysisApp(tk.Tk):
             self.custom_target_entry.delete(0, tk.END)
             self.custom_target_entry.config(state="disabled")
 
+
     def update_figure(self):
-        # Recreate canvas and add to GUI
+        # Destroy old canvas widget if it exists
+        self.app_state.main.plot_canvas_figure.delete("all")
+
+        # Create new canvas with updated figure
         self.app_state.main.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
         self.app_state.main.plot_canvas.draw()
 
-        self.app_state.main.plot_canvas_widget = self.app_state.main.plot_canvas.get_tk_widget()
-        self.app_state.main.plot_canvas_widget.grid(row=0, column=2, rowspan=3, padx=10, pady=10, sticky="new")
+        # Get the Tkinter widget and add it to the grid
+        self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
+        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nsw")
+
 
 
     #### 5. EVENT HANDLERS ####
