@@ -63,13 +63,13 @@ class LoadFileBox(tk.Frame):
         # Show Error message and set df status variables if the file failed to load
         if self.app_state.df is None or self.app_state.df.empty:
             messagebox.showerror("Error", "Failed to load file!")
-            self.app_state.df_loaded = False
-            self.app_state.df_cleaned = False
+            self.app_state.df_loaded.set(False)
+            self.app_state.df_cleaned.set(False)
             return
 
-        self.app_state.df_updated = True
-        self.app_state.df_loaded = True
-        self.app_state.df_cleaned = False
+        self.app_state.df_updated.set(True)
+        self.app_state.df_loaded.set(True)
+        self.app_state.df_cleaned.set(False)
 
         # Generate new Blank figure
         self.app_state.fig = Figure()

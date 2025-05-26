@@ -91,11 +91,9 @@ class CleanFileBox(tk.Frame):
 
     def clean_data(self):
         """Clean the data and prepare it for PCA analysis."""
-        if not self.app_state.df_loaded:
+        if not self.app_state.df_loaded.get():
             messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return  
-        
-        print(self.app_state.df_loaded)
             
         try:
             # Convert int64 to float for PCA compatibility
@@ -143,8 +141,8 @@ class CleanFileBox(tk.Frame):
                 self.app_state.df = pd.DataFrame(x_imputed, columns=self.app_state.df.columns)
             
             # Update Varibales tracking df status
-            self.app_state.df_updated = True
-            self.app_state.df_cleaned = True
+            self.app_state.df_updated.set(True)
+            self.app_state.df_cleaned.set(True)
 
             # Generate new Blank figure
             self.app_state.fig = Figure()

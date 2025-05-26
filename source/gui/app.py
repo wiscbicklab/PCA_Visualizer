@@ -213,6 +213,7 @@ class PCAAnalysisApp(tk.Tk):
         self.output_dir_label.grid(row=4, column=3, padx=5, pady=5, sticky="w")
         self.output_dir_button.grid(row=4, column=3, padx=5, pady=5, sticky="e")
 
+
         
 
     
@@ -222,7 +223,7 @@ class PCAAnalysisApp(tk.Tk):
     def run_analysis(self):
         """Execute PCA analysis."""
         # Skip analysis if data isn't cleaned or if data has not changed
-        if not self.app_state.df_cleaned or not self.app_state.df_updated:
+        if not self.app_state.df_cleaned.get() or not self.app_state.df_updated.get():
             return
 
         try:
@@ -236,7 +237,7 @@ class PCAAnalysisApp(tk.Tk):
             self.update_results_display(self.app_state.pca_results)
 
             # Update df status variables
-            self.app_state.df_updated = False
+            self.app_state.df_updated.set(False)
 
         except ValueError as ve:
             messagebox.showerror("Analysis Error", str(ve))
@@ -291,7 +292,7 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_data_info(self):
         """Update display with simplified data information."""
-        if self.app_state.df_loaded:
+        if self.app_state.df_loaded.get():
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"

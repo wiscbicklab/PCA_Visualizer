@@ -104,7 +104,7 @@ class BiplotBox(tk.Frame):
 
     def create_scree_plot(self):
         """Create scree plot."""
-        if not self.app_state.df_cleaned:
+        if not self.app_state.df_cleaned.get():
             return
         
         try:
@@ -153,7 +153,7 @@ class BiplotBox(tk.Frame):
 
     def create_biplot(self):
         """Create biplot visualization."""
-        if not self.app_state.df_cleaned:
+        if not self.app_state.df_cleaned.get():
             return
         
         try:
@@ -187,7 +187,7 @@ class BiplotBox(tk.Frame):
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
-        if not self.app_state.df_cleaned:
+        if not self.app_state.df_cleaned.get():
             return
 
         # Ensures PCA has been run
@@ -216,7 +216,7 @@ class BiplotBox(tk.Frame):
 
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
-        if not self.app_state.df_cleaned:
+        if not self.app_state.df_cleaned.get():
             return
         
         try:

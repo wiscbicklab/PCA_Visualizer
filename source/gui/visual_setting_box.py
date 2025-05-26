@@ -141,7 +141,7 @@ class visual_setting_Box(tk.Frame):
             return True 
         # Allows user to enter digits
         elif proposed_value.isdigit() and int(proposed_value) >= 2:
-            self.app_state.df_updated = True
+            self.app_state.df_updated.set(True)
             return True
         return False
 
@@ -151,7 +151,7 @@ class visual_setting_Box(tk.Frame):
             return True 
         # Allows user to enter digits
         elif proposed_value.isdigit() and int(proposed_value) > 0:
-            self.app_state.df_updated = True
+            self.app_state.df_updated.set(True)
             return True
         return False
     
@@ -179,16 +179,19 @@ class visual_setting_Box(tk.Frame):
         if current_value == "" or float(current_value) == 0.0:
             widget.delete(0, tk.END)
             widget.insert(0, default_value)
-            self.app_state.df_updated = True
+            self.app_state.df_updated.set(True)
 
 
     #### 6. Data Handling ####
 
     def visualize_pca(self):
         """Creates a PCA visualization based on the given inputs and updates GUI plot"""
+        if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be cleaned in order to run PCA!")
+            return  
+        
         try:
-            if not self.app_state.df_cleaned:
-                raise Exception("Data Must be cleaned first")
+            
             # Creats a new figure and ax with labels and grid
             self.app_state.fig = Figure()
             self.app_state.ax = self.app_state.fig.add_subplot(111)
