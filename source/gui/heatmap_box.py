@@ -1,13 +1,14 @@
 import tkinter as tk
-from tkinter import filedialog, messagebox
+from tkinter import messagebox
 import traceback
-import pandas as pd
+from matplotlib.figure import Figure
+import seaborn as sns
 import numpy as np
+import matplotlib.pyplot as plt
 
 from sklearn.impute import SimpleImputer
 
-from source.visualization.biplot import InteractiveBiplotVisualizer
-
+from source.gui.app_state import AppState
 from source.utils.constant import *
 
 
@@ -16,8 +17,9 @@ class HeatmapBox(tk.Frame):
     
     """
 
-    def __init__(self, main=None, **kwargs):
+    def __init__(self, main, app_state: AppState, **kwargs):
         super().__init__(main, **kwargs)
+        self.app_state = app_state
 
         self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
 
@@ -94,10 +96,10 @@ class HeatmapBox(tk.Frame):
         
         try:
             # Ensures PCA has been run
-            self.run_analysis()
+            self.app_state.main.run_analysis()
 
             # Reset the canvas
-            self.reset_canvas()
+            self.init_fig()
 
             # Retrieve heatmap mode (e.g., from a dropdown)
             heatmap_mode = self.heatmap_mode_var.get()  # Ensure the actual value is retrieved
@@ -105,16 +107,15 @@ class HeatmapBox(tk.Frame):
                 raise ValueError("Heatmap mode is not defined.")
 
             # Calculate PCA loadings
-            loadings = self.pca_results["model"].components_.T
+            loadings = self.app_state.pca_results["loadings"]
 
             # Determine focus columns
             focus_columns = self.get_focus_columns(heatmap_mode, focus_entry=self.focus_entry.get())
 
             # Create and display heatmap
-            heatmap_visualizer = LoadingsHeatmapVisualizer(self.fig, self.ax)
-            heatmap_visualizer.display_loadings_heatmap(
+            self.display_loadings_heatmap(
                 loadings=loadings,
-                data_columns=self.df.columns.tolist(),
+                data_columns=self.app_state.df.columns.tolist(),
                 focus_columns=focus_columns,
                 cmap="coolwarm"
             )
@@ -126,18 +127,43 @@ class HeatmapBox(tk.Frame):
             print(error_str)
             messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
 
-    def reset_canvas(self):
+    def init_fig(self):
         """Clear the canvas and reinitialize the figure and axes."""
-        if self.fig is None or self.ax is None:
-            self.initialize_matplotlib()  # Reinitialize if needed
+        self.app_state.fig = Figure(self.app_state.fig_size)
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
 
-        # Clear the entire figure
-        self.fig.clear()
+        self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
+        self.app_state.ax.tick_params(axis='x', labelsize=12)
+        self.app_state.ax.tick_params(axis='y', labelsize=10)
+        self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
+        self.app_state.ax.set_ylabel('Features', fontsize=14)
 
-        # Create a fresh subplot
-        self.ax = self.fig.add_subplot(111)
 
-        # Update the canvas to use the cleared figure
-        self.canvas.figure = self.fig
-        self.canvas.draw()
+    def display_loadings_heatmap(self, loadings, data_columns, focus_columns=None, cmap='viridis'):
+        """
+        Display a heatmap of loadings with improved design.
+        :param loadings: PCA loadings matrix
+        :param data_columns: List of all data column names
+        :param focus_columns: List of columns to focus on (optional)
+        :param cmap: Colormap for heatmap
+        """
+        if focus_columns is None:
+            focus_columns = data_columns  # Default to all columns if none specified
+
+        # Select only the relevant rows from the loadings matrix
+        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
+
+        # Create the heatmap
+        plt.figure(figsize=(10, 12))  # Increase figure size for clarity
+        sns.heatmap(
+            selected_loadings,
+            annot=True,  # Add annotations to cells
+            fmt=".2f",  # Format numbers
+            cmap=cmap,  # Use perceptually uniform colormap
+            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
+            xticklabels=[f'PC{i + 1}' for i in range(selected_loadings.shape[1])],
+            yticklabels=focus_columns,
+            ax=self.app_state.ax
+        )
+
 
