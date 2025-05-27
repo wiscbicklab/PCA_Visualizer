@@ -57,9 +57,8 @@ class visual_setting_Box(tk.Frame):
 
     def create_components(self):
         # Creates Validation commands for the text boxes
-        self.vcmd_2_or_more = (self.register(self.validate_2_or_more), '%P')
-        self.vcmd_pos_int = (self.register(self.validate_pos_int), '%P')
-        self.vcmd_pos_num = (self.register(self.validate_pos_num), '%P')
+        self.vcmd_int = (self.register(self.validate_int), '%P')
+        self.vcmd_non_neg_float = (self.register(self.validate_non_neg_float), '%P')
 
         # Creates the Banner
         self.banner = tk.Label(self, text="Visualize PCA", font=("Helvetica", 12),
@@ -90,36 +89,44 @@ class visual_setting_Box(tk.Frame):
 
         # Creates an input section for the Number of PCA Components
         self.components_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
-        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, validate="key",
-                                          validatecommand=self.vcmd_2_or_more,
+        self.components_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, 
+                                         validate="key", validatecommand=self.vcmd_int,
                                           textvariable=self.app_state.num_pca_components)
-        # Sets the default value and resets the box is left empty
-        self.components_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.components_entry, "2", "num_pca_components"))
+        # Sets the default value and entry and exit behavior
+        self.components_entry.bind("<FocusOut>",
+                                   lambda e: self.on_entry_exit(self.components_entry, "2", "num_pca_components"))
+        self.components_entry.bind("<FocusIn>",
+                                   lambda e: self.on_entry_enter(self.components_entry))
 
         
         # Creates and input section for the Number of features to include in the Biplot
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
-        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, validate="key", 
-                                    validatecommand=self.vcmd_pos_int,
+        self.top_n_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, 
+                                    validate="key", validatecommand=self.vcmd_int,
                                     textvariable=self.app_state.top_n_feat)
-        # Sets the default value and resets the box is left empty
-        self.top_n_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.top_n_entry, "10", "top_n_feat"))
+        # Sets the default value and entry and exit behavior
+        self.top_n_entry.bind("<FocusOut>",
+                              lambda e: self.on_entry_exit(self.top_n_entry, "10", "top_n_feat"))
+        self.top_n_entry.bind("<FocusIn>",
+                                   lambda e: self.on_entry_enter(self.top_n_entry))
 
 
         # Creates and input section for the Distance between text labels on generated plots
         self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
         self.text_dist_entry = tk.Entry(self, font=LABEL_STYLE["font"], width=22, 
-                                            validate="key", validatecommand=self.vcmd_pos_num,
+                                            validate="key", validatecommand=self.vcmd_non_neg_float,
                                             textvariable=self.app_state.text_dist)
-        # Sets the default value and resets the box is left empty
-        self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_entry_exit(self.text_dist_entry, "1.1", "text_dist"))
+        # Sets the default value and entry and exit behavior
+        self.text_dist_entry.bind("<FocusOut>",
+                                  lambda e: self.on_entry_exit(self.text_dist_entry, "1.1", "text_dist"))
+        self.text_dist_entry.bind("<FocusIn>",
+                                   lambda e: self.on_entry_enter(self.text_dist_entry))
 
 
         # Visualization button
         self.button = tk.Button(self, text="Visualize PCA", **BUTTON_STYLE, 
                                 command=self.visualize_pca)
         
-
     def setup_layout(self):
         # Configure component structure
         self.columnconfigure(0, weight=1)
@@ -148,38 +155,40 @@ class visual_setting_Box(tk.Frame):
 
     #### 5. EVENT HANDLERS ####
 
-    def validate_2_or_more(self, proposed_value):
+    def validate_int(self, proposed_value):
         # Allow user to clear input
-        if proposed_value == "":
+        if proposed_value == "" or proposed_value.isdigit():
             return True 
-        # Allows user to enter digits
-        elif proposed_value.isdigit() and int(proposed_value) >= 2:
-            self.app_state.df_updated.set(True)
-            return True
-        return False
-
-    def validate_pos_int(self, proposed_value):
-        # Allow user to clear input
-        if proposed_value == "":
-            return True 
-        # Allows user to enter digits
-        elif proposed_value.isdigit() and int(proposed_value) > 0:
-            self.app_state.df_updated.set(True)
-            return True
         return False
     
-    def validate_pos_num(self, proposed_value):
-        # Allow user to clear input
-        if proposed_value == "":
-            return True 
-        # Allows user to enter float 0 or greater 
+    def validate_non_neg_float(self, proposed_value):
         try:
-            value = float(proposed_value)
-            if value >= 0:
+            if proposed_value == "" or float(proposed_value) >= 0:
                 return True
-        except ValueError:
-            pass
+        except Exception: pass
         return False
+    
+    def on_entry_enter(self, widget):
+        self.original_value = float(widget.get().strip())
+
+
+    def on_entry_exit(self, widget, default_value, attr_name):
+        current_value = widget.get().strip()
+        if attr_name == "num_pca_components":
+            min_value = 1.9
+        elif attr_name == "top_n_feat":
+            min_value = 0.9
+        else:
+            min_value = 0.0
+
+        if current_value == "" or float(current_value) <= min_value:
+            widget.delete(0, tk.END)
+            widget.insert(0, default_value)
+            current_value = default_value
+        
+        if float(current_value) != self.original_value:
+            self.app_state.df_updated.set(True)
+
     
     def toggle_entry(self, *args):
         if self.target_mode.get() == "Input Specific Target":
@@ -187,12 +196,7 @@ class visual_setting_Box(tk.Frame):
         else:
             self.custom_target_entry.config(state="disabled")
 
-    def on_entry_exit(self, widget, default_value, attr_name):
-        current_value = widget.get().strip()
-        if current_value == "" or float(current_value) == 0.0:
-            widget.delete(0, tk.END)
-            widget.insert(0, default_value)
-            self.app_state.df_updated.set(True)
+    
 
 
     #### 6. Data Handling ####
