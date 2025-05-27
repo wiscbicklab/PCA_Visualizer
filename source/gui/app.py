@@ -367,6 +367,9 @@ class PCAAnalysisApp(tk.Tk):
         # Destroy old canvas
         self.app_state.main.plot_canvas_figure.destroy()
 
+        # Adjusts Layout to avoid cutoff
+        self.app_state.fig.tight_layout()
+
         # Create new canvas with updated figure
         self.app_state.main.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self.app_state.main)
         self.app_state.main.plot_canvas.draw()
