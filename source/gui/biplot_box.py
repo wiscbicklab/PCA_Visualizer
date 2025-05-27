@@ -1,3 +1,5 @@
+import os
+import time
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import traceback
@@ -7,14 +9,12 @@ from matplotlib.figure import Figure
 from matplotlib.patches import Ellipse
 import pandas as pd
 import numpy as np
-import os, time
+import plotly.graph_objects as go
+import plotly.io
+
 
 from scipy import stats
-from sklearn.impute import SimpleImputer
 
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-from source.visualization.biplot import BiplotVisualizer, InteractiveBiplotVisualizer
 from source.gui.app_state  import AppState
 
 from adjustText import adjust_text
@@ -155,7 +155,8 @@ class BiplotBox(tk.Frame):
             if not self.init_biplot_fig(variance, num_feat): return 
             
             # Calculate axis limits with margin
-            scaled_loadings = self.set_axis_limits(eigenvals, loadings, top_idx)
+            scaled_loadings = self.scale_loadings(eigenvals, loadings)
+            self.set_biplot_axis_limits(scaled_loadings, top_idx)
 
             # Scatter plot for samples
             self.app_state.ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
@@ -184,27 +185,27 @@ class BiplotBox(tk.Frame):
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
-        if not self.app_state.df_cleaned.get():
-            return
+        # Runs PCA analysis and gets relavent values
+        scores, loadings, variance, eigenvals, feat_names = self.get_pca_data()
 
-        # Ensures PCA has been run
-        self.app_state.main.run_analysis()
+        # Calculates other need information based on the PCA Resulats
+        top_idx, loading_magnitudes, num_feat = self.get_top_pca_features(loadings)
+        top_feat = self.app_state.df.columns[top_idx]
 
         try:
-            interactive_visualizer = InteractiveBiplotVisualizer()
-            fig = interactive_visualizer.create_interactive_biplot(
-                pca_model=self.app_state.pca_results["model"],
-                x_standardized=self.app_state.pca_results["standardized_data"],
-                data=self.app_state.df,
-                top_n_entry=self.app_state.top_n_feat,  # Replace with actual entry for top N
-                text_distance_entry=self.app_state.text_dist,  # Replace with actual entry for text distance
-                enable_feature_grouping=self.enable_feature_grouping.get(),
-                feature_to_group=self.feature_to_group,
-            )
+            self.app_state.fig = go.Figure()
 
-            save_path = interactive_visualizer.save_interactive_biplot(fig, OUTPUT_DIR)
-            messagebox.showinfo("Success", f"Interactive biplot saved at {save_path}")
+            # Calculate axis limits with margin
+            scaled_loadings = self.scale_loadings(eigenvals, loadings)
 
+            self.add_interactive_biplot_groups(top_feat, top_idx, feat_names, loading_magnitudes, scaled_loadings)
+
+            self.add_biplot_interactivity(top_idx, loading_magnitudes)
+            
+            self.update_interactie_biplot_layout(variance)
+
+            file_name = self.save_interactive_plot()
+            messagebox.showinfo("Sucess", f"Interactive pca plot sucessfully created: {file_name}")
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -320,15 +321,15 @@ class BiplotBox(tk.Frame):
 
             messagebox.showinfo("Feature Grouping Disabled", "Feature grouping has been disabled.")
 
-    def set_axis_limits(self, eigenvals, loadings, top_idx):
-        variance_scale = np.sqrt(eigenvals)
-        scaled_loadings = loadings[:, :2] * variance_scale
-        x_min, x_max = np.min(scaled_loadings[top_idx, 0]), np.max(scaled_loadings[top_idx, 0])
-        y_min, y_max = np.min(scaled_loadings[top_idx, 1]), np.max(scaled_loadings[top_idx, 1])
-        margin = 0.2 * max(x_max - x_min, y_max - y_min)  # 20% margin of the larger range
-        self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
-        self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
-        return scaled_loadings
+    def init_scree_fig(self):
+        # Create scree plot - exact match to original
+        self.app_state.fig = Figure(self.app_state.fig_size)
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
+
+        # Labels and title - exact match
+        self.app_state.ax.set_xlabel('Principal Component Index')
+        self.app_state.ax.set_ylabel('Explained Variance Ratio')
+        self.app_state.ax.set_title('Scree Plot')
 
     def init_biplot_fig(self, explained_variance, num_features):
         try:
@@ -344,19 +345,22 @@ class BiplotBox(tk.Frame):
             return True
         except Exception:
             return False
-        
+
+    def set_biplot_axis_limits(self, scaled_loadings, top_idx):
+        x_min, x_max = np.min(scaled_loadings[top_idx, 0]), np.max(scaled_loadings[top_idx, 0])
+        y_min, y_max = np.min(scaled_loadings[top_idx, 1]), np.max(scaled_loadings[top_idx, 1])
+        margin = 0.2 * max(x_max - x_min, y_max - y_min)  # 20% margin of the larger range
+        self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
+        self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
+        return scaled_loadings
+
     def add_biplot_arrows(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings):
         # Text annotations
         texts = []
-        print("Starting color mapping")
+
         # Generates a generic color mapping if one hasn't been uploaded
-        if not self.app_state.mapping_uploaded.get():
-            colormap = cm.get_cmap('tab20', len(top_feat))
-            self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
-            self.app_state.feat_colors = {
-                feature: to_hex(colormap(i)) for i, feature in enumerate(top_feat)
-            }
-        print("Finished Color mapping")
+        feat_map, feat_colors = self.get_color_mapping(top_feat)
+
         # Use the color mapping to add arrows to the plot
         for idx in top_idx:
             feature = feat_names[idx]
@@ -365,8 +369,8 @@ class BiplotBox(tk.Frame):
             if magnitude < 0.2:
                 continue
 
-            group = self.app_state.feat_map.get(feature, feature)  # fallback to self-mapped feature if no mapping
-            color = self.app_state.feat_colors.get(group, '#333333')  # fallback color just in case
+            group = feat_map.get(feature)
+            color = feat_colors.get(group)
 
             self.app_state.ax.quiver(
                 0, 0,
@@ -395,7 +399,7 @@ class BiplotBox(tk.Frame):
                 va='center'
             )
             texts.append(text)
-        print("Loop completed")
+
         # Settings to control the text around arrows on the plot?
         adjust_text(
             texts,
@@ -413,17 +417,95 @@ class BiplotBox(tk.Frame):
             expand_points=(1.2, 1.2),  # Ensure spacing from points
             lim=500  # Higher limit for iterations if overlaps persist
         )
-        print("Text Adjusted")
 
-    def init_scree_fig(self):
-        # Create scree plot - exact match to original
-        self.app_state.fig = Figure(self.app_state.fig_size)
-        self.app_state.ax = self.app_state.fig.add_subplot(111)
+    def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings):
+        # Generates a generic color mapping if one hasn't been uploaded
+        feat_map, feat_colors = self.get_color_mapping(top_feat)
 
-        # Labels and title - exact match
-        self.app_state.ax.set_xlabel('Principal Component Index')
-        self.app_state.ax.set_ylabel('Explained Variance Ratio')
-        self.app_state.ax.set_title('Scree Plot')
+        # Add grouped features - exact match
+        legend_groups = set()
+        for idx in top_idx:
+            feature = feat_names[idx]
+            magnitude = magnitudes[idx]
+
+            if magnitude < 0.2:
+                continue
+
+            group = feat_map.get(feature)
+            color = feat_colors.get(group)
+
+            showlegend = group not in legend_groups
+            legend_groups.add(group)
+
+            self.app_state.fig.add_trace(go.Scatter(
+                x=[0, scaled_loadings[idx, 0]],
+                y=[0, scaled_loadings[idx, 1]],
+                mode="lines+markers",
+                line=dict(color=color, width=2),
+                marker=dict(color=color),
+                name=group if showlegend else feature,
+                legendgroup=group,
+                showlegend=showlegend,
+                hovertext=(f"Feature: {feature}<br>"
+                            f"Group: {group}<br>"
+                            f"Loading PC1: {scaled_loadings[idx, 0]:.3f}<br>"
+                            f"Loading PC2: {scaled_loadings[idx, 1]:.3f}<br>"
+                            f"Magnitude: {magnitude:.3f}"),
+                hoverinfo="text"
+            ))
+
+    def add_biplot_interactivity(self, top_idx, loading_magnitudes):
+        fig = self.app_state.fig
+
+        # Add interactivity - exact match to original
+        fig.update_layout(
+            updatemenus=[{
+                "type": "buttons",
+                "buttons": [
+                    dict(label="Show All Features",
+                         method="update",
+                         args=[{"visible": [True] * len(fig.data)}]),
+                    dict(label="Show Top 10",
+                         method="update",
+                         args=[{"visible": [i < 10 for i in range(len(fig.data))]}]),
+                ],
+                "direction": "down",
+                "showactive": True,
+                "x": 0.1,
+                "y": 1.1,
+                "xanchor": "left",
+                "yanchor": "top"
+            }],
+            sliders=[{
+                "steps": [
+                    dict(
+                        method="update",
+                        args=[{"visible": [abs(loading_magnitudes[i]) > t for i in range(len(top_idx))]}],
+                        label=f"{t:.1f}"
+                    ) for t in np.linspace(0, 1, 10)
+                ],
+                "currentvalue": {"prefix": "Significance Threshold: "}
+            }]
+        )
+
+    def update_interactie_biplot_layout(self, variance):
+        # Update layout - matching original
+        self.app_state.fig.update_layout(
+            title=f"Interactive Biplot with Top {self.app_state.top_n_feat.get()} Significant Features",
+            xaxis_title=f"PC1 ({variance[0]:.1%} explained var.)",
+            yaxis_title=f"PC2 ({variance[1]:.1%} explained var.)",
+            clickmode='event+select',
+            showlegend=True,
+            legend=dict(
+                title="Feature Groups" if self.app_state.mapping_uploaded.get() else "Features",
+                yanchor="top",
+                y=0.99,
+                xanchor="right",
+                x=0.99,
+                bgcolor="rgba(255, 255, 255, 0.8)"
+            )
+        )
+    
 
     #### 5. Other Functions    ####
 
@@ -515,5 +597,33 @@ class BiplotBox(tk.Frame):
             height=2 * np.sqrt(eigenvals[1] * confidence_ellipse),
             alpha=0.1, color='gray', linestyle='--'
         )
+
+    def scale_loadings(self, eigenvals, loadings):
+        variance_scale = np.sqrt(eigenvals)
+        return loadings[:, :2] * variance_scale
+
+    def get_color_mapping(self, top_feat):
+        # Generates a generic color mapping if one hasn't been uploaded
+        if not self.app_state.mapping_uploaded.get():
+            colormap = cm.get_cmap('tab20', len(top_feat))
+            self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
+            self.app_state.feat_colors = {
+                feature: to_hex(colormap(i)) for i, feature in enumerate(top_feat)
+            }
+        return self.app_state.feat_map, self.app_state.feat_colors
+    
+    def save_interactive_plot(self):
+        current_time = time.strftime("%Y%m%d-%H%M%S")
+        if not os.path.exists(self.app_state.output_dir):
+            os.makedirs(self.app_state.output_dir)
+
+        save_path = os.path.join(self.app_state.output_dir, f"Interactive_Biplot_{current_time}.html")
+        config = {
+            'scrollZoom': True,
+            'displayModeBar': True,
+            'editable': True
+        }
+        plotly.io.write_html(self.app_state.fig, file=save_path, config=config)
+        return save_path
 
 

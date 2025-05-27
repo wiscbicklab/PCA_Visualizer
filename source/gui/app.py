@@ -366,7 +366,6 @@ class PCAAnalysisApp(tk.Tk):
     def update_figure(self):
         # Destroy old canvas
         self.app_state.main.plot_canvas_figure.destroy()
-
         # Adjusts Layout to avoid cutoff
         self.app_state.fig.tight_layout()
 

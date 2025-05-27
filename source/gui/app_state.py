@@ -42,3 +42,6 @@ class AppState:
 
         # Holds PCA Results
         self.pca_results = None
+
+        # Output directory for saved files
+        self.output_dir = "KUpca_plots_output"
