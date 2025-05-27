@@ -21,7 +21,6 @@ class HeatmapBox(tk.Frame):
 
         self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
 
-
         # Banner
         self.heatmap_banner = None
 
@@ -38,10 +37,7 @@ class HeatmapBox(tk.Frame):
     def create_components(self):
         # Banner
         self.heatmap_banner = tk.Label(self,
-                                       text="Heatmap Section",
-                                       font=("Helvetica", 12),
-                                       bg="#dcdcdc",
-                                       relief="groove")
+                                       **BANNER_STYLE)
         
         # Heatmap Controls
         self.focus_label = tk.Label(self,
