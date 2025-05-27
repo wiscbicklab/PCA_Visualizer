@@ -110,19 +110,10 @@ class BiplotBox(tk.Frame):
             return
         
         try:
-            # Ensures PCA has been run
-            self.app_state.main.run_analysis()
-
             # Get the explained variance
-            explained_variance = self.app_state.pca_results["explained_variance"]
+            __, __, explained_variance, __, __ = self.get_pca_data()
             
-            # Create scree plot - exact match to original
-            old_figsize = self.app_state.fig.get_size_inches()
-            self.app_state.fig = Figure(self.app_state.fig_size)
-            self.app_state.ax = self.app_state.fig.add_subplot(111)
-
-            # Remove the old plot
-            self.app_state.ax.clear()
+            self.init_scree_fig()
 
             # Bar plot of individual explained variance
             self.app_state.ax.bar(
@@ -139,11 +130,6 @@ class BiplotBox(tk.Frame):
                 where='mid',
                 label='Cumulative explained variance'
             )
-
-            # Labels and title - exact match
-            self.app_state.ax.set_xlabel('Principal Component Index')
-            self.app_state.ax.set_ylabel('Explained Variance Ratio')
-            self.app_state.ax.set_title('Scree Plot')
 
             # Updates the figure on the GUI
             self.app_state.main.update_figure()
@@ -166,7 +152,7 @@ class BiplotBox(tk.Frame):
         top_feat = self.app_state.df.columns[top_idx]
 
         try:
-            if not self.init_biplot_figure(variance, num_feat): return 
+            if not self.init_biplot_fig(variance, num_feat): return 
             
             # Calculate axis limits with margin
             scaled_loadings = self.set_axis_limits(eigenvals, loadings, top_idx)
@@ -344,7 +330,7 @@ class BiplotBox(tk.Frame):
         self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
         return scaled_loadings
 
-    def init_biplot_figure(self, explained_variance, num_features):
+    def init_biplot_fig(self, explained_variance, num_features):
         try:
             # Generates and configures plot appearance
             self.app_state.fig = Figure(self.app_state.fig_size)
@@ -429,6 +415,15 @@ class BiplotBox(tk.Frame):
         )
         print("Text Adjusted")
 
+    def init_scree_fig(self):
+        # Create scree plot - exact match to original
+        self.app_state.fig = Figure(self.app_state.fig_size)
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
+
+        # Labels and title - exact match
+        self.app_state.ax.set_xlabel('Principal Component Index')
+        self.app_state.ax.set_ylabel('Explained Variance Ratio')
+        self.app_state.ax.set_title('Scree Plot')
 
     #### 5. Other Functions    ####
 
