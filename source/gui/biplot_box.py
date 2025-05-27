@@ -118,7 +118,7 @@ class BiplotBox(tk.Frame):
             
             # Create scree plot - exact match to original
             old_figsize = self.app_state.fig.get_size_inches()
-            self.app_state.fig = Figure()
+            self.app_state.fig = Figure(self.app_state.fig_size)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
 
             # Remove the old plot
@@ -347,7 +347,7 @@ class BiplotBox(tk.Frame):
     def init_biplot_figure(self, explained_variance, num_features):
         try:
             # Generates and configures plot appearance
-            self.app_state.fig = Figure()
+            self.app_state.fig = Figure(self.app_state.fig_size)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
             self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
             self.app_state.ax.set_facecolor('#f8f9fa')

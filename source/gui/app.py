@@ -99,7 +99,7 @@ class PCAAnalysisApp(tk.Tk):
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
-        self.minsize(1200, 700)
+        self.minsize(1350, 700)
 
     def create_widgets(self):
         """Create all widgets"""
@@ -398,6 +398,7 @@ class PCAAnalysisApp(tk.Tk):
             self.plot_canvas.get_tk_widget().destroy()
         plt.close('all')
         self.destroy()
+
 
     def _bind_mousewheel(self):
         # Windows and macOS

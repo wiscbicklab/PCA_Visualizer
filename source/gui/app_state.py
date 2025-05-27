@@ -35,7 +35,8 @@ class AppState:
         self.os_type = platform.system()
 
         # Variables for tracking the figure
-        self.fig = Figure()
+        self.fig_size = (8, 5)
+        self.fig = Figure(self.fig_size)
         self.ax = self.fig.add_subplot(111)
         self.ax.grid(True)
 

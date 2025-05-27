@@ -221,7 +221,7 @@ class visual_setting_Box(tk.Frame):
                     return
             
             # Creats a new figure and ax with labels and grid
-            self.app_state.fig = Figure()
+            self.app_state.fig = Figure(self.app_state.fig_size)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
             self.app_state.ax.set_xlabel("Principal Component 1")
             self.app_state.ax.set_ylabel("Principal Component 2")

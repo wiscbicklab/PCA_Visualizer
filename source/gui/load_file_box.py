@@ -72,7 +72,7 @@ class LoadFileBox(tk.Frame):
         self.app_state.df_cleaned.set(False)
 
         # Generate new Blank figure
-        self.app_state.fig = Figure()
+        self.app_state.fig = Figure(self.app_state.fig_size)
         self.app_state.ax = self.app_state.fig.add_subplot(111)
         self.app_state.ax.grid(True)
         
