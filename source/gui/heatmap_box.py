@@ -38,8 +38,7 @@ class HeatmapBox(tk.Frame):
 
     def create_components(self):
         # Banner
-        self.heatmap_banner = tk.Label(self,
-                                       **BANNER_STYLE)
+        self.heatmap_banner = tk.Label(self, **BANNER_STYLE, text="Heatmap Section")
         
         # Heatmap Controls
         self.focus_label = tk.Label(self,
@@ -90,7 +89,7 @@ class HeatmapBox(tk.Frame):
 
     def plot_loadings_heatmap(self):
         """Plot loadings heatmap using user-selected mode."""
-        if not self.df_cleaned:
+        if not self.app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return
         
@@ -120,7 +119,7 @@ class HeatmapBox(tk.Frame):
                 cmap="coolwarm"
             )
 
-            self.canvas.draw()  # This ensures the new plot appears on the canvas
+            self.app_state.main.update_figure()  # This ensures the new plot appears on the canvas
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -166,4 +165,27 @@ class HeatmapBox(tk.Frame):
             ax=self.app_state.ax
         )
 
-
+    def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
+        """Determine columns to focus on based on heatmap mode."""
+        try:
+            if heatmap_mode_var == "Top 10 Features":
+                return self.app_state.df.columns[:10].tolist()  # Top 10 features by default
+            elif heatmap_mode_var == "Top 20 Features":
+                return self.app_state.df.columns[:20].tolist()  # Top 20 features by default
+            elif heatmap_mode_var == "Custom Features":
+                if focus_entry:
+                    columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
+                    if not columns:
+                        raise ValueError("No valid columns specified for custom heatmap.")
+                    # Ensure specified columns exist in the data
+                    missing_columns = [col for col in columns if col not in self.data.columns]
+                    if missing_columns:
+                        raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
+                    return columns
+                else:
+                    raise ValueError("No columns specified for custom heatmap.")
+            else:
+                raise ValueError(f"Invalid heatmap mode: {heatmap_mode_var}")
+        except Exception as e:
+            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
+            return None

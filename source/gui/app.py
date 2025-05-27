@@ -149,7 +149,7 @@ class PCAAnalysisApp(tk.Tk):
         self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
         self.pca_box = visual_setting_Box(self.options_frame, self.app_state, bg="#f0f0f0")
         self.biplot_box = BiplotBox(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.heatmap_box = HeatmapBox(self.options_frame, bg="#f0f0f0")
+        self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, bg="#f0f0f0")
 
         # Color Palette Selection
         self.palette_label = tk.Label(self.options_frame,

@@ -57,7 +57,7 @@ class BiplotBox(tk.Frame):
 
     def create_components(self):
         # Banner
-        self.biplot_banner = tk.Label(self, **BANNER_STYLE)
+        self.biplot_banner = tk.Label(self, **BANNER_STYLE, text="Biplot Section")
         
         # Feature Grouping Section
         self.grouping_checkbox = tk.Checkbutton(self, text="Enable Feature Grouping",

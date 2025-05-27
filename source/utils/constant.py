@@ -23,7 +23,6 @@ LABEL_STYLE = {
 }
 
 BANNER_STYLE = {
-    "text": "Biplot Section",
     "font": ("Helvetica", 12),
     "bg": "#dcdcdc",
     "relief": "groove",
