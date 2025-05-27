@@ -178,7 +178,7 @@ class HeatmapBox(tk.Frame):
                     if not columns:
                         raise ValueError("No valid columns specified for custom heatmap.")
                     # Ensure specified columns exist in the data
-                    missing_columns = [col for col in columns if col not in self.data.columns]
+                    missing_columns = [col for col in columns if col not in self.app_state.df.columns]
                     if missing_columns:
                         raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
                     return columns
