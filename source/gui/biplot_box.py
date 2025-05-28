@@ -216,6 +216,7 @@ class BiplotBox(tk.Frame):
     def plot_top_features_loadings(self):
         """Plot top feature loadings using LoadingsProcessor."""
         if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be cleaned first!")
             return
         
         try:
@@ -521,30 +522,29 @@ class BiplotBox(tk.Frame):
         Returns:
             Tuple[np.ndarray, List[str]]: Loadings array and list of focus columns.
         """
-        # Validate PCA model
-        pca_results = self.app_state.pca_results
-        if pca_results is None or not hasattr(pca_results, 'components_'):
-            messagebox.showerror("Error", "Please run PCA analysis first.")
-            return None, None
-
         try:
             # Extract loadings
-            loadings = pca_results["loadings"]
+            loadings = self.app_state.pca_results["loadings"]
             feature_scores = np.abs(loadings[:, 0])  # Example: PC1 loadings
 
-            # Determine focus columns based on mode
             if "Top" in heatmap_mode:
                 top_n = int(heatmap_mode.split()[1])  # Extract number from mode
                 top_indices = np.argsort(feature_scores)[::-1][:top_n]
+                sorted_loadings = loadings[top_indices, :]
                 focus_columns = [self.app_state.df.columns[i] for i in top_indices]
             elif heatmap_mode == "Custom" and focus_entry:
                 focus_columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
                 if not all(col in self.app_state.df.columns for col in focus_columns):
                     raise ValueError("Some specified columns do not exist in the dataset.")
+                focus_indices = [self.app_state.df.columns.get_loc(col) for col in focus_columns]
+                feature_scores_custom = feature_scores[focus_indices]
+                sorted_indices = [x for _, x in sorted(zip(feature_scores_custom, focus_indices), reverse=True)]
+                sorted_loadings = loadings[sorted_indices, :]
+                focus_columns = [self.app_state.df.columns[i] for i in sorted_indices]
             else:
                 raise ValueError("Invalid heatmap mode or missing focus entry.")
-
-            return loadings, focus_columns
+            
+            return sorted_loadings, focus_columns
 
         except Exception as e:
             messagebox.showerror("Error", f"Error processing loadings: {str(e)}")
@@ -552,7 +552,7 @@ class BiplotBox(tk.Frame):
         
     def validate_biplot_data(self):
         if not self.app_state.df_cleaned.get():
-            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
+            messagebox.showerror("Error", "Data must be cleaned first!")
             return False
 
         if self.enable_feature_grouping.get() and not self.app_state.mapping_uploaded.get():
