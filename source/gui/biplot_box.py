@@ -227,9 +227,15 @@ class BiplotBox(tk.Frame):
             top_n = self.app_state.top_n_feat.get()
 
             # Validate and retrieve loadings
-            loadings, focus_columns = self.validate_and_get_loadings(
-                heatmap_mode=f"Top {top_n} Features"  # Adjust dynamically
-            )
+            loadings = abs(self.app_state.pca_results['components'][0])  # Get the loadings for the first PCA element
+            feat_names = self.app_state.pca_results['feature_names']
+            
+            # Sorting the loadings
+            sorted_pairs = sorted(zip(feat_names, loadings), key=lambda x: abs(x[1]), reverse=True)
+
+            sorted_loadings, sorted_feat_names = zip(*sorted_pairs)
+            sorted_loadings = list(sorted_loadings)
+            sorted_feat_names = list(sorted_feat_names)
 
             # Clear the canvas and reinitialize the figure and axes
             self.app_state.fig.clear()  # Clears the existing figure
@@ -237,8 +243,8 @@ class BiplotBox(tk.Frame):
 
             # Plot top feature loadings
             self.app_state.ax.barh(
-                focus_columns,
-                np.abs(loadings[:len(focus_columns), 0]),  # Example: loadings for PC1
+                sorted_loadings[:top_n],
+                sorted_feat_names[:top_n],
                 color='steelblue',
                 alpha=0.8
             )
@@ -246,7 +252,7 @@ class BiplotBox(tk.Frame):
             self.app_state.ax.set_xlabel("Absolute Loadings", fontsize=12)
             self.app_state.ax.set_ylabel("Features", fontsize=12)
             self.app_state.ax.tick_params(axis='x', labelsize=10)
-            self.app_state.ax.tick_params(axis='y', labelsize=10)
+            self.app_state.ax.tick_params(axis='y', labelsize=10, rotation=45)
 
             # Updates the figure on the GUI
             self.app_state.main.update_figure()
@@ -511,44 +517,7 @@ class BiplotBox(tk.Frame):
 
     #### 5. Other Functions    ####
 
-    def validate_and_get_loadings(self, heatmap_mode, focus_entry=None):
-        """
-        Validates PCA model and retrieves loadings based on mode.
-
-        Args:
-            heatmap_mode (str): Mode to determine which features to focus on.
-            focus_entry (str): Comma-separated column names for custom focus (optional).
-
-        Returns:
-            Tuple[np.ndarray, List[str]]: Loadings array and list of focus columns.
-        """
-        try:
-            # Extract loadings
-            loadings = self.app_state.pca_results["loadings"]
-            feature_scores = np.abs(loadings[:, 0])  # Example: PC1 loadings
-
-            if "Top" in heatmap_mode:
-                top_n = int(heatmap_mode.split()[1])  # Extract number from mode
-                top_indices = np.argsort(feature_scores)[::-1][:top_n]
-                sorted_loadings = loadings[top_indices, :]
-                focus_columns = [self.app_state.df.columns[i] for i in top_indices]
-            elif heatmap_mode == "Custom" and focus_entry:
-                focus_columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
-                if not all(col in self.app_state.df.columns for col in focus_columns):
-                    raise ValueError("Some specified columns do not exist in the dataset.")
-                focus_indices = [self.app_state.df.columns.get_loc(col) for col in focus_columns]
-                feature_scores_custom = feature_scores[focus_indices]
-                sorted_indices = [x for _, x in sorted(zip(feature_scores_custom, focus_indices), reverse=True)]
-                sorted_loadings = loadings[sorted_indices, :]
-                focus_columns = [self.app_state.df.columns[i] for i in sorted_indices]
-            else:
-                raise ValueError("Invalid heatmap mode or missing focus entry.")
-            
-            return sorted_loadings, focus_columns
-
-        except Exception as e:
-            messagebox.showerror("Error", f"Error processing loadings: {str(e)}")
-            return None, None
+    
         
     def validate_biplot_data(self):
         if not self.app_state.df_cleaned.get():
