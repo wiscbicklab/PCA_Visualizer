@@ -80,7 +80,7 @@ class BiplotBox(tk.Frame):
         self.scree_plot_button = tk.Button(self, text="Show Scree Plot", **BUTTON_STYLE,
                                            command=self.create_scree_plot)
         self.top_features_button = tk.Button(self, text="Top Features Loadings", **BUTTON_STYLE,
-                                             command=self.plot_top_features_loadings)
+                                             command=self.create_top_n_feat_plot)
 
     def setup_layout(self):
         # Configure component structure
@@ -102,20 +102,19 @@ class BiplotBox(tk.Frame):
         self.top_features_button.grid(row=4, column=1, padx=5, pady=5)
 
 
-    #### 2. VISUALIZATION METHODS ####
+    #### 2. Create Plots ####
 
     def create_scree_plot(self):
         """Create scree plot."""
-        if not self.app_state.df_cleaned.get():
-            messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
-            return
-        
-        try:
-            # Get the explained variance
-            __, __, explained_variance, __, __ = self.get_pca_data()
-            
-            self.init_scree_fig()
+        # Validates required input data
+        if not self.check_clean_data(): return
 
+        if not self.init_scree_fig(): return
+        
+        # Get the explained variance
+        __, __, explained_variance, __, __ = self.get_pca_data()
+
+        try:
             # Bar plot of individual explained variance
             self.app_state.ax.bar(
                 range(1, len(explained_variance) + 1),
@@ -132,18 +131,20 @@ class BiplotBox(tk.Frame):
                 label='Cumulative explained variance'
             )
 
-            # Updates the figure on the GUI
-            self.app_state.main.update_figure()
-
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Error", f"Error creating scree plot: {str(e)}")
+            return
+        
+        # Updates the figure on the GUI
+        self.app_state.main.update_figure()
 
     def create_biplot(self):
         """Create biplot visualization."""
-        # Validates Input Data
-        if not self.validate_biplot_data(): return
+        # Validates required input data
+        if not self.check_clean_data: return
+        if not self.check_feature_grouping: return
 
         # Runs PCA analysis and gets relavent values
         scores, loadings, variance, eigenvals, feat_names = self.get_pca_data()
@@ -186,8 +187,11 @@ class BiplotBox(tk.Frame):
 
     def create_interactive_biplot(self):
         """Create an interactive biplot visualization."""
+        # Validates required input data
+        if not self.check_clean_data: return
+        if not self.check_feature_grouping: return
         # Runs PCA analysis and gets relavent values
-        scores, loadings, variance, eigenvals, feat_names = self.get_pca_data()
+        __, loadings, variance, eigenvals, feat_names = self.get_pca_data()
 
         # Calculates other need information based on the PCA Resulats
         top_idx, loading_magnitudes, num_feat = self.get_top_pca_features(loadings)
@@ -213,7 +217,7 @@ class BiplotBox(tk.Frame):
             print(error_str)
             messagebox.showerror("Error", f"Error creating interactive biplot: {str(e)}")
 
-    def plot_top_features_loadings(self):
+    def create_top_n_feat_plot(self):
         """Plot top feature loadings using LoadingsProcessor."""
         if not self.app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
@@ -226,6 +230,10 @@ class BiplotBox(tk.Frame):
             # Get top N features from user input
             top_n = self.app_state.top_n_feat.get()
 
+            # Intialize the plot
+            if not self.init_top_feat_plot(top_n):
+                messagebox("Error", "Error occured while attemping to initialize the new figure")
+
             # Validate and retrieve loadings
             loadings = abs(self.app_state.pca_results['components'][0])  # Get the loadings for the first PCA element
             feat_names = self.app_state.pca_results['feature_names']
@@ -237,10 +245,6 @@ class BiplotBox(tk.Frame):
             sorted_loadings = list(sorted_loadings)
             sorted_feat_names = list(sorted_feat_names)
 
-            # Clear the canvas and reinitialize the figure and axes
-            self.app_state.fig.clear()  # Clears the existing figure
-            self.app_state.ax = self.app_state.fig.add_subplot(111)  # Create a new subplot
-
             # Plot top feature loadings
             self.app_state.ax.barh(
                 sorted_loadings[:top_n],
@@ -248,11 +252,7 @@ class BiplotBox(tk.Frame):
                 color='steelblue',
                 alpha=0.8
             )
-            self.app_state.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
-            self.app_state.ax.set_xlabel("Absolute Loadings", fontsize=12)
-            self.app_state.ax.set_ylabel("Features", fontsize=12)
-            self.app_state.ax.tick_params(axis='x', labelsize=10)
-            self.app_state.ax.tick_params(axis='y', labelsize=10, rotation=45)
+            
 
             # Updates the figure on the GUI
             self.app_state.main.update_figure()
@@ -264,7 +264,7 @@ class BiplotBox(tk.Frame):
             messagebox.showerror("Error", f"Failed to plot top feature loadings: {str(e)}")
 
 
-    #### 3. UTILITY METHODS ####
+    #### 3. Feature Grouping Operations ####
 
     def upload_mapping_csv(self):
         """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
@@ -296,7 +296,7 @@ class BiplotBox(tk.Frame):
                 group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
             }
 
-            self.app_state.mapping_uploaded.set(True)
+            self.app_state.mapping_state.set(True)
 
             messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
         
@@ -304,9 +304,6 @@ class BiplotBox(tk.Frame):
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
             messagebox.showerror("Error", f"Failed to load mapping CSV: {str(e)}")
-
-
-    #### 4. UI UPDATE METHODS ####
 
     def toggle_feature_grouping(self):
         """Toggle the feature grouping functionality."""
@@ -317,7 +314,7 @@ class BiplotBox(tk.Frame):
                                 "Feature grouping is now enabled. Please upload a mapping file.")
         else:
             # Disable the mapping upload button and reset group-related variables
-            self.app_state.mapping_uploaded.set(False)
+            self.app_state.mapping_state.set(False)
             self.app_state.feat_map = None
             self.app_state.feat_colors = None
 
@@ -329,21 +326,34 @@ class BiplotBox(tk.Frame):
 
             messagebox.showinfo("Feature Grouping Disabled", "Feature grouping has been disabled.")
 
+
+    #### 4. Figure Initialization ####
+
     def init_scree_fig(self):
         # Create scree plot - exact match to original
-        self.app_state.fig = Figure(self.app_state.fig_size)
-        self.app_state.ax = self.app_state.fig.add_subplot(111)
+        try:
+            self.app_state.fig = Figure(self.app_state.fig_size)
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
 
-        # Labels and title - exact match
-        self.app_state.ax.set_xlabel('Principal Component Index')
-        self.app_state.ax.set_ylabel('Explained Variance Ratio')
-        self.app_state.ax.set_title('Scree Plot')
+            # Labels and title - exact match
+            self.app_state.ax.set_xlabel('Principal Component Index')
+            self.app_state.ax.set_ylabel('Explained Variance Ratio')
+            self.app_state.ax.set_title('Scree Plot')
+
+            return True
+        except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
+            messagebox.showerror("Error", f"An error occurred during data cleaning: {e}")
+            return False
+            
 
     def init_biplot_fig(self, explained_variance, num_features):
         try:
             # Generates and configures plot appearance
             self.app_state.fig = Figure(self.app_state.fig_size)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
+            
             self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
             self.app_state.ax.set_facecolor('#f8f9fa')
             self.app_state.ax.set_xlabel(f"PC1 ({explained_variance[0]:.1%} explained var.)")
@@ -353,6 +363,21 @@ class BiplotBox(tk.Frame):
             return True
         except Exception:
             return False
+
+    def init_top_feat_plot(self, top_n):
+        try:
+            self.app_state.fig = Figure(self.app_state.fig_size)
+            self.app_state.ax = self.app_state.fig.add_subplot(111)
+
+            self.app_state.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
+            self.app_state.ax.set_xlabel("Absolute Loadings", fontsize=12)
+            self.app_state.ax.set_ylabel("Features", fontsize=12)
+            self.app_state.ax.tick_params(axis='x', labelsize=10)
+            self.app_state.ax.tick_params(axis='y', labelsize=10, rotation=45)
+            return True
+        except Exception:
+            return False
+
 
     def set_biplot_axis_limits(self, scaled_loadings, top_idx):
         x_min, x_max = np.min(scaled_loadings[top_idx, 0]), np.max(scaled_loadings[top_idx, 0])
@@ -505,7 +530,7 @@ class BiplotBox(tk.Frame):
             clickmode='event+select',
             showlegend=True,
             legend=dict(
-                title="Feature Groups" if self.app_state.mapping_uploaded.get() else "Features",
+                title="Feature Groups" if self.app_state.mapping_state.get() else "Features",
                 yanchor="top",
                 y=0.99,
                 xanchor="right",
@@ -515,19 +540,19 @@ class BiplotBox(tk.Frame):
         )
     
 
-    #### 5. Other Functions    ####
+    #### 5. Data Validation    ####
 
-    
-        
-    def validate_biplot_data(self):
+    def check_clean_data(self):
         if not self.app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
             return False
+        return True
 
-        if self.enable_feature_grouping.get() and not self.app_state.mapping_uploaded.get():
+        
+    def check_feature_grouping(self):
+        if self.enable_feature_grouping.get() and not self.app_state.mapping_state.get():
             messagebox.showerror("Error", "Feature Groups is enabled, but a feature group has not been uploaded!")
             return False
-        
         return True
 
     def get_pca_data(self):
@@ -574,7 +599,7 @@ class BiplotBox(tk.Frame):
 
     def get_color_mapping(self, top_feat):
         # Generates a generic color mapping if one hasn't been uploaded
-        if not self.app_state.mapping_uploaded.get():
+        if not self.app_state.mapping_state.get():
             colormap = cm.get_cmap('tab20', len(top_feat))
             self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
             self.app_state.feat_colors = {
