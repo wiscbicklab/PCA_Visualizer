@@ -2,7 +2,6 @@ import tkinter as tk
 from tkinter import messagebox
 import traceback
 from matplotlib.figure import Figure
-import numpy as np
 import pandas as pd
 
 from sklearn.impute import SimpleImputer

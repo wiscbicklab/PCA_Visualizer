@@ -1,17 +1,10 @@
+import os
+import time
 import tkinter as tk
 from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
-import chardet
 from matplotlib import pyplot as plt
-from matplotlib.colors import to_hex
-from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
-import pandas as pd
-import numpy as np
-import platform
-
-from sklearn.impute import SimpleImputer
 
 
 
@@ -19,7 +12,6 @@ from sklearn.impute import SimpleImputer
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
-import source.utils.file_operations as file_ops
 from source.utils.helpers import generate_color_palette
 
 # Components Imports
@@ -383,9 +375,20 @@ class PCAAnalysisApp(tk.Tk):
 
     def save_plot(self):
         """Save the current plot using the dynamic output directory."""
+        output_dir = self.app_state.output_dir
+        # Create Directory if it doesn't exist
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+        
+        # Create file path
+        timestamp = time.strftime("%Y%m%d-%H%M%S")
+        plot_filename = f'plot_{timestamp}.png'
+        save_path = os.path.join(output_dir, plot_filename)
+            
         try:
-            save_path = file_ops.save_plot(self.fig, output_dir=self.output_dir)
+            self.app_state.fig.savefig(save_path)
             messagebox.showinfo("Success", f"Plot saved at:\n{save_path}")
+            return save_path
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking

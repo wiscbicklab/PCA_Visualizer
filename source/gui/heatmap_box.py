@@ -3,10 +3,8 @@ from tkinter import messagebox
 import traceback
 from matplotlib.figure import Figure
 import seaborn as sns
-import numpy as np
 import matplotlib.pyplot as plt
 
-from sklearn.impute import SimpleImputer
 
 from source.gui.app_state import AppState
 from source.utils.constant import *

@@ -1,5 +1,6 @@
 import os
 import time
+import webbrowser
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import traceback
@@ -624,6 +625,9 @@ class BiplotBox(tk.Frame):
             'editable': True
         }
         plotly.io.write_html(self.app_state.fig, file=save_path, config=config)
+
+        webbrowser.open(f'file://{os.path.abspath(save_path)}')
+
         return save_path
 
 
