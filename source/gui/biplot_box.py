@@ -236,12 +236,11 @@ class BiplotBox(tk.Frame):
                 messagebox("Error", "Error occured while attemping to initialize the new figure")
 
             # Validate and retrieve loadings
-            loadings = abs(self.app_state.pca_results['components'][pca_comp_num])  # Get the loadings for the first PCA element
+            loadings = abs(self.app_state.pca_results['components'][pca_comp_num])
             feat_names = self.app_state.pca_results['feature_names']
             
             # Sorting the loadings
             sorted_pairs = sorted(zip(feat_names, loadings), key=lambda x: abs(x[1]), reverse=True)
-
             sorted_loadings, sorted_feat_names = zip(*sorted_pairs)
             sorted_loadings = list(sorted_loadings)
             sorted_feat_names = list(sorted_feat_names)
