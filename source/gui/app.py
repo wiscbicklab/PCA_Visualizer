@@ -12,7 +12,6 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
-from source.utils.helpers import generate_color_palette
 
 # Components Imports
 from source.gui.load_file_box import LoadFileBox
@@ -124,13 +123,13 @@ class PCAAnalysisApp(tk.Tk):
 
 
         # Output Directory Section
-        self.output_dir = OUTPUT_DIR  # Default directory
-        self.output_dir_label = tk.Label(self,
-                                         text=f"Output Directory: {self.output_dir}",
-                                         bg=LABEL_STYLE["bg"],
-                                         font=LABEL_STYLE["font"],
-                                         wraplength=300,  # Wrap text for long paths
-                                         anchor="w", justify="left")
+        self.output_dir_label = tk.Label(
+            self,
+            text=f"Output Directory: {self.app_state.output_dir}",
+            bg=LABEL_STYLE["bg"],
+            font=LABEL_STYLE["font"],
+            wraplength=300,  # Wrap text for long paths
+            anchor="w", justify="left")
         self.output_dir_button = tk.Button(self,
                                            text="Select Output Directory",
                                            **BUTTON_STYLE,
@@ -222,7 +221,7 @@ class PCAAnalysisApp(tk.Tk):
             # Run analysis and store the result
             self.app_state.pca_results = self.pca_analyzer.analyze(
                 df=self.app_state.df,
-                n_components=self.app_state.num_pca_components.get(),
+                n_components=self.app_state.num_pca_comp.get(),
             )
 
             # Update display
@@ -243,8 +242,8 @@ class PCAAnalysisApp(tk.Tk):
         selected_dir = filedialog.askdirectory()
         if selected_dir:  # If the user selects a directory
             self.output_dir = selected_dir
-            self.output_dir_label.config(text=f"Output Directory: {self.output_dir}")
-            messagebox.showinfo("Directory Selected", f"Output directory set to:\n{self.output_dir}")
+            self.output_dir_label.config(text=f"Output Directory: {self.app_state.output_dir}")
+            messagebox.showinfo("Directory Selected", f"Output directory set to:\n{self.app_state.output_dir}")
         else:
             messagebox.showwarning("No Directory Selected", "Using the default output directory.")
       

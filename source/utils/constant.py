@@ -1,6 +1,3 @@
-# constants.py
-OUTPUT_DIR = "KUpca_plots_output"
-
 FEATURE_GROUPS_COLORS = {
     "FAB": "black",
     "non-FAB": "silver",
@@ -16,33 +13,41 @@ DEFAULT_COLUMNS_TO_DROP = [
     "SideFlowerStrip_W", "SideFlowerStrip_preflow"
 ]
 
+# Style constants
 LABEL_STYLE = {
     "font":   ("Helvetica", 10),
     "bg":     "#f5f5f5",
 
 }
-
 BANNER_STYLE = {
     "font": ("Helvetica", 12),
     "bg": "#dcdcdc",
     "relief": "groove",
 }
-
-# Style constants
 BUTTON_STYLE = {
     "font": ("Helvetica", 10),
     "bg": "#007ACC",
     "fg": "white",
     "activebackground": "#005f99",
     "relief": "raised",
-    "width": 18,
+    "width": 22,
 }
-
+OPTION_MENU_STYLE = {
+    "bg": "#007ACC",
+    "fg": "white",
+    "relief": "raised",
+    "width": 22,
+}
 RAD_BUTTON_STYLE = {
     "font": ("Helvetica", 10),
     "bg": "#e8e8e8",
     "fg": "black",
     "activebackground": "#d0d0d0",
+}
+ENTRY_STYLE = {
+    "font": ("Helvetica", 10),
+    "bg": "white",
+    "width": 22
 }
 
 
