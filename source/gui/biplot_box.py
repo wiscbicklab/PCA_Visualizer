@@ -229,13 +229,14 @@ class BiplotBox(tk.Frame):
 
             # Get top N features from user input
             top_n = self.app_state.top_n_feat.get()
+            pca_comp_num = self.app_state.pca_num.get()-1
 
             # Intialize the plot
             if not self.init_top_feat_plot(top_n):
                 messagebox("Error", "Error occured while attemping to initialize the new figure")
 
             # Validate and retrieve loadings
-            loadings = abs(self.app_state.pca_results['components'][0])  # Get the loadings for the first PCA element
+            loadings = abs(self.app_state.pca_results['components'][pca_comp_num])  # Get the loadings for the first PCA element
             feat_names = self.app_state.pca_results['feature_names']
             
             # Sorting the loadings
@@ -353,7 +354,7 @@ class BiplotBox(tk.Frame):
             # Generates and configures plot appearance
             self.app_state.fig = Figure(self.app_state.fig_size)
             self.app_state.ax = self.app_state.fig.add_subplot(111)
-            
+
             self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
             self.app_state.ax.set_facecolor('#f8f9fa')
             self.app_state.ax.set_xlabel(f"PC1 ({explained_variance[0]:.1%} explained var.)")
