@@ -5,6 +5,8 @@ from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import matplotlib.cm as cm
+import matplotlib.colors as mcolors
 
 
 
@@ -65,10 +67,6 @@ class PCAAnalysisApp(tk.Tk):
         # Save Button
         self.save_button = None
 
-        # Sets selected color pallet
-        self.selected_palette = tk.StringVar(value="Default")
-
-
         # Set up the application
         #self.initialize_matplotlib()
         self.create_widgets()
@@ -126,14 +124,15 @@ class PCAAnalysisApp(tk.Tk):
         self.output_dir_label = tk.Label(
             self,
             text=f"Output Directory: {self.app_state.output_dir}",
-            bg=LABEL_STYLE["bg"],
-            font=LABEL_STYLE["font"],
+            **LABEL_STYLE,
             wraplength=300,  # Wrap text for long paths
             anchor="w", justify="left")
-        self.output_dir_button = tk.Button(self,
-                                           text="Select Output Directory",
-                                           **BUTTON_STYLE,
-                                           command=self.select_output_directory)
+        self.output_dir_button = tk.Button(
+            self,
+            text="Select Output Directory",
+            **BUTTON_STYLE,
+            command=self.select_output_directory
+        )
 
         # Intialize Custom components
         self.load_file_box = LoadFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
@@ -143,30 +142,23 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, bg="#f0f0f0")
 
         # Color Palette Selection
-        self.palette_label = tk.Label(self.options_frame,
-                                      text="Select Color Palette:",
-                                      bg=LABEL_STYLE["bg"], font=LABEL_STYLE["font"])
-        self.palette_menu = tk.OptionMenu(self.options_frame,
-                                          self.selected_palette,
-                                          *COLOR_PALETTES.keys(),
-                                          command=self.update_color_palette)
+        self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
+        self.palette_menu = tk.OptionMenu(
+            self.options_frame,
+            self.app_state.selected_palette,
+            *COLOR_PALETTES.keys(),
+            command=self.update_color_palette
+        )
 
         ### Focus on signficant loadings (Biplot)
         # Create a BooleanVar for the checkbox
         self.focus_on_loadings = tk.BooleanVar(value=True)
 
         # Results Section
-        self.data_insight_summary = tk.Text(self,
-                                          height=8,
-                                          width=50,
-                                          font=LABEL_STYLE["font"],
-                                          bg="white")
+        self.data_insight_summary = tk.Text(self, height=8, width=50, font=LABEL_STYLE["font"], bg="white")
 
         # Save
-        self.save_button = tk.Button(self,
-                                     text="Save Plot",
-                                     **BUTTON_STYLE,
-                                     command=self.save_plot)
+        self.save_button = tk.Button(self, text="Save Plot", **BUTTON_STYLE, command=self.save_plot)
 
     def setup_layout(self):
         """Setup the layout of GUI components"""
@@ -204,10 +196,6 @@ class PCAAnalysisApp(tk.Tk):
         self.output_dir_label.grid(row=4, column=3, padx=5, pady=5, sticky="w")
         self.output_dir_button.grid(row=4, column=3, padx=5, pady=5, sticky="e")
 
-
-        
-
-    
 
     #### 1. DATA HANDLING METHODS ####
 
@@ -278,6 +266,49 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
 
+    def generate_color_palette(self, n_groups, preferred_colors=None):
+        """
+        Generate a color palette for feature groups.
+
+        Parameters:
+        -----------
+        n_groups : int
+            The number of feature groups to generate colors for.
+        preferred_colors : dict, optional
+            A dictionary of predefined colors for specific feature groups. Keys are group names, and values are color codes.
+
+        Returns:
+        --------
+        dict
+            A dictionary where keys are feature group names (e.g., "Group 1", "FAB") and values are color codes (hex).
+        """
+        # Define default preferred colors if not provided
+        if preferred_colors is None:
+            preferred_colors = {
+                "FAB": "#000000",  # Black
+                "non-FAB": "#C0C0C0",  # Silver
+                "RAA": "#FF0000",  # Red
+                "Beneficials": "#008000",  # Green
+                "non-RAA pests": "#FFC0CB"  # Pink
+            }
+
+        # Generate a colormap for any additional groups beyond preferred colors
+        num_extra_colors = max(0, n_groups - len(preferred_colors))
+        colormap = cm.get_cmap('tab20', num_extra_colors)  # Use a 20-color palette
+        extra_colors = [mcolors.rgb2hex(colormap(i)[:3]) for i in range(num_extra_colors)]
+
+        # Combine preferred colors with extra colors
+        all_colors = list(preferred_colors.values()) + extra_colors
+
+        # Create a dictionary for all groups
+        color_palette = {}
+        for i in range(n_groups):
+            group_name = f"Group {i+1}"  # Generic group name
+            if i < len(preferred_colors):
+                group_name = list(preferred_colors.keys())[i]  # Use predefined names if available
+            color_palette[group_name] = all_colors[i]
+
+        return color_palette
   
     #### 4. UI UPDATE METHODS ####
 
@@ -323,10 +354,10 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_color_palette(self, *args):
         try:
-            if self.feature_to_group:
-                unique_groups = set(self.feature_to_group.values())
+            if self.app_state.has_mapping_state:
+                unique_groups = set(self.feat_mapping.values())
                 n_groups = len(unique_groups)
-                selected_palette = self.selected_palette.get()
+                selected_palette = self.app_state.selected_palette.get()
 
                 # Use predefined preferred colors (if any)
                 preferred_colors = {
@@ -338,7 +369,7 @@ class PCAAnalysisApp(tk.Tk):
                 }
 
                 # Generate a combined palette using the helper function
-                self.feature_groups_colors = generate_color_palette(n_groups, preferred_colors)
+                self.feature_groups_colors = self.generate_color_palette(n_groups, preferred_colors)
             else:
                 messagebox.showinfo("No Groups Defined", "No feature groups are currently defined.")
         except Exception as e:
@@ -399,7 +430,6 @@ class PCAAnalysisApp(tk.Tk):
             self.plot_canvas.get_tk_widget().destroy()
         plt.close('all')
         self.destroy()
-
 
     def _bind_mousewheel(self):
         # Windows and macOS
