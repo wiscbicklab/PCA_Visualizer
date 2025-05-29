@@ -14,6 +14,9 @@ class AppState:
         # Gets the name of the os
         self.os_type = platform.system()
 
+        # Selects application color palette
+        self.selected_palette = tk.StringVar(value="Default")
+
         # PCA Results
         self.pca_results = None
 
@@ -37,7 +40,7 @@ class AppState:
         # Variables for tracking feature mapping
         self.feat_map = None
         self.feat_colors = None
-        self.mapping_state = tk.BooleanVar(main, value=False)
+        self.has_mapping_state = tk.BooleanVar(main, value=False)
 
         # Variables for the current figure being displayed
         self.fig_size = (8, 5)

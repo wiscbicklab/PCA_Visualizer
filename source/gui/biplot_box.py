@@ -296,7 +296,7 @@ class BiplotBox(tk.Frame):
                 group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
             }
 
-            self.app_state.mapping_state.set(True)
+            self.app_state.has_mapping_state.set(True)
 
             messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
         
@@ -314,7 +314,7 @@ class BiplotBox(tk.Frame):
                                 "Feature grouping is now enabled. Please upload a mapping file.")
         else:
             # Disable the mapping upload button and reset group-related variables
-            self.app_state.mapping_state.set(False)
+            self.app_state.has_mapping_state.set(False)
             self.app_state.feat_map = None
             self.app_state.feat_colors = None
 
@@ -530,7 +530,7 @@ class BiplotBox(tk.Frame):
             clickmode='event+select',
             showlegend=True,
             legend=dict(
-                title="Feature Groups" if self.app_state.mapping_state.get() else "Features",
+                title="Feature Groups" if self.app_state.has_mapping_state.get() else "Features",
                 yanchor="top",
                 y=0.99,
                 xanchor="right",
@@ -550,7 +550,7 @@ class BiplotBox(tk.Frame):
 
         
     def check_feature_grouping(self):
-        if self.enable_feature_grouping.get() and not self.app_state.mapping_state.get():
+        if self.enable_feature_grouping.get() and not self.app_state.has_mapping_state.get():
             messagebox.showerror("Error", "Feature Groups is enabled, but a feature group has not been uploaded!")
             return False
         return True
@@ -599,7 +599,7 @@ class BiplotBox(tk.Frame):
 
     def get_color_mapping(self, top_feat):
         # Generates a generic color mapping if one hasn't been uploaded
-        if not self.app_state.mapping_state.get():
+        if not self.app_state.has_mapping_state.get():
             colormap = cm.get_cmap('tab20', len(top_feat))
             self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
             self.app_state.feat_colors = {
