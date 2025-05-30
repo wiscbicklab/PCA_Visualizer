@@ -13,11 +13,12 @@ DEFAULT_COLUMNS_TO_DROP = [
     "SideFlowerStrip_W", "SideFlowerStrip_preflow"
 ]
 
+BG_COLOR = {"bg": "#f5f5f5",}
+
 # Style constants
 LABEL_STYLE = {
     "font":   ("Helvetica", 10),
-    "bg":     "#f5f5f5",
-
+    "bg":     BG_COLOR["bg"],
 }
 BANNER_STYLE = {
     "font": ("Helvetica", 12),

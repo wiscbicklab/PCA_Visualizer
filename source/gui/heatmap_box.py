@@ -36,6 +36,7 @@ class HeatmapBox(tk.Frame):
         self.setup_layout()
 
     def create_components(self):
+        """Creates the components to be placed onto this tk Frame"""
         # Banner
         self.heatmap_banner = tk.Label(self, **BANNER_STYLE, text="Heatmap Section")
         
@@ -50,8 +51,8 @@ class HeatmapBox(tk.Frame):
 
         self.heatmap_button = tk.Button(self, text="Plot Heatmap", command=self.create_heatmap_fig, **BUTTON_STYLE)
 
-        
     def setup_layout(self):
+        """Sets the components onto this tk Frame"""
         # Configure component structure
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)

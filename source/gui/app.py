@@ -7,6 +7,7 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.cm as cm
 import matplotlib.colors as mcolors
+from matplotlib.figure import Figure
 
 
 
@@ -29,12 +30,11 @@ import traceback
 class PCAAnalysisApp(tk.Tk):
     """GUI Application for PCA Analysis."""
 
+    #### 0. Setup GUI Elements ####
+
     def __init__(self):
         """
         Initialize the GUI_Application
-
-        Args:
-            root: 
         """
         # Sets up the window, and creates a way to track the app state
         super().__init__()
@@ -44,7 +44,7 @@ class PCAAnalysisApp(tk.Tk):
         # Object for running PCA analysis
         self.pca_analyzer = PCAAnalyzer()
 
-        # Creates a scroll bar
+        # Declare scrollable section
         self.options_scroll = None
         self.options_canvas = None
         self.options_window = None
@@ -57,6 +57,10 @@ class PCAAnalysisApp(tk.Tk):
         self.biplot_box = None
         self.heatmap_box = None
 
+        # Declare color palette selection
+        self.palette_label = None
+        self.palette_menu = None
+
         # Declare space for the figure to be stored
         self.plot_canvas = None
         self.plot_canvas_figure = None
@@ -68,7 +72,6 @@ class PCAAnalysisApp(tk.Tk):
         self.save_button = None
 
         # Set up the application
-        #self.initialize_matplotlib()
         self.create_widgets()
         self.setup_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
@@ -91,16 +94,16 @@ class PCAAnalysisApp(tk.Tk):
         self.minsize(1350, 700)
 
     def create_widgets(self):
-        """Create all widgets"""
-
+        """Creates the components to be placed onto this tk Frame"""
+        # Creates canvas and figure where plots will be displayed
         self.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
         self.plot_canvas_figure = self.plot_canvas.get_tk_widget()
 
-        # Sets up scrollable window
+        # Creates a scrollable window 
         self.options_canvas = tk.Canvas(self)
         self.options_scroll = Scrollbar(self, orient=VERTICAL, command=self.options_canvas.yview)
         self.options_canvas.configure(yscrollcommand=self.options_scroll.set)
-        self.options_frame = tk.Frame(self.options_canvas, bg="#f0f0f0")
+        self.options_frame = tk.Frame(self.options_canvas, **BG_COLOR)
         self.options_window = self.options_canvas.create_window(
             (0, 0),
             window=self.options_frame,
@@ -118,8 +121,6 @@ class PCAAnalysisApp(tk.Tk):
         self.options_canvas.bind("<Enter>", lambda e: self._bind_mousewheel())
         self.options_canvas.bind("<Leave>", lambda e: self._unbind_mousewheel())
 
-
-
         # Output Directory Section
         self.output_dir_label = tk.Label(
             self,
@@ -135,11 +136,11 @@ class PCAAnalysisApp(tk.Tk):
         )
 
         # Intialize Custom components
-        self.load_file_box = LoadFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.pca_box = visual_setting_Box(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.biplot_box = BiplotBox(self.options_frame, self.app_state, bg="#f0f0f0")
-        self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, bg="#f0f0f0")
+        self.load_file_box = LoadFileBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.pca_box = visual_setting_Box(self.options_frame, self.app_state, **BG_COLOR)
+        self.biplot_box = BiplotBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
 
         # Color Palette Selection
         self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
@@ -155,7 +156,7 @@ class PCAAnalysisApp(tk.Tk):
         self.focus_on_loadings = tk.BooleanVar(value=True)
 
         # Results Section
-        self.data_insight_summary = tk.Text(self, height=8, width=50, font=LABEL_STYLE["font"], bg="white")
+        self.data_insight_summary = tk.Text(self, height=8, width=50, **LABEL_STYLE)
 
         # Save
         self.save_button = tk.Button(self, text="Save Plot", **BUTTON_STYLE, command=self.save_plot)
@@ -183,8 +184,8 @@ class PCAAnalysisApp(tk.Tk):
         self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
 
         # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
-        self.palette_menu.grid(row=6, column=0, padx=5, pady=5, sticky="w")
+        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
+        self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
         self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
@@ -377,14 +378,6 @@ class PCAAnalysisApp(tk.Tk):
             print(error_str)
             messagebox.showerror("Error", f"Failed to update color palette: {str(e)}")
 
-    def update_target_input(self, *args):
-        """Enable or disable the target input box based on the dropdown selection."""
-        if self.target_mode.get() == "Input Specific Target":
-            self.custom_target_entry.config(state="normal")
-        else:
-            self.custom_target_entry.delete(0, tk.END)
-            self.custom_target_entry.config(state="disabled")
-
     def update_figure(self):
         # Destroy old canvas
         self.app_state.main.plot_canvas_figure.destroy()
@@ -399,6 +392,10 @@ class PCAAnalysisApp(tk.Tk):
         self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
         self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
 
+    def create_blank_fig(self, grid=True):
+        self.app_state.fig = Figure(self.app_state.fig_size)
+        self.app_state.ax = self.app_state.fig.add_subplot(111)
+        self.app_state.ax.grid(grid)
 
 
     #### 5. EVENT HANDLERS ####
@@ -412,8 +409,8 @@ class PCAAnalysisApp(tk.Tk):
         
         # Create file path
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        plot_filename = f'plot_{timestamp}.png'
-        save_path = os.path.join(output_dir, plot_filename)
+        filename = f'plot_{timestamp}.png'
+        save_path = os.path.join(output_dir, filename)
             
         try:
             self.app_state.fig.savefig(save_path)
@@ -454,8 +451,9 @@ class PCAAnalysisApp(tk.Tk):
 
         
 
-
 # Start App
 if __name__ == "__main__":   
         app = PCAAnalysisApp()  
         app.mainloop()
+
+

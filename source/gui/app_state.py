@@ -29,6 +29,10 @@ class AppState:
         self.df_cleaned = tk.BooleanVar(main, value=False)
         self.df_updated = tk.BooleanVar(main, value=False)
 
+        # Varialbe to track user inputs for data cleaning
+        self.missing_choice = tk.StringVar(main, value="impute_mean")
+        self.bbch_choice = tk.IntVar(main, value=-1)
+
         # Variables to track user inputs for plot generation
         self.target_mode = tk.StringVar(main, "None")
         self.custom_target = tk.StringVar(main, "")
@@ -40,7 +44,7 @@ class AppState:
         # Variables for tracking feature mapping
         self.feat_map = None
         self.feat_colors = None
-        self.has_mapping_state = tk.BooleanVar(main, value=False)
+        self.feat_group_enable = tk.BooleanVar(main, value=False)
 
         # Variables for the current figure being displayed
         self.fig_size = (8, 5)
