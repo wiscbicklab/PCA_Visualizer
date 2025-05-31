@@ -195,9 +195,6 @@ class HeatmapBox(tk.Frame):
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
 
-
-
-
     def validate_and_get_loadings(self, heatmap_mode, focus_entry=None):
         """
         Validates PCA model and retrieves loadings based on mode.
@@ -231,3 +228,7 @@ class HeatmapBox(tk.Frame):
         except Exception as e:
             messagebox.showerror("Error", f"Error processing loadings: {str(e)}")
             return None, None
+        
+
+
+

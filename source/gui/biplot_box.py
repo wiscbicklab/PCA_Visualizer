@@ -165,7 +165,8 @@ class BiplotBox(tk.Frame):
         if not self.init_biplot_fig(variance, num_feat): return 
 
         # Add legend for groups
-        for group, color in self.app_state.feat_colors.items():
+        feat_map, feat_colors = self.get_color_mapping(top_feat)
+        for group, color in feat_colors.items():
             self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
         self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
@@ -586,12 +587,14 @@ class BiplotBox(tk.Frame):
             feature mapping and feature colors
         """
         # Generates a generic color mapping if one hasn't been uploaded
-        if self.app_state.feat_map is not None:
+        if self.app_state.feat_map is None or len(self.app_state.feat_map) != self.app_state.top_n_feat.get():
             colormap = cm.get_cmap('tab20', len(top_feat))
             self.app_state.feat_map = {feature.lower(): feature for feature in top_feat}
             self.app_state.feat_colors = {
                 feature: to_hex(colormap(i)) for i, feature in enumerate(top_feat)
             }
+        print(self.app_state.feat_map)
+        print(self.app_state.feat_colors)
         # Returns the existing color mapping or the generated one
         return self.app_state.feat_map, self.app_state.feat_colors
 

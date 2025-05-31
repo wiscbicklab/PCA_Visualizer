@@ -94,16 +94,7 @@ class LoadFileBox(tk.Frame):
         self.app_state.df_cleaned.set(False)
 
         # Generate new blank figure
-        self.app_state.main.create_blank_fig()
-        
-
-        
-        #DEBUGGING CONSOLE PRINTOUT
-        print("DataFrame Shape:\t" + self.app_state.df.shape)
-        print("DataFrame Head:\t" + self.app_state.df.head())
-        print("DataFrame Column Names:\t" + self.app_state.df.columns)
-
-        
+        self.app_state.main.create_blank_fig()    
 
         # Updates the GUI and shows sucess message
         self.app_state.main.update_data_info()

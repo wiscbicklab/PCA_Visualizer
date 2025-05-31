@@ -57,8 +57,8 @@ class CleanFileBox(tk.Frame):
         self.banner = tk.Label(self, text="Clean and/or Filter Data", **BANNER_STYLE)
         
         # Creates selector components for user input       
-        self.missing_selector = MissingSelector(self, bg="#f0f0f0")
-        self.bbch_selector = BbchSelector(self,bg="#f0f0f0")
+        self.missing_selector = MissingSelector(self, self.app_state, bg="#f0f0f0")
+        self.bbch_selector = BbchSelector(self, self.app_state, bg="#f0f0f0")
         
         # Creates widgets for selecting columns to drop
         self.drop_label = tk.Label(self, text="Columns to Drop (comma-separated):", **LABEL_STYLE)

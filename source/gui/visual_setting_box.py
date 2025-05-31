@@ -94,6 +94,7 @@ class visual_setting_Box(tk.Frame):
         )
         self.num_pca_comp_entry.bind("<FocusOut>", lambda e: self.on_exit(self.num_pca_comp_entry, "2", "num_pca_comp"))
         self.num_pca_comp_entry.bind("<FocusIn>", lambda e: self.on_entry(self.num_pca_comp_entry))
+        self.num_pca_comp_entry.bind("<Return>", lambda e: self.num_pca_comp_entry.tk_focusNext().focus())
 
         # Creates components for selecting the number of top PCA features
         self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
@@ -106,6 +107,8 @@ class visual_setting_Box(tk.Frame):
         )
         self.top_n_entry.bind("<FocusOut>", lambda e: self.on_exit(self.top_n_entry, "10", "top_n_feat"))
         self.top_n_entry.bind("<FocusIn>", lambda e: self.on_entry(self.top_n_entry))
+        self.top_n_entry.bind("<Return>", lambda e: self.top_n_entry.tk_focusNext().focus())
+
 
         # Creates components for selecting which PCA component to analise
         self.pca_num_label = tk.Label(self, text="Select the PCA Component to Analize", **LABEL_STYLE)
@@ -118,6 +121,8 @@ class visual_setting_Box(tk.Frame):
         )
         self.pca_num_entry.bind("<FocusOut>", lambda e: self.on_exit(self.pca_num_entry, "1", "pca_num"))
         self.pca_num_entry.bind("<FocusIn>", lambda e: self.on_entry(self.pca_num_entry))
+        self.pca_num_entry.bind("<Return>", lambda e: self.pca_num_entry.tk_focusNext().focus())
+
 
         # Creates components for selecting the label text distance
         self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
@@ -130,6 +135,8 @@ class visual_setting_Box(tk.Frame):
         )
         self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_exit(self.text_dist_entry, "1.1", "text_dist"))
         self.text_dist_entry.bind("<FocusIn>", lambda e: self.on_entry(self.text_dist_entry))
+        self.text_dist_entry.bind("<Return>", lambda e: self.text_dist_entry.tk_focusNext().focus())
+
 
         # Creates button for visualizing PCA plot
         self.button = tk.Button(self, text="Visualize PCA", **BUTTON_STYLE, command=self.visualize_pca)
@@ -186,6 +193,13 @@ class visual_setting_Box(tk.Frame):
         # Gets the user selected target variable
         target= self.get_target()
 
+        # Generate new blank figure
+        self.app_state.main.create_blank_fig()
+        # Adds title and axis lables to the figure
+        self.app_state.ax.set_title("PCA Visualization")
+        self.app_state.ax.set_xlabel("Principal Component 1")
+        self.app_state.ax.set_ylabel("Principal Component 2")
+
         # Plot grouped by target if available
         if target:
             # Gets targets
@@ -208,12 +222,6 @@ class visual_setting_Box(tk.Frame):
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
 
-        # Generate new blank figure
-        self.app_state.main.create_blank_fig()
-        # Adds title and axis lables to the figure
-        self.app_state.ax.set_title("PCA Visualization")
-        self.app_state.ax.set_xlabel("Principal Component 1")
-        self.app_state.ax.set_ylabel("Principal Component 2")
         self.app_state.main.update_figure()
 
     def get_target(self):
@@ -228,17 +236,34 @@ class visual_setting_Box(tk.Frame):
             if target_mode in self.app_state.df.columns.to_list():
                 return "bbch"
             else:
-                messagebox.showerror("Target Error", f"BBCH selected as target, but not found in the dataset!")
+                messagebox.showerror(
+                    "Target Error",
+                    f"BBCH selected as target, but not found in the dataset!"
+                )
                 return None
         elif target_mode == "input specific target":
+            print("Target_Mode is 'input specific target'")
             # If the target mode is a custom target get the user specified target
             target = self.app_state.custom_target.get()
             if not target or target.isspace():
-                messagebox.showerror("Target Error", f"Invalid target selected.")
+                messagebox.showerror(
+                    "Target Error",
+                    f"Invalid target selected.\nDefaulting to no target."
+                )
                 return None
             if target not in self.app_state.df.columns.to_list():
-                messagebox.showerror("Target Error", f"Target variable '{target}' not found in the dataset!")
+                messagebox.showerror(
+                    "Target Error",
+                    f"Target variable '{target}' not found in the dataset!\nDefualting to no target."
+                )
                 return None
+            return target
+        else:
+            messagebox.showerror(
+                "Target_Mode Error",
+                f"An internal application error occured, an impossible target_mode was selected!"
+            )
+            return None
 
 
     #### 2. EVENT HANDLERS ####
