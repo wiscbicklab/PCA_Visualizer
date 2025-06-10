@@ -87,7 +87,7 @@ class PCAAnalysisApp(tk.Tk):
 
         # Sets state maximized if possible
         if self.app_state.os_type == "Windows" or self.app_state.os_type == "Darwin":
-            self.state("-zoomed")
+            self.state("zoomed")
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
