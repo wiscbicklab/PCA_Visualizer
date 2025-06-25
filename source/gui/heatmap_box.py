@@ -45,9 +45,11 @@ class HeatmapBox(tk.Frame):
         heatmap_options = ["Top 10 Features", "Top 20 Features", "Custom Features"]
         self.heatmap_mode_label = tk.Label(self, text="Select Heatmap Mode:", **LABEL_STYLE)
         self.heatmap_mode_menu = tk.OptionMenu( self, self.heatmap_mode_var, *heatmap_options)
+        self.heatmap_mode_var.trace_add("write", self.on_heatmap_mode_change)
 
         self.focus_label = tk.Label(self, text="Columns to Focus On (comma-separated):", **LABEL_STYLE)
         self.focus_entry = tk.Entry(self, **ENTRY_STYLE)
+        self.focus_entry.configure(state="disabled")
 
         self.heatmap_button = tk.Button(self, text="Plot Heatmap", command=self.create_heatmap_fig, **BUTTON_STYLE)
 
@@ -80,12 +82,6 @@ class HeatmapBox(tk.Frame):
             return
         
         try:
-            heatmap_mode = self.heatmap_mode_var.get()
-            if heatmap_mode == "Top 10 Features":
-                self.app_state.top_n_feat.set(10)
-            else:
-                self.app_state.top_n_feat.set(20)
-
             # Ensures PCA has been run
             self.app_state.main.run_analysis()
 
@@ -93,38 +89,23 @@ class HeatmapBox(tk.Frame):
             if not self.init_fig():
                 messagebox.showerror("Error", f"Failed to plot top feature loadings: {str(e)}")
 
-            pca_comp_num = self.app_state.pca_num.get()-1
-            top_n = self.app_state.num_pca_comp.get()
-
-
-            # Validate and retrieve loadings
-            loadings = abs(self.app_state.pca_results['components'])
-            feat_names = self.app_state.pca_results['feature_names']
-
-            # Sorting the loadings
-            sorted_pairs = sorted(zip(feat_names, loadings), key=lambda x: abs(x[1][pca_comp_num]), reverse=True)
-
-            sorted_feat_names, sorted_loadings = zip(*sorted_pairs)
-            sorted_loadings_rows = list(sorted_loadings)
-            sorted_feat_names = list(sorted_feat_names)
-
-            # Convert list of vectors back into a 2D array
-            sorted_loadings_array = np.vstack(sorted_loadings_rows)
-            sorted_loadings_rows = sorted_loadings_rows[:, :top_n]
-
-            # Retrieve heatmap mode (e.g., from a dropdown)
+            # Get user entered heatmap mode and PCA data
+            heatmap_mode = self.heatmap_mode_var.get()
+            loadings = abs(self.app_state.pca_results['loadings'])
 
             # Determine focus columns
-            #focus_columns = self.get_focus_columns(heatmap_mode, focus_entry=self.focus_entry.get())
+            focus_columns = self.get_focus_columns(heatmap_mode, focus_entry=self.focus_entry.get())
 
-            # Create and display heatmap
+            # Update the heatmap figure
             self.display_loadings_heatmap(
-                loadings=sorted_loadings_array,
-                feat_names=sorted_feat_names,
+                loadings=loadings,
+                data_columns=self.app_state.df.columns.tolist(),
+                focus_columns=focus_columns,
                 cmap="coolwarm"
             )
 
-            self.app_state.main.update_figure()  # This ensures the new plot appears on the canvas
+            # Ensure that the GUI updates
+            self.app_state.main.update_figure()
 
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
@@ -148,7 +129,7 @@ class HeatmapBox(tk.Frame):
             return False
 
 
-    def display_loadings_heatmap(self, loadings, feat_names, cmap='viridis'):
+    def display_loadings_heatmap(self, loadings, data_columns, focus_columns=None, cmap='viridis'):
         """
         Display a heatmap of loadings with improved design.
         :param loadings: PCA loadings matrix
@@ -157,18 +138,32 @@ class HeatmapBox(tk.Frame):
         :param cmap: Colormap for heatmap
         """
 
+        if focus_columns is None:
+            focus_columns = data_columns  # Default to all columns if none specified
+
+        # Select only the relevant rows from the loadings matrix
+        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
+
         # Create the heatmap
         plt.figure(figsize=(10, 12))  # Increase figure size for clarity
         sns.heatmap(
-            loadings,
+            selected_loadings,
             annot=True,  # Add annotations to cells
             fmt=".2f",  # Format numbers
             cmap=cmap,  # Use perceptually uniform colormap
             cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
             xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
-            yticklabels=feat_names,
+            yticklabels=focus_columns,
             ax=self.app_state.ax
         )
+
+        # Improve plot aesthetics
+        self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
+        self.app_state.ax.tick_params(axis='x', labelsize=12)
+        self.app_state.ax.tick_params(axis='y', labelsize=10)
+        self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
+        self.app_state.ax.set_ylabel('Features', fontsize=14)
+
 
     def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
         """Determine columns to focus on based on heatmap mode."""
@@ -230,5 +225,14 @@ class HeatmapBox(tk.Frame):
             return None, None
         
 
+
+    #### 3. EVENT HANDLERS ####
+
+    def on_heatmap_mode_change(self, *args):
+        if self.heatmap_mode_var.get() == "Custom Features":
+            self.focus_entry.configure(state="normal")
+        else:
+            self.focus_entry.delete(0, tk.END)
+            self.focus_entry.configure(state="disabled")
 
 
