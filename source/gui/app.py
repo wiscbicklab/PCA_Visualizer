@@ -10,8 +10,6 @@ import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
 
-
-
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
