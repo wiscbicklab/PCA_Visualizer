@@ -298,7 +298,7 @@ class visual_setting_Box(tk.Frame):
             current_value = default_value
 
         # Set pca_num do defualt if it's too large
-        if attr_name == "pca_num" and float(current_value) > float(self.app_state.num_pca_comp.get()):
+        if attr_name == "pca_num" and float(current_value) > 2.1:
             widget.delete(0, tk.END)
             widget.insert(0, default_value)
             current_value = default_value

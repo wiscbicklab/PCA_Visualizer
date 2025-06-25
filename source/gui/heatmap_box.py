@@ -3,6 +3,7 @@ from tkinter import messagebox
 import traceback
 from matplotlib.figure import Figure
 import numpy as np
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
@@ -168,17 +169,26 @@ class HeatmapBox(tk.Frame):
     def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
         """Determine columns to focus on based on heatmap mode."""
         try:
+            # Get the column and loadings data
+            df_cols = self.app_state.df.columns.tolist()
+            loadings = self.app_state.pca_results['loadings']
+
+            # Get absolute loadings for the first principal component
+            pc1_loadings = abs(loadings[:, self.app_state.pca_num.get()-1])
+            loading_series = pd.Series(pc1_loadings, index=df_cols)
+            sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
+
             if heatmap_mode_var == "Top 10 Features":
-                return self.app_state.df.columns[:10].tolist()  # Top 10 features by default
+                return sorted_columns[:10]  # Top 10 by PCA loadings
             elif heatmap_mode_var == "Top 20 Features":
-                return self.app_state.df.columns[:20].tolist()  # Top 20 features by default
+                return sorted_columns[:20]  # Top 20 by PCA loadings
             elif heatmap_mode_var == "Custom Features":
                 if focus_entry:
                     columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
                     if not columns:
                         raise ValueError("No valid columns specified for custom heatmap.")
-                    # Ensure specified columns exist in the data
-                    missing_columns = [col for col in columns if col not in self.app_state.df.columns]
+                    # Check if specified columns exist
+                    missing_columns = [col for col in columns if col not in df_columns]
                     if missing_columns:
                         raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
                     return columns
@@ -186,6 +196,7 @@ class HeatmapBox(tk.Frame):
                     raise ValueError("No columns specified for custom heatmap.")
             else:
                 raise ValueError(f"Invalid heatmap mode: {heatmap_mode_var}")
+
         except Exception as e:
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
