@@ -265,7 +265,7 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
 
-    def generate_color_palette(self, n_groups, preferred_colors=None):
+    def generate_color_palette(self, n_groups, preferred_colors):
         """
         Generate a color palette for feature groups.
 
@@ -281,15 +281,6 @@ class PCAAnalysisApp(tk.Tk):
         dict
             A dictionary where keys are feature group names (e.g., "Group 1", "FAB") and values are color codes (hex).
         """
-        # Define default preferred colors if not provided
-        if preferred_colors is None:
-            preferred_colors = {
-                "FAB": "#000000",  # Black
-                "non-FAB": "#C0C0C0",  # Silver
-                "RAA": "#FF0000",  # Red
-                "Beneficials": "#008000",  # Green
-                "non-RAA pests": "#FFC0CB"  # Pink
-            }
 
         # Generate a colormap for any additional groups beyond preferred colors
         num_extra_colors = max(0, n_groups - len(preferred_colors))
@@ -353,22 +344,16 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_color_palette(self, *args):
         try:
-            if self.app_state.has_mapping_state:
-                unique_groups = set(self.feat_mapping.values())
+            if self.app_state.feat_group_enable.get():
+                unique_groups = set(self.app_state.feat_map.values())
                 n_groups = len(unique_groups)
                 selected_palette = self.app_state.selected_palette.get()
 
                 # Use predefined preferred colors (if any)
-                preferred_colors = {
-                    "FAB": "#000000",  # Black
-                    "non-FAB": "#C0C0C0",  # Silver
-                    "RAA": "#FF0000",  # Red
-                    "Beneficials": "#008000",  # Green
-                    "non-RAA pests": "#FFC0CB"  # Pink
-                }
+                preferred_colors = COLOR_PALETTES[selected_palette]
 
                 # Generate a combined palette using the helper function
-                self.feature_groups_colors = self.generate_color_palette(n_groups, preferred_colors)
+                self.app_state.feat_colors = self.generate_color_palette(n_groups, preferred_colors)
             else:
                 messagebox.showinfo("No Groups Defined", "No feature groups are currently defined.")
         except Exception as e:

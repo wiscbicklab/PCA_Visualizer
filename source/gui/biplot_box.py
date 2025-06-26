@@ -653,9 +653,8 @@ class BiplotBox(tk.Frame):
             messagebox.showerror("Error", "No file selected. Please upload a valid mapping CSV.")
             return
         
-        file_path = file_path.lower()
         # Ensures that the user selected a CSV file
-        if not file_path.endswith(".csv"):
+        if not file_path.lower().endswith(".csv"):
             messagebox.showerror(
                 "File Error",
                 f"The selected file: {file_path} is not a csv file. You must select a CSV file")

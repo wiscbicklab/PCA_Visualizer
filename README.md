@@ -122,11 +122,6 @@ PCA_11.27.24-pca/
     - Check "Top Loadings" to see feature rankings
     - For more than 2 principal components, adjust the component number textbox from the default 2, then run PCA again
 
-## Known Issues That Need Fixing:
-
-1. Feature Mapping: Enable/disable logic not functioning properly
-2. Heatmap: Currently showing index of features instead of top features
-3. User input - case sensitive and depeonds on user's csv - very rigid right now
 
 ## Future Enhancements
 
