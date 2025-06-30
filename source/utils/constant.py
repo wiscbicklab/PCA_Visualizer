@@ -34,10 +34,12 @@ BUTTON_STYLE = {
     "width": 22,
 }
 OPTION_MENU_STYLE = {
+    "font": ("Helvetica", 10),
     "bg": "#007ACC",
     "fg": "white",
+    "activebackground": "#005f99",
     "relief": "raised",
-    "width": 22,
+    "width": 20,
 }
 RAD_BUTTON_STYLE = {
     "font": ("Helvetica", 10),

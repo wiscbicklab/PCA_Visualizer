@@ -15,12 +15,12 @@ from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
 
 # Components Imports
-from source.gui.load_file_box import LoadFileBox
-from source.gui.clean_file_box import CleanFileBox
+from source.gui.load_clean_file_box import CleanFileBox
 from source.gui.visual_setting_box import visual_setting_Box
 from source.gui.biplot_box import BiplotBox
 from source.gui.heatmap_box import HeatmapBox
 from source.gui.app_state  import AppState
+import source.utils.file_operations as file_ops
 
 import traceback
 
@@ -49,8 +49,7 @@ class PCAAnalysisApp(tk.Tk):
         self.options_frame = None
 
         # Declare the custom component
-        self.load_file_box = None
-        self.clean_file_box = None
+        self.load_clean_file_box = None
         self.pca_box = None
         self.biplot_box = None
         self.heatmap_box = None
@@ -70,7 +69,7 @@ class PCAAnalysisApp(tk.Tk):
         self.save_button = None
 
         # Set up the application
-        self.create_widgets()
+        self.create_components()
         self.setup_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
@@ -91,7 +90,7 @@ class PCAAnalysisApp(tk.Tk):
         self.configure(bg="#f5f5f5")
         self.minsize(1350, 700)
 
-    def create_widgets(self):
+    def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates canvas and figure where plots will be displayed
         self.plot_canvas = FigureCanvasTkAgg(self.app_state.fig, master=self)
@@ -134,8 +133,7 @@ class PCAAnalysisApp(tk.Tk):
         )
 
         # Intialize Custom components
-        self.load_file_box = LoadFileBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.load_clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
         self.pca_box = visual_setting_Box(self.options_frame, self.app_state, **BG_COLOR)
         self.biplot_box = BiplotBox(self.options_frame, self.app_state, **BG_COLOR)
         self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
@@ -157,7 +155,12 @@ class PCAAnalysisApp(tk.Tk):
         self.data_insight_summary = tk.Text(self, height=8, width=50, **LABEL_STYLE)
 
         # Save
-        self.save_button = tk.Button(self, text="Save Plot", **BUTTON_STYLE, command=self.save_plot)
+        self.save_button = tk.Button(
+            self,
+            text="Save Plot",
+            **BUTTON_STYLE,
+            command=lambda: file_ops.save_plot(self.app_state.fig, self.app_state.output_dir)
+        )
 
     def setup_layout(self):
         """Setup the layout of GUI components"""
@@ -175,8 +178,7 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
-        self.load_file_box.grid(row=0, column=0, padx=10, pady=10, sticky="we")
-        self.clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
+        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
         self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
         self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
@@ -217,71 +219,37 @@ class PCAAnalysisApp(tk.Tk):
             # Update df status variables
             self.app_state.df_updated.set(False)
 
-        except ValueError as ve:
+        except ValueError as e:
+            print(e.with_traceback)
             messagebox.showerror("Analysis Error", str(ve))
         except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
+            print(e.with_traceback)
             messagebox.showerror("Error", f"PCA analysis failed: {str(e)}")
 
     def select_output_directory(self):
         """Allow the user to select an output directory for saving plots."""
         selected_dir = filedialog.askdirectory()
         if selected_dir:  # If the user selects a directory
-            self.output_dir = selected_dir
+            self.app_state.output_dir = selected_dir
             self.output_dir_label.config(text=f"Output Directory: {self.app_state.output_dir}")
             messagebox.showinfo("Directory Selected", f"Output directory set to:\n{self.app_state.output_dir}")
         else:
-            messagebox.showwarning("No Directory Selected", "Using the default output directory.")
+            messagebox.showerror("No Directory Selected", f"Output directory set to:\n{self.app_state.output_dir}.")
       
     
-
     #### 3. UTILITY METHODS ####
    
-    def get_focus_columns(self, heatmap_mode_var, focus_entry=None):
-        """Determine columns to focus on based on heatmap mode."""
-        try:
-            if heatmap_mode_var == "Top 10 Features":
-                return self.app_state.df.columns[:10].tolist()  # Top 10 features by default
-            elif heatmap_mode_var == "Top 20 Features":
-                return self.app_state.df.columns[:20].tolist()  # Top 20 features by default
-            elif heatmap_mode_var == "Custom Features":
-                if focus_entry:
-                    columns = [col.strip() for col in focus_entry.split(",") if col.strip()]
-                    if not columns:
-                        raise ValueError("No valid columns specified for custom heatmap.")
-                    # Ensure specified columns exist in the data
-                    missing_columns = [col for col in columns if col not in self.app_state.df.columns]
-                    if missing_columns:
-                        raise ValueError(f"The following columns are not in the dataset: {', '.join(missing_columns)}")
-                    return columns
-                else:
-                    raise ValueError("No columns specified for custom heatmap.")
-            else:
-                raise ValueError(f"Invalid heatmap mode: {heatmap_mode_var}")
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
-            return None
-
     def generate_color_palette(self, n_groups, preferred_colors):
         """
         Generate a color palette for feature groups.
 
-        Parameters:
-        -----------
-        n_groups : int
-            The number of feature groups to generate colors for.
-        preferred_colors : dict, optional
-            A dictionary of predefined colors for specific feature groups. Keys are group names, and values are color codes.
+        Args:
+            n_groups: The number of feature groups to generate colors for.
+            preferred_colors: A dictionary of predefined colors for specific feature groups. Keys are group names, and values are color codes.
 
         Returns:
-        --------
-        dict
-            A dictionary where keys are feature group names (e.g., "Group 1", "FAB") and values are color codes (hex).
+            A dictionary where keys are feature group names and values are hex color codes
         """
-
         # Generate a colormap for any additional groups beyond preferred colors
         num_extra_colors = max(0, n_groups - len(preferred_colors))
         colormap = cm.get_cmap('tab20', num_extra_colors)  # Use a 20-color palette
@@ -304,7 +272,7 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_data_info(self):
         """Update display with simplified data information."""
-        if self.app_state.df_loaded.get():
+        if self.app_state.df is not None:
             # Simple, clean formatting
             info_text = "Data Information\n"
             info_text += "═══════════════\n\n"
@@ -316,7 +284,7 @@ class PCAAnalysisApp(tk.Tk):
             for i, col in enumerate(columns, 1):
                 info_text += f"{i}. {col}\n"
 
-            # Update the results summary box
+            # Insert the info_text into the GUI widget
             self.data_insight_summary.delete(1.0, tk.END)
             self.data_insight_summary.insert(tk.END, info_text)
 
@@ -324,8 +292,6 @@ class PCAAnalysisApp(tk.Tk):
 
     def update_results_display(self, results: dict):
         """Update results display with simplified formatting."""
-        self.data_insight_summary.delete(1.0, tk.END)
-
         # Simple, clean formatting
         summary = "PCA Analysis Results\n"
         summary += "══════════════════\n\n"
@@ -340,12 +306,14 @@ class PCAAnalysisApp(tk.Tk):
         for i, var in enumerate(results['explained_variance']):
             summary += f"PC{i + 1}: {var:.3f}\n"
 
+        # Insert the summary into the GUI widget
+        self.data_insight_summary.delete(1.0, tk.END)
         self.data_insight_summary.insert(tk.END, summary)
 
     def update_color_palette(self, *args):
         try:
             if self.app_state.feat_group_enable.get():
-                unique_groups = set(self.app_state.feat_map.values())
+                unique_groups = set(self.app_state.feat_group_map.values())
                 n_groups = len(unique_groups)
                 selected_palette = self.app_state.selected_palette.get()
 
@@ -353,9 +321,9 @@ class PCAAnalysisApp(tk.Tk):
                 preferred_colors = COLOR_PALETTES[selected_palette]
 
                 # Generate a combined palette using the helper function
-                self.app_state.feat_colors = self.generate_color_palette(n_groups, preferred_colors)
+                self.app_state.group_color_map = self.generate_color_palette(n_groups, preferred_colors)
             else:
-                messagebox.showinfo("No Groups Defined", "No feature groups are currently defined.")
+                messagebox.showerror("No Groups Defined", "No feature groups are currently defined.")
         except Exception as e:
             error_str = traceback.print_exc()  # Keep detailed error tracking
             print(error_str)
@@ -382,28 +350,6 @@ class PCAAnalysisApp(tk.Tk):
 
 
     #### 5. EVENT HANDLERS ####
-
-    def save_plot(self):
-        """Save the current plot using the dynamic output directory."""
-        output_dir = self.app_state.output_dir
-        # Create Directory if it doesn't exist
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-        
-        # Create file path
-        timestamp = time.strftime("%Y%m%d-%H%M%S")
-        filename = f'plot_{timestamp}.png'
-        save_path = os.path.join(output_dir, filename)
-            
-        try:
-            self.app_state.fig.savefig(save_path)
-            messagebox.showinfo("Success", f"Plot saved at:\n{save_path}")
-            return save_path
-
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Save Error", f"Could not save plot: {str(e)}")
 
     def on_close(self):
         if self.plot_canvas:

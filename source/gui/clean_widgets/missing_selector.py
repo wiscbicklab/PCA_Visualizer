@@ -8,9 +8,30 @@ from source.utils.constant import *
 
 
 class MissingSelector(tk.Frame):
-    """Gui Frame for asking the user how they would like to filter/interpolate missing data."""
+    """
+    A GUI box for selecting how to handle missing values in the data
+
+    A text Header
+    Radio buttons for selecting the filter
+        Button for Imputing with Mean
+        Button for Imputing with Median
+        Button for Replacing with 0
+    """
+
+    #### 0. Setup GUI Elements ####
+
     def __init__(self, main: tk.Tk, app_state: AppState,  **kwargs):
-        """Initializes Radio button selection for interpolating missing data"""
+        """
+        Creates a space for selecting BBCH filtering
+        
+        Parameters:
+            main: tk.Widget
+                The parent widget for this frame.
+            app_state: AppState
+                The app_state variable used to pass data between components
+            **kwargs: dict
+                Additional keyword arguments passed to tk.Frame.
+        """
         # Intializes data about the container class
         super().__init__(main, **kwargs)
         self.app_state = app_state

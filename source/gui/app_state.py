@@ -25,7 +25,6 @@ class AppState:
 
         # Variables for tracking the data frame with the data file
         self.df = None
-        self.df_loaded = tk.BooleanVar(main, value=False)
         self.df_cleaned = tk.BooleanVar(main, value=False)
         self.df_updated = tk.BooleanVar(main, value=False)
 
@@ -42,9 +41,9 @@ class AppState:
         self.text_dist = tk.DoubleVar(main, value=1.1)
 
         # Variables for tracking feature mapping
-        self.feat_map = None
-        self.feat_colors = None
         self.feat_group_enable = tk.BooleanVar(main, value=False)
+        self.feat_group_map = None
+        self.group_color_map = None
 
         # Variables for the current figure being displayed
         self.fig_size = (8, 5)

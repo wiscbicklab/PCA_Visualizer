@@ -8,21 +8,30 @@ from source.utils.constant import *
 
 class BbchSelector(tk.Frame):
     """
-    Creates a space for selecting BBCH filtering
-    
-    Parameters:
-        main: tk.Widget
-            The parent widget for this frame.
-        app_state: AppState
-            The app_state variable used to pass data between components
-        **kwargs: dict
-            Additional keyword arguments passed to tk.Frame.
+    A GUI box for selecting the bbch value to filter by
+
+    A text Header
+    Radio buttons for selecting the filter
+        Button for All(no filter)
+        Button for BBCH 59
+        Button for BBCH 69
+        Button for BBCH 85
     """
     
     #### 0. Setup GUI Elements ####
     
     def __init__(self, main: tk.Tk, app_state: AppState, **kwargs):
-        """Initializes Radio button selection for BBCH"""
+        """
+        Creates a space for selecting BBCH filtering
+        
+        Parameters:
+            main: tk.Widget
+                The parent widget for this frame.
+            app_state: AppState
+                The app_state variable used to pass data between components
+            **kwargs: dict
+                Additional keyword arguments passed to tk.Frame.
+        """
         # Intializes data about the container class
         super().__init__(main, **kwargs)
         self.app_state = app_state

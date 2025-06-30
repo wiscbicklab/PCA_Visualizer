@@ -13,20 +13,33 @@ from source.utils.constant import *
 
 class visual_setting_Box(tk.Frame):
     """
-    Creates a space for plot settings and visualizing PCA analysis
+    A GUI box for holding selection settings for PCA analysis and other plot generation
 
-    Args:
-        main: tk.Widget
-            The parent widget for this frame.
-        app_state: AppState
-            The app_state variable used to pass data between components
-        **kwargs: dict
-            Additional keyword arguments passed to tk.Frame.
+    A banner with a header for the section
+    Two columns, one for text labels and one for entries
+        * "Target Variable" and a dropdown menu
+        * "Custom Target Variable" and an entry box
+        * "Number of PCA Components" and an entry box
+        * "Top N Features for Biplot" and an entry bow
+        * "Select the PCA Component to Analize" and an entry box
+        * "Text Distance for Labels" and an entry box
+    A button for creating and visualizing a PCA plot
     """
 
     #### 0. Setup GUI Elements ####
 
     def __init__(self, main: tk.Tk, app_state: AppState, **kwargs):
+        """
+        Creates a space for plot settings and visualizing PCA analysis
+
+        Args:
+            main: tk.Widget
+                The parent widget for this frame.
+            app_state: AppState
+                The app_state variable used to pass data between components
+            **kwargs: dict
+                Additional keyword arguments passed to tk.Frame.
+        """
         super().__init__(main, **kwargs)
         self.main = main
         self.app_state = app_state
@@ -35,8 +48,9 @@ class visual_setting_Box(tk.Frame):
         self.banner = None
 
         # Declares target selection components
-        self.target_label = None
-        self.target_dropdown = None
+        self.target_mode_label = None
+        self.target_mode_dropdown = None
+        self.custom_target_label = None
         self.custom_target_entry = None
 
         # Declares selector for the number of PCA components
@@ -67,17 +81,23 @@ class visual_setting_Box(tk.Frame):
         self.banner = tk.Label(self, text="Visualize PCA", **BANNER_STYLE)
         
         # Creates compnents for seleting the target variable 
-        target_options = ["None", "bbch", "Input Specific Target"]
-        self.target_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
-        self.target_dropdown = tk.OptionMenu(self, self.app_state.target_mode, *target_options)
-        self.target_dropdown.configure(**OPTION_MENU_STYLE)
+        self.target_mode_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
+        self.target_mode_dropdown = tk.OptionMenu(
+            self,
+            self.app_state.target_mode, 
+            "None",
+            "bbch",
+            "Input Specific Target",
+        )
+        self.target_mode_dropdown.configure(**OPTION_MENU_STYLE)
+        self.custom_target_label = tk.Label(self, text="Custom Target Variable:", **LABEL_STYLE)
         self.custom_target_entry = tk.Entry(
             self,
             **ENTRY_STYLE,
             state="disabled",
             textvariable=self.app_state.custom_target
         )
-        self.app_state.target_mode.trace_add("write", self.toggle_target_entry)
+        self.app_state.target_mode.trace_add("write", self.toggle_custom_target_entry)
         
         # Creates validation commands for the text boxes
         self.vcmd_int = (self.register(self.validate_int), '%P')
@@ -151,8 +171,9 @@ class visual_setting_Box(tk.Frame):
         self.banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
     
         # Places target selection widgets
-        self.target_dropdown.grid(row=1, column=0, columnspan=2, padx=5, pady=5,)
-        self.target_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.target_mode_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.target_mode_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+        self.custom_target_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
         self.custom_target_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for number of PCA components
@@ -178,7 +199,12 @@ class visual_setting_Box(tk.Frame):
     #### 1. VISUALIZATION METHODS ####
 
     def visualize_pca(self):
-        """Creates a PCA visualization based on the given inputs and updates GUI plot"""
+        """
+        Creates a PCA visualization based on the given inputs and updates GUI plot
+        
+        Creates a PCA plot of the first two prinicple components. Creates groupings using
+            the selected Target Variable and gives them unique colors. Displays the generated plot.
+        """
         # Validates that the data has been cleaned
         if not self.app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned in order to run PCA.")
@@ -191,7 +217,7 @@ class visual_setting_Box(tk.Frame):
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
         
         # Gets the user selected target variable
-        target= self.get_target()
+        target = self.get_target()
 
         # Generate new blank figure
         self.app_state.main.create_blank_fig()
@@ -225,7 +251,13 @@ class visual_setting_Box(tk.Frame):
         self.app_state.main.update_figure()
 
     def get_target(self):
-        """Gets the user selected target"""
+        """
+        Gets the user selected target
+        
+        Returns:
+            None if None is selected, the selected target is not in the df, or an error occures
+            Otherwise the selected target stripped of whitespace and in lower case
+        """
         # Get the user selected target mode
         target_mode = self.app_state.target_mode.get().strip().lower()
 
@@ -242,9 +274,8 @@ class visual_setting_Box(tk.Frame):
                 )
                 return None
         elif target_mode == "input specific target":
-            print("Target_Mode is 'input specific target'")
             # If the target mode is a custom target get the user specified target
-            target = self.app_state.custom_target.get()
+            target = self.app_state.custom_target.get().strip().lower()
             if not target or target.isspace():
                 messagebox.showerror(
                     "Target Error",
@@ -268,14 +299,15 @@ class visual_setting_Box(tk.Frame):
 
     #### 2. EVENT HANDLERS ####
 
-    def toggle_target_entry(self, *args):
+    def toggle_custom_target_entry(self, *args):
+        """Toggles the custom_target_entry to accept or refuse input"""
         if self.app_state.target_mode.get() == "Input Specific Target":
             self.custom_target_entry.config(state="normal")
         else:
             self.custom_target_entry.config(state="disabled")
 
     def on_entry(self, widget):
-        """Command for saving input value on entry option upon enter"""
+        """Command for saving input value of entry option upon enter"""
         self.original_value = float(widget.get().strip())
 
     def on_exit(self, widget, default_value, attr_name):
@@ -308,7 +340,7 @@ class visual_setting_Box(tk.Frame):
             self.app_state.df_updated.set(True)
 
     def validate_int(self, proposed_value):
-        """Validate that user iput is an integer of is blank"""
+        """Validate that user iput is an integer or is blank"""
         if proposed_value == "" or proposed_value.isdigit():
             return True 
         return False
