@@ -36,14 +36,13 @@ class AppState:
         self.target_mode = tk.StringVar(main, "None")
         self.custom_target = tk.StringVar(main, "")
         self.num_pca_comp = tk.IntVar(main, value=2)
-        self.top_n_feat = tk.IntVar(main, value=10)
-        self.pca_num = tk.IntVar(main, value=1)
+        self.num_feat = tk.IntVar(main, value=10)
+        self.focused_pca_num = tk.IntVar(main, value=1)
         self.text_dist = tk.DoubleVar(main, value=1.1)
 
         # Variables for tracking feature mapping
         self.feat_group_enable = tk.BooleanVar(main, value=False)
         self.feat_group_map = None
-        self.group_color_map = None
 
         # Variables for the current figure being displayed
         self.fig_size = (8, 5)

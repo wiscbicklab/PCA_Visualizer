@@ -56,7 +56,7 @@ class HeatmapBox(tk.Frame):
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Banner
-        self.heatmap_banner = tk.Label(self, **BANNER_STYLE, text="Heatmap Section")
+        self.heatmap_banner = tk.Label(self, **BANNER_STYLE, text="Heatmap Generation")
         
 
         # Heatmap Controls
@@ -151,7 +151,7 @@ class HeatmapBox(tk.Frame):
             df_cols = self.app_state.df.columns.tolist()
 
             # Get absolute loadings for the first principal component
-            pc1_loadings = abs(loadings[:, self.app_state.pca_num.get()-1])
+            pc1_loadings = abs(loadings[:, self.app_state.focused_pca_num.get()-1])
             loading_series = pd.Series(pc1_loadings, index=df_cols)
             sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
 

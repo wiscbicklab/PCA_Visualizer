@@ -57,24 +57,24 @@ ENTRY_STYLE = {
 
 COLOR_PALETTES = {
     "Default": {
-        "FAB": "black",
-        "non-FAB": "silver",
-        "non-RAA pests": "pink",
-        "Beneficials": "green",
-        "RAA": "red"
+        "fab": "black",
+        "non-fab": "silver",
+        "non-raa pests": "pink",
+        "beneficials": "green",
+        "raa": "red"
     },
     "Colorblind-Friendly": {
-        "FAB": "#117733",
-        "non-FAB": "#88CCEE",
-        "non-RAA pests": "#CC6677",
-        "Beneficials": "#DDCC77",
-        "RAA": "#332288"
+        "fab": "#117733",
+        "non-fab": "#88CCEE",
+        "non-raa pests": "#CC6677",
+        "beneficials": "#DDCC77",
+        "raa": "#332288"
     },
     "Bright": {
-        "FAB": "#FF0000",
-        "non-FAB": "#00FF00",
-        "non-RAA pests": "#0000FF",
-        "Beneficials": "#FFFF00",
-        "RAA": "#FF00FF"
+        "fab": "#FF0000",
+        "non-fab": "#00FF00",
+        "non-raa pests": "#0000FF",
+        "beneficials": "#FFFF00",
+        "raa": "#FF00FF"
     }
 }

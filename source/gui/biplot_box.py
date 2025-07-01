@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import filedialog, messagebox
 import traceback
-from matplotlib import cm
+from matplotlib import cm, pyplot as plt
 from matplotlib.colors import to_hex
 from matplotlib.patches import Ellipse
 import pandas as pd
@@ -70,18 +70,18 @@ class BiplotBox(tk.Frame):
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates frame banner
-        self.biplot_banner = tk.Label(self, **BANNER_STYLE, text="Biplot Section")
+        self.biplot_banner = tk.Label(self, **BANNER_STYLE, text="Plot Generation")
         
         # Creates feature mapping components
         self.mapping_toggle = tk.Checkbutton(
             self,
             text="Enable Feature Grouping",
             variable=self.app_state.feat_group_enable,
+            command=self.update_mapping_bttn,
             **LABEL_STYLE,
         )
-        self.mapping_label = tk.Label(self, **LABEL_STYLE, text="Feature-to-Group Mapping (Optional):")
-        self.mapping_bttn = tk.Button(self, text="Upload Mapping CSV", **BUTTON_STYLE, command=self.upload_mapping)
-        self.mapping_bttn.config(state="normal")
+        self.mapping_label = tk.Label(self, **LABEL_STYLE, text="Feature Grouping Map:")
+        self.mapping_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.upload_mapping, state="disabled")
 
         # Creates plot generation buttons
         self.scree_plot_bttn = tk.Button(self, text="Show Scree Plot", **BUTTON_STYLE, command=self.create_scree_plot)
@@ -99,9 +99,9 @@ class BiplotBox(tk.Frame):
         self.biplot_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
         # Places feature grouping components
-        self.mapping_toggle.grid(row=1, column=1, sticky="w", padx=5, pady=5)
-        self.mapping_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        self.mapping_bttn.grid(row=2, column=0, columnspan=2, padx=5, pady=5)
+        self.mapping_toggle.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        self.mapping_label.grid(row=2, column=0, padx=5, pady=5)
+        self.mapping_bttn.grid(row=2, column=1, padx=5, pady=5)
 
         # Places plot generation buttons
         self.scree_plot_bttn.grid(row=3, column=0, padx=5, pady=5)
@@ -167,6 +167,9 @@ class BiplotBox(tk.Frame):
         Creates a biplot using the Top N features selected by the user. Uses the top two
             priniciple components for the biplot. Creates a color map and addes it as a legend.
         """
+        if not self.app_state.df_cleaned:
+            messagebox.showerror("Error", "DataFrame must be cleaned")
+            return
         # Runs PCA analysis and gets relavent values
         scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, num_feat = self.validate_biplot_data()
 
@@ -174,10 +177,14 @@ class BiplotBox(tk.Frame):
         if not self.init_biplot_fig(variance, num_feat): return 
 
         # Add legend for groups
-        feat_map, feat_colors = self.get_color_mapping(top_feat)
-        for group, color in feat_colors.items():
-            self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
-        self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        try:
+            color_map = self.get_color_mapping(top_feat)
+            for group, color in color_map.items():
+                self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
+            self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        except Exception as e:
+            traceback.print_exc()
+            return
 
         # Creates an elipse to represent confidence
         confidence_ellipse = stats.chi2.ppf(0.95, df=2)
@@ -269,7 +276,7 @@ class BiplotBox(tk.Frame):
         texts = []
 
         # Gets the color mapping for the biplot
-        feat_map, feat_colors = self.get_color_mapping(top_feat)
+        color_map = self.get_color_mapping(top_feat)
 
         # Use the color mapping to add arrows to the plot
         for idx in top_idx:
@@ -280,9 +287,12 @@ class BiplotBox(tk.Frame):
             if magnitude < 0.2:
                 continue
             
-            # Get feature grouping and color
-            group = feat_map.get(feature)
-            color = feat_colors.get(group)
+            # Get feature color
+            if self.app_state.feat_group_enable.get():
+                group = self.app_state.feat_group_map.get(feature)
+                color = color_map.get(group)
+            else:
+                color = color_map.get(feature)
 
             # Generate arrow
             self.app_state.ax.quiver(
@@ -372,7 +382,7 @@ class BiplotBox(tk.Frame):
                     "steps": [
                         dict(
                             method="update",
-                            args=[{"visible": [abs(loading_magnitudes[i]) > t for i in range(len(top_idx))]}],
+                            args=[{"visible": [abs(magnitudes[i]) > t for i in range(len(top_idx))]}],
                             label=f"{t:.1f}"
                         ) for t in np.linspace(0, 1, 10)
                     ],
@@ -380,7 +390,7 @@ class BiplotBox(tk.Frame):
                 }]
             )
             fig.update_layout(
-                title=f"Interactive Biplot with Top {self.app_state.top_n_feat.get()} Significant Features",
+                title=f"Interactive Biplot with Top {self.app_state.num_feat.get()} Significant Features",
                 xaxis_title=f"PC1 ({variance[0]:.1%} explained var.)",
                 yaxis_title=f"PC2 ({variance[1]:.1%} explained var.)",
                 clickmode='event+select',
@@ -400,7 +410,7 @@ class BiplotBox(tk.Frame):
             return
         
         # Save plot, opens it in users browser, and shows success message
-        file_name = file_ops.save_interactive_plot(fig)
+        file_name = file_ops.save_interactive_plot(fig, self.app_state.output_dir)
         if file_name is not None:
             messagebox.showinfo("Sucess", f"Interactive pca plot sucessfully created: {file_name}")
 
@@ -417,7 +427,7 @@ class BiplotBox(tk.Frame):
             fig:    The figure to generate the biplot groupings on
         """
         # Gets the color mapping for the biplot
-        feat_map, feat_colors = self.get_color_mapping(top_feat)
+        color_map = self.get_color_mapping(top_feat)
 
         # Set for holding legend groups to avoid duplicate legend entries
         legend_groups = set()
@@ -430,9 +440,13 @@ class BiplotBox(tk.Frame):
             if magnitude < 0.2:
                 continue
 
-            # Get the group this feature belongs to and its corresponding color
-            group = feat_map.get(feature)
-            color = feat_colors.get(group)
+            # Get feature color
+            if self.app_state.feat_group_enable.get():
+                group = self.app_state.feat_group_map.get(feature)
+                color = color_map.get(group)
+            else:
+                group = feature
+                color = color_map.get(feature)
 
             # Only show legend for the group once; check if it's already been shown
             showlegend = group not in legend_groups
@@ -469,8 +483,8 @@ class BiplotBox(tk.Frame):
         self.app_state.main.run_analysis()
 
         # Get top N features from user input
-        top_n = self.app_state.top_n_feat.get()
-        pca_comp_num = self.app_state.pca_num.get()-1
+        top_n = self.app_state.num_feat.get()
+        pca_comp_num = self.app_state.focused_pca_num.get()-1
 
         # Intialize the plot
         if not self.init_top_feat_plot(top_n):
@@ -557,7 +571,7 @@ class BiplotBox(tk.Frame):
         eigenvals = variance[:2]
 
         # Gets Users number of PCA results
-        num_feat = self.app_state.top_n_feat.get()
+        num_feat = self.app_state.num_feat.get()
 
         # Calculates PCA magnitudes and gets top indexes and features
         magnitudes = np.sqrt(loadings[:, 0] ** 2 + loadings[:, 1] ** 2)
@@ -566,32 +580,92 @@ class BiplotBox(tk.Frame):
 
         return scores, loadings, variance, eigenvals, feat_names, top_idx, top_feat, magnitudes, num_feat
     
-    def get_color_mapping(self, top_feat):
+    def get_color_mapping(self, feat = None):
         """
-        Gets the user uploaded color mapping otherwise creates one 
+        Creates a color mapping for biplot groups or features
+
+        Creates a color mapping using the selected color palette and extra generated colors
+            when a feature group mapping is enabled has been uploaded. Creates a color mapping
+            of the given features if using generated colors if feature group mapping is disabled.
         
         Args:
             top_feat: List of the top PCA features to color map
         
         Returns:
             feature mapping and feature colors
+
+        Raises:
+            Attribute Error: If feature grouping is enabled but a feature map hasn't been uploaded or
+                    if feature gouping is disabled and no top_features are provided
+            ValueError: If the number of features/groups without predefined colors is greater then 20
         """
-        # Generates a generic color mapping if one hasn't been uploaded
-        if self.app_state.feat_group_map is None or len(self.app_state.feat_group_map) != self.app_state.top_n_feat.get():
-            colormap = cm.get_cmap('tab20', len(top_feat))
-            self.app_state.feat_group_map = {feature.lower(): feature for feature in top_feat}
-            self.app_state.group_color_map = {
-                feature: to_hex(colormap(i)) for i, feature in enumerate(top_feat)
-            }
-        print(self.app_state.feat_group_map)
-        print(self.app_state.group_color_map)
-        # Returns the existing color mapping or the generated one
-        return self.app_state.feat_group_map, self.app_state.group_color_map
+        # Get the current color palette
+        color_palette = COLOR_PALETTES[self.app_state.selected_palette.get()]
+        # Color Mapping if a feature grouping is enables
+        if self.app_state.feat_group_enable.get():
+            # Show error and return if a mapping hasn't been loaded
+            if self.app_state.feat_group_map is None:
+                messagebox.showerror("Mapping Error", "Feature grouping is enabled, but a feature group map hasn't been loaded")
+                raise AttributeError("Mapping error, feature grouping is enabled, but no feature map found")
+
+            # Get the groups from the loaded mapping and seperate it into groups with an already
+            #   defined color and groups without
+            unique_groups = set(self.app_state.feat_group_map.values())
+            predifined_groups = unique_groups & color_palette.keys()
+            undefined_groups = unique_groups-predifined_groups
+
+            # Map predefined colors to a group
+            color_group_map = {}
+            for group in predifined_groups:
+                color_group_map[group] = color_palette[group]
+
+            # Map undefined colors to the group
+            color_group_map.update(self.map_generic_colors(undefined_groups))
+
+            return color_group_map
+        
+        # Color Mapping without feature grouping
+        else:
+            if feat is None or len(feat) == 0:
+                raise AttributeError("No features have been provided")
+            return self.map_generic_colors(feat)
+            
+    def map_generic_colors(self, feat):
+        """
+        Generates a generic color map
+        
+        Uses tab10 color blind friendly colors if possible, otherwise uses tab20 colors.
+            Maps the features to unique colors
+
+        Args:
+            feat: The features to be color mapped
+        
+        Returns:
+            A dictionary with the features as keys and the mapped colors as values
+        
+        Raises:
+            ValueError: If the number of features is greater then 20
+        """
+        # Parameter Validation
+        if (len(feat) > 20):
+            messagebox.showerror("Mapping Error", f"{len(feat)} groups without predfined colors where requested, but only 20 colors are available")
+            raise ValueError("Mapping Error, not enough colors available for requested groups")
+        
+        # Color blind friendly colors used if possible       
+        if 10 >= len(feat):
+            colors = [to_hex(c) for c in plt.get_cmap('tab10').colors]
+        else:
+            # Non-color blind friendly pallet if needed
+            colors = [to_hex(c) for c in plt.get_cmap('tab20').colors]
+        # Map newly generated colors to a group
+        color_group_map = {}
+        for group, color in zip(feat, colors):
+                color_group_map[group] = color
+        return color_group_map
 
 
-    #### 6. Feature Grouping Operations ####
+    #### 5. Feature Grouping Operations ####
 
-#TODO: Add checks to ensure the csv contents are valid for this process
     def upload_mapping(self):
         """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
         # Asks the user to select a csv file and ensures a csv file was selected
@@ -633,4 +707,16 @@ class BiplotBox(tk.Frame):
         except Exception as e:
             traceback.print_exc()
             messagebox.showerror("Error", f"Failed to load mapping CSV: {str(e)}")
+
+
+    #### 6. EVENT HANDLERS ####
+
+    def update_mapping_bttn(self):
+        """Toggles the mapping button state"""
+        if self.app_state.feat_group_enable.get():
+            self.mapping_bttn.config(state='normal')
+        else:
+            self.mapping_bttn.config(state='disabled')
+
+
 

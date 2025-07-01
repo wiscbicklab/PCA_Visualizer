@@ -144,8 +144,9 @@ class PCAAnalysisApp(tk.Tk):
             self.options_frame,
             self.app_state.selected_palette,
             *COLOR_PALETTES.keys(),
-            command=self.update_color_palette
         )
+        #self.palette_menu.config(state="disabled")
+        #self.app_state.feat_group_enable.trace_add("write", self._update_palette_menu_state)
 
         ### Focus on signficant loadings (Biplot)
         # Create a BooleanVar for the checkbox
@@ -237,37 +238,6 @@ class PCAAnalysisApp(tk.Tk):
             messagebox.showerror("No Directory Selected", f"Output directory set to:\n{self.app_state.output_dir}.")
       
     
-    #### 3. UTILITY METHODS ####
-   
-    def generate_color_palette(self, n_groups, preferred_colors):
-        """
-        Generate a color palette for feature groups.
-
-        Args:
-            n_groups: The number of feature groups to generate colors for.
-            preferred_colors: A dictionary of predefined colors for specific feature groups. Keys are group names, and values are color codes.
-
-        Returns:
-            A dictionary where keys are feature group names and values are hex color codes
-        """
-        # Generate a colormap for any additional groups beyond preferred colors
-        num_extra_colors = max(0, n_groups - len(preferred_colors))
-        colormap = cm.get_cmap('tab20', num_extra_colors)  # Use a 20-color palette
-        extra_colors = [mcolors.rgb2hex(colormap(i)[:3]) for i in range(num_extra_colors)]
-
-        # Combine preferred colors with extra colors
-        all_colors = list(preferred_colors.values()) + extra_colors
-
-        # Create a dictionary for all groups
-        color_palette = {}
-        for i in range(n_groups):
-            group_name = f"Group {i+1}"  # Generic group name
-            if i < len(preferred_colors):
-                group_name = list(preferred_colors.keys())[i]  # Use predefined names if available
-            color_palette[group_name] = all_colors[i]
-
-        return color_palette
-  
     #### 4. UI UPDATE METHODS ####
 
     def update_data_info(self):
@@ -309,25 +279,6 @@ class PCAAnalysisApp(tk.Tk):
         # Insert the summary into the GUI widget
         self.data_insight_summary.delete(1.0, tk.END)
         self.data_insight_summary.insert(tk.END, summary)
-
-    def update_color_palette(self, *args):
-        try:
-            if self.app_state.feat_group_enable.get():
-                unique_groups = set(self.app_state.feat_group_map.values())
-                n_groups = len(unique_groups)
-                selected_palette = self.app_state.selected_palette.get()
-
-                # Use predefined preferred colors (if any)
-                preferred_colors = COLOR_PALETTES[selected_palette]
-
-                # Generate a combined palette using the helper function
-                self.app_state.group_color_map = self.generate_color_palette(n_groups, preferred_colors)
-            else:
-                messagebox.showerror("No Groups Defined", "No feature groups are currently defined.")
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"Failed to update color palette: {str(e)}")
 
     def update_figure(self):
         # Destroy old canvas
@@ -377,7 +328,11 @@ class PCAAnalysisApp(tk.Tk):
         else:  # Windows/macOS
             self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
-
+    def _update_palette_menu_state(self, *args):
+        if self.app_state.feat_group_enable.get():
+            self.palette_menu.config(state="normal")
+        else:
+            self.palette_menu.config(state="disabled")
         
 
 # Start App

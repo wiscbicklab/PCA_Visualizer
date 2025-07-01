@@ -78,7 +78,7 @@ class visual_setting_Box(tk.Frame):
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates the Banner
-        self.banner = tk.Label(self, text="Visualize PCA", **BANNER_STYLE)
+        self.banner = tk.Label(self, text="PCA Settings", **BANNER_STYLE)
         
         # Creates compnents for seleting the target variable 
         self.target_mode_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
@@ -117,13 +117,13 @@ class visual_setting_Box(tk.Frame):
         self.num_pca_comp_entry.bind("<Return>", lambda e: self.num_pca_comp_entry.tk_focusNext().focus())
 
         # Creates components for selecting the number of top PCA features
-        self.top_n_label = tk.Label(self, text="Top N Features for Biplot:", **LABEL_STYLE)
+        self.top_n_label = tk.Label(self, text="Number of Features:", **LABEL_STYLE)
         self.top_n_entry = tk.Entry(
             self,
             **ENTRY_STYLE ,
             validate="key",
             validatecommand=self.vcmd_int,
-            textvariable=self.app_state.top_n_feat
+            textvariable=self.app_state.num_feat
         )
         self.top_n_entry.bind("<FocusOut>", lambda e: self.on_exit(self.top_n_entry, "10", "top_n_feat"))
         self.top_n_entry.bind("<FocusIn>", lambda e: self.on_entry(self.top_n_entry))
@@ -131,13 +131,13 @@ class visual_setting_Box(tk.Frame):
 
 
         # Creates components for selecting which PCA component to analise
-        self.pca_num_label = tk.Label(self, text="Select the PCA Component to Analize", **LABEL_STYLE)
+        self.pca_num_label = tk.Label(self, text="Focused PCA Component:", **LABEL_STYLE)
         self.pca_num_entry = tk.Entry(
             self,
             **ENTRY_STYLE ,
             validate="key",
             validatecommand=self.vcmd_int,
-            textvariable=self.app_state.pca_num
+            textvariable=self.app_state.focused_pca_num
         )
         self.pca_num_entry.bind("<FocusOut>", lambda e: self.on_exit(self.pca_num_entry, "1", "pca_num"))
         self.pca_num_entry.bind("<FocusIn>", lambda e: self.on_entry(self.pca_num_entry))
@@ -330,7 +330,7 @@ class visual_setting_Box(tk.Frame):
             current_value = default_value
 
         # Set pca_num do defualt if it's too large
-        if attr_name == "pca_num" and float(current_value) > 2.1:
+        if attr_name == "pca_num" and float(current_value) > float(self.app_state.num_pca_comp.get()):
             widget.delete(0, tk.END)
             widget.insert(0, default_value)
             current_value = default_value

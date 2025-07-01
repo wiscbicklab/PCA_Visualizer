@@ -36,7 +36,7 @@ def load_csv_file():
         messagebox.showerror("File Error", f"An error occurred while opening the file: {e}")
         return None
         
-def save_plot(self, fig, output_dir):
+def save_plot(fig, output_dir):
         """
         Saves a figure as a png image
         
@@ -68,10 +68,10 @@ def save_plot(self, fig, output_dir):
                 f"An error occured attempting to save the figure.\t{e}"
             )
             return None
-        
+        messagebox.showinfo("Plot Saved", f"Plot Sucsessfully Saved at {save_path}")
         return save_path
 
-def save_interactive_plot(self, fig, output_dir):
+def save_interactive_plot(fig, output_dir):
     """
     Save an interactive biplot figure as an html file and opens it in the users browser
 
@@ -89,7 +89,7 @@ def save_interactive_plot(self, fig, output_dir):
     # Create file_name and save_path
     time_stamp = time.strftime("%Y%m%d-%H%M%S")
     filename = f"Interactive_Biplot_{time_stamp}.html"
-    save_path = os.path.join(self.state.output_dir, filename)
+    save_path = os.path.join(output_dir, filename)
 
 
     config = {
@@ -110,4 +110,5 @@ def save_interactive_plot(self, fig, output_dir):
         )
         return None
 
+    messagebox.showinfo("Plot Saved", f"Plot Sucsessfully Saved at {save_path}")
     return save_path
