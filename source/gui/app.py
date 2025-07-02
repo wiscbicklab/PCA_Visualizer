@@ -16,8 +16,8 @@ from source.utils.constant import *
 
 # Components Imports
 from source.gui.load_clean_file_box import CleanFileBox
-from source.gui.visual_setting_box import visual_setting_Box
-from source.gui.biplot_box import BiplotBox
+from source.gui.setting_box import SettingBox
+from source.gui.plot_box import PlotBox
 from source.gui.heatmap_box import HeatmapBox
 from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
@@ -88,7 +88,7 @@ class PCAAnalysisApp(tk.Tk):
         else: self.state('normal')
 
         self.configure(bg="#f5f5f5")
-        self.minsize(1350, 700)
+        self.minsize(1350, 800)
 
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
@@ -134,8 +134,8 @@ class PCAAnalysisApp(tk.Tk):
 
         # Intialize Custom components
         self.load_clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.pca_box = visual_setting_Box(self.options_frame, self.app_state, **BG_COLOR)
-        self.biplot_box = BiplotBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.pca_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.biplot_box = PlotBox(self.options_frame, self.app_state, **BG_COLOR)
         self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
 
         # Color Palette Selection
@@ -145,15 +145,9 @@ class PCAAnalysisApp(tk.Tk):
             self.app_state.selected_palette,
             *COLOR_PALETTES.keys(),
         )
-        #self.palette_menu.config(state="disabled")
-        #self.app_state.feat_group_enable.trace_add("write", self._update_palette_menu_state)
-
-        ### Focus on signficant loadings (Biplot)
-        # Create a BooleanVar for the checkbox
-        self.focus_on_loadings = tk.BooleanVar(value=True)
 
         # Results Section
-        self.data_insight_summary = tk.Text(self, height=8, width=50, **LABEL_STYLE)
+        self.data_insight_summary = tk.Text(self, height=15, width=50, **LABEL_STYLE)
 
         # Save
         self.save_button = tk.Button(
@@ -166,8 +160,12 @@ class PCAAnalysisApp(tk.Tk):
     def setup_layout(self):
         """Setup the layout of GUI components"""
         # Configure grid weights
-        for i in range(5):
-            self.grid_rowconfigure(i, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_rowconfigure(1, weight=0)
+        self.grid_rowconfigure(2, weight=0)
+        self.grid_rowconfigure(3, weight=1)
+        self.grid_rowconfigure(4, weight=0)
+
         self.grid_columnconfigure(0, weight=2)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
@@ -189,7 +187,7 @@ class PCAAnalysisApp(tk.Tk):
         self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
-        self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="ew")
+        self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
 
         # Save Button
         self.save_button.grid(row=4, column=2, padx=5, pady=5, sticky="w")

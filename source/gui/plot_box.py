@@ -17,7 +17,7 @@ from source.utils.constant import *
 from adjustText import adjust_text
 
 
-class BiplotBox(tk.Frame):
+class PlotBox(tk.Frame):
     """
     A GUI box for generating different types of plots using PCA analysis
 
@@ -133,10 +133,13 @@ class BiplotBox(tk.Frame):
             self.app_state.ax.set_title('Scree Plot')
             self.app_state.ax.set_xlabel('Principal Component Index')
             self.app_state.ax.set_ylabel('Explained Variance Ratio')
+            
+            # Create a range for principal components
+            pc_indices = range(1, len(explained_variance) + 1)
 
             # Creates bar plot of individual explained variance
             self.app_state.ax.bar(
-                range(1, len(explained_variance) + 1),
+                pc_indices,
                 explained_variance,
                 alpha=0.7,
                 align='center'
@@ -144,11 +147,15 @@ class BiplotBox(tk.Frame):
             
             # Creates step plot of cumulative explained variance
             self.app_state.ax.step(
-            range(1, len(explained_variance) + 1),
-            np.cumsum(explained_variance),
-            where='mid',
-            label='Cumulative explained variance'
-        )
+                pc_indices,
+                np.cumsum(explained_variance),
+                where='mid',
+                label='Cumulative explained variance'
+            )
+
+            # Set x-axis ticks to whole numbers only
+            self.app_state.ax.set_xticks(pc_indices)
+            
         except Exception as e:
             traceback.print_exc()
             messagebox.showerror("Error", f"An error occurred while generating the scree plot: {e}")

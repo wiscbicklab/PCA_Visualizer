@@ -11,7 +11,7 @@ from source.gui.app_state  import AppState
 from source.utils.constant import *
 
 
-class visual_setting_Box(tk.Frame):
+class SettingBox(tk.Frame):
     """
     A GUI box for holding selection settings for PCA analysis and other plot generation
 
@@ -288,7 +288,7 @@ class visual_setting_Box(tk.Frame):
                     f"Target variable '{target}' not found in the dataset!\nDefualting to no target."
                 )
                 return None
-            return target
+            return target.strip().lower()
         else:
             messagebox.showerror(
                 "Target_Mode Error",
