@@ -1,24 +1,10 @@
-FEATURE_GROUPS_COLORS = {
-    "FAB": "black",
-    "non-FAB": "silver",
-    "non-RAA pests": "pink",
-    "Beneficials": "green",
-    "RAA": "red"
-}
-
-DEFAULT_COLUMNS_TO_DROP = [
-    "Site", "SampleNum", "Type", "farm", "EventId", "SampleID",
-    "trees.assessed", "flower.clusters.assessed", "Year", "treat",
-    "Rep", "SideFlowerStrip", "SideFlowerStrip_E",
-    "SideFlowerStrip_W", "SideFlowerStrip_preflow"
-]
-
 BG_COLOR = {"bg": "#f5f5f5",}
+FONT = {"font":   ("Helvetica", 10)}
 
 # Style constants
 LABEL_STYLE = {
-    "font":   ("Helvetica", 10),
-    "bg":     BG_COLOR["bg"],
+    **FONT,
+    **BG_COLOR,
 }
 BANNER_STYLE = {
     "font": ("Helvetica", 12),
@@ -26,7 +12,7 @@ BANNER_STYLE = {
     "relief": "groove",
 }
 BUTTON_STYLE = {
-    "font": ("Helvetica", 10),
+    **FONT,
     "bg": "#007ACC",
     "fg": "white",
     "activebackground": "#005f99",
@@ -34,7 +20,7 @@ BUTTON_STYLE = {
     "width": 22,
 }
 OPTION_MENU_STYLE = {
-    "font": ("Helvetica", 10),
+    **FONT,
     "bg": "#007ACC",
     "fg": "white",
     "activebackground": "#005f99",
@@ -42,13 +28,13 @@ OPTION_MENU_STYLE = {
     "width": 20,
 }
 RAD_BUTTON_STYLE = {
-    "font": ("Helvetica", 10),
+    **FONT,
     "bg": "#e8e8e8",
     "fg": "black",
     "activebackground": "#d0d0d0",
 }
 ENTRY_STYLE = {
-    "font": ("Helvetica", 10),
+    **FONT,
     "bg": "white",
     "width": 22
 }
@@ -78,3 +64,12 @@ COLOR_PALETTES = {
         "raa": "#FF00FF"
     }
 }
+
+# Leftovers from previous build
+DEFAULT_COLUMNS_TO_DROP = [
+    "Site", "SampleNum", "Type", "farm", "EventId", "SampleID",
+    "trees.assessed", "flower.clusters.assessed", "Year", "treat",
+    "Rep", "SideFlowerStrip", "SideFlowerStrip_E",
+    "SideFlowerStrip_W", "SideFlowerStrip_preflow"
+]
+

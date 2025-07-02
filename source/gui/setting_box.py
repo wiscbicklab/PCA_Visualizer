@@ -78,7 +78,7 @@ class SettingBox(tk.Frame):
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates the Banner
-        self.banner = tk.Label(self, text="PCA Settings", **BANNER_STYLE)
+        self.banner = tk.Label(self, text="Settings", **BANNER_STYLE)
         
         # Creates compnents for seleting the target variable 
         self.target_mode_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)

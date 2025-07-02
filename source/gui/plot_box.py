@@ -85,9 +85,9 @@ class PlotBox(tk.Frame):
 
         # Creates plot generation buttons
         self.scree_plot_bttn = tk.Button(self, text="Show Scree Plot", **BUTTON_STYLE, command=self.create_scree_plot)
-        self.biplot_bttn = tk.Button(self, text="Biplot with Groups", **BUTTON_STYLE, command=self.create_biplot)
+        self.biplot_bttn = tk.Button(self, text="Biplot", **BUTTON_STYLE, command=self.create_biplot)
         self.interactive_biplot_bttn = tk.Button(self, text="Interactive Biplot", **BUTTON_STYLE, command=self.create_interactive_biplot)
-        self.top_feat_bttn = tk.Button(self, text="Top Features Loadings", **BUTTON_STYLE, command=self.create_top_n_feat_plot)
+        self.top_feat_bttn = tk.Button(self, text="Top Feature Loadings", **BUTTON_STYLE, command=self.create_top_n_feat_plot)
 
     def setup_layout(self):
         """Sets the components onto this tk Frame"""

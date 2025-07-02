@@ -72,7 +72,7 @@ class CleanFileBox(tk.Frame):
         self.banner = tk.Label(self, text="Load, Clean, and Filter Data", **BANNER_STYLE)
 
         # Creates loading components
-        self.load_label =  tk.Label(self, text="Load CSV file:", **LABEL_STYLE)
+        self.load_label =  tk.Label(self, text="Load CSV File:", **LABEL_STYLE)
         self.load_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.load_data)
         
         # Creates selector components for user input       
