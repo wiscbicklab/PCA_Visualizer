@@ -5,138 +5,186 @@ from sklearn.preprocessing import StandardScaler
 from typing import Dict, Any, Optional, List, Tuple
 import traceback
 
-
 class PCAAnalyzer:
-    """Core PCA analysis functionality separate from GUI."""
-
-    def __init__(self):
-        self.pca_model = None
-        self.standardized_data = None
-        self.feature_groups = None
-        self.x_standardized = None
+    """
+    Core PCA analysis functionality
+    """
 
     def prepare_data(
             self,
-            data: pd.DataFrame,
-            drop_columns: Optional[List[str]] = None,
-            default_columns_to_drop: Optional[List[str]] = None
+            df: pd.DataFrame,
+            drop_cols: Optional[List[str]] = None,
+            default_drop_cols: Optional[List[str]] = None
     ) -> Tuple[pd.DataFrame, List[str]]:
-        """Prepare data for PCA analysis."""
+        """
+        Removes the specified columns from the data
+
+        Args:
+            df (pd.DataFrame): Data to prepare
+            drop_cols (List[str]): The names of the columns to remove from the data
+            default_drop_cols (List[str]): The names of 'default' columns to remove from the data
+
+        Return:  
+            DataFrame: A copy of data with the specified columns filtered out
+        """
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
+
         # Create working copy
-        working_data = data.copy()
+        df_copy = df.copy()
 
         # Validate user-specified columns exist
-        if drop_columns:
-            missing_columns = [col for col in drop_columns if col not in working_data.columns]
-            if missing_columns:
-                raise ValueError(f"Columns not found in the dataset: {', '.join(missing_columns)}")
-            working_data = working_data.drop(columns=drop_columns)
+        if drop_cols:
+            missing_cols = [col for col in drop_cols if col not in df_copy.columns]
+            if missing_cols:
+                raise ValueError(f"Columns not found in the dataset: {', '.join(missing_cols)}")
+            df_copy = df_copy.drop(columns=drop_cols)
 
         # Drop predefined columns
-        if default_columns_to_drop:
-            default_to_drop = [col for col in default_columns_to_drop if col in working_data.columns]
-            working_data = working_data.drop(columns=default_to_drop)
+        if default_drop_cols:
+            default_to_drop = [col for col in default_drop_cols if col in df_copy.columns]
+            df_copy = df_copy.drop(columns=default_to_drop)
 
-        return working_data, missing_columns if drop_columns else []
+        return df_copy, missing_cols if drop_cols else []
 
-    def validate_numeric_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Extract and validate numeric data with detailed checks."""
+    def clean_numeric_data(self, df: pd.DataFrame) -> Tuple[pd.DataFrame, List[str]]:
+        """
+        Excludes and prints non-numeric columns. Cleans numeric data by replacing inf values with NaN
+        
+        Args:
+            df (pd.DataFrame): Data to validate
+        
+        Return:
+            (pd.DataFrame): The numeric data from the given data with cleaned values.
+        """
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
+
         # Select numeric data
-        numeric_data = data.select_dtypes(include=[np.number])
-
-        # Identify and log non-numeric columns
-        removed_columns = data.columns.difference(numeric_data.columns)
-        if not removed_columns.empty:
-            print(f"Non-numeric columns excluded: {list(removed_columns)}")
+        numeric_df = df.select_dtypes(include=[np.number])
 
         # Check if numeric data is empty
-        if numeric_data.empty:
+        if numeric_df.empty:
             raise ValueError("No numerical data available for PCA")
 
+        # Identify and log non-numeric columns
+        rm_cols = df.columns.difference(numeric_df.columns)
+        if not rm_cols.empty:
+            print(f"Non-numeric columns excluded: {list(rm_cols)}")
+
         # Replace inf values with NaN
-        if np.any(np.isinf(numeric_data.values)):
-            numeric_data = numeric_data.replace([np.inf, -np.inf], np.nan)
+        if np.any(np.isinf(numeric_df.values)):
+            numeric_df = numeric_df.replace([np.inf, -np.inf], np.nan)
 
-        return numeric_data
+        return numeric_df, rm_cols
+  
+    def standardize_data(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Standardize the data for PCA with detailed tracking.
+        
+        Args:
+            df (pd.DataFrame): Data to be standardized
+        Return:
+            (pd.DataFrame): Standardized data
+        """
+        # Validate Input data
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
 
-    def standardize_data(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Standardize the data for PCA with detailed tracking."""
-        print(f"Data shape before standardization: {data.shape}")  # Debug info
+        # Standardize Data
+        standardized = pd.DataFrame(StandardScaler().fit_transform(df), columns=df.columns)
 
-
-
-
-        scaler = StandardScaler()
-        standardized = pd.DataFrame(
-            scaler.fit_transform(data),
-            columns=data.columns
-        )
-        self.standardized_data = standardized
-        self.x_standardized = standardized  # Keep original attribute
-
-
-
-        print(f"Data shape after standardization: {standardized.shape}")  # Debug info
         return standardized
 
-    def run_pca(self, data: pd.DataFrame, n_components: int) -> Dict[str, Any]:
-        """Run PCA analysis with detailed validation and debugging."""
-        # Validate components and data
-        print(f"\nDEBUG INFO BEFORE PCA:")
-        print(f"Data shape before PCA: {data.shape}")
-        print(f"Number of components requested: {n_components}")
+    def run_pca(self, df: pd.DataFrame, n_components: int) -> Dict[str, Any]:
+        """
+        Run PCA analysis with detailed validation and debugging.
+        
+        Args:
+            df (pd.DataFrame): Numeric data to run PCA on.
+            dimensions (int):  Number of components for PCA to divide the data into
+            n_components (int): Number of components to run PCA on
 
-        max_components = data.shape[1]
-        print(f"Maximum components allowed: {max_components}")
+        Return:
+            A dictionary of useful information regaurding the PCA model
+                'model': model,
+                'transformed_data': transformed_data,
+                'components': model.components_,
+                'explained_variance': model.explained_variance_ratio_,
+                'loadings': model.components_.T,
+                'feature_names': df.columns.tolist(),
+                'n_components': n_components,
+                'max_components': max_components,
+                'data_shape': df.shape
+        """
+        # Gets the number of data entries in the df
+        max_components = df.shape[1]
 
-        if n_components > max_components:
-            n_components = max_components
-            print(f"Capping components to {max_components}.")
+        # Verifies parameter types
+        if not isinstance(df, pd.DataFrame):
+            raise TypeError(f"Input must be a pandas DataFrame, but got {type(df).__name__}")
+        if n_components > df.shape[1]:
+            raise ValueError("More components selected then exist")
 
         # PCA Execution with detailed tracking
-        print("\nStarting PCA fit...")
-        self.pca_model = PCA(n_components=n_components)
-        print("PCA model initialized")
-
-        transformed_data = self.pca_model.fit_transform(data)
-        print("PCA fit completed")
-
-        # Debug output
-        print("\nPCA Results:")
-        print(f"PCA components shape: {self.pca_model.components_.shape}")
-        print(f"Explained variance ratios: {self.pca_model.explained_variance_ratio_}")
+        model = PCA(n_components=n_components)
+        transformed_data = model.fit_transform(df)
 
         # Return comprehensive results
         return {
-            'model': self.pca_model,
+            'model': model,
             'transformed_data': transformed_data,
-            'components': self.pca_model.components_,
-            'explained_variance': self.pca_model.explained_variance_ratio_,
-            'loadings': self.pca_model.components_.T,
-            'feature_names': data.columns.tolist(),
+            'components': model.components_,
+            'explained_variance': model.explained_variance_ratio_,
+            'loadings': model.components_.T,
+            'feature_names': df.columns.tolist(),
             'n_components': n_components,
             'max_components': max_components,
-            'data_shape': data.shape
+            'data_shape': df.shape
         }
 
     def analyze(
             self,
-            data: pd.DataFrame,
+            df: pd.DataFrame,
             n_components: int,
-            drop_columns: Optional[List[str]] = None,
-            default_columns_to_drop: Optional[List[str]] = None
+            drop_cols: Optional[List[str]] = None,
+            default_drop_cols: Optional[List[str]] = None
     ) -> Dict[str, Any]:
-        """Complete PCA analysis pipeline with comprehensive error handling."""
+        """
+        Complete PCA analysis pipeline with comprehensive error handling.
+        
+        Args:
+            df (pd.DataFrame): Data to run the PCA analysis on
+            n_components (int): Number of components to run PCA on
+            drop_cols (List[str]): The names of the columns to remove from the data
+            default_drop_cols (List[str]): The names of 'default' columns to remove from the data
+
+        Return:
+            A dictionary of useful information regaurding the PCA model
+                'model': model,
+                'transformed_data': transformed_data,
+                'components': model.components_,
+                'explained_variance': model.explained_variance_ratio_,
+                'loadings': model.components_.T,
+                'feature_names': df.columns.tolist(),
+                'n_components': n_components,
+                'max_components': max_components,
+                'data_shape': df.shape
+                'missing_columns': missing_columns,
+                'original_shape': df.shape,
+                'prepared_shape': prepared_data.shape,
+                'standardized_shape': standardized_data.shape
+        """
         try:
             # Prepare and validate data
-            prepared_data, missing_columns = self.prepare_data(
-                data,
-                drop_columns=drop_columns,
-                default_columns_to_drop=default_columns_to_drop
+            prepared_data, missing_cols = self.prepare_data(
+                df,
+                drop_cols=drop_cols,
+                default_drop_cols=default_drop_cols
             )
 
-            # Process numeric data
-            numeric_data = self.validate_numeric_data(prepared_data)
+            # Clean numeric data
+            numeric_data, missing_cols = self.clean_numeric_data(prepared_data)
 
             # Standardize
             standardized_data = self.standardize_data(numeric_data)
@@ -146,14 +194,16 @@ class PCAAnalyzer:
 
             # Add additional context to results
             results.update({
-                'missing_columns': missing_columns,
-                'original_shape': data.shape,
+                'missing_columns': missing_cols,
+                'original_shape': df.shape,
                 'prepared_shape': prepared_data.shape,
-                'standardized_shape': standardized_data.shape
+                'standardized_shape': standardized_data.shape,
+                'standardized_data': standardized_data,
             })
 
             return results
 
         except Exception as e:
-            traceback.print_exc()  # Keep detailed error tracking
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
             raise Exception(f"PCA analysis failed: {str(e)}")
