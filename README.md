@@ -30,16 +30,16 @@ PCA_11.27.24-pca/
 ## How to start the application
 
 - To run on Linux
-  Clone the repository, '''git clone https://github.com/wiscbicklab/PCA_11.27.24.git'''
-  Open the repository, '''cd PCA_11.27.24'''
-  Create a virtual enviroment, '''python -m venv NAME_OF_ENVIROMENT'''
-  Activate the enviroment, '''source NAMEOF_ENVIROMENT/bin/activate'''
-  Install dependencies, '''pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn'''
-  Run application as a module, '''python -m source.gui.app'''
+  - Clone the repository, ```git clone https://github.com/wiscbicklab/PCA_11.27.24.git```
+  - Open the repository, ```cd PCA_11.27.24```
+  - Create a virtual enviroment, ```python -m venv NAME_OF_ENVIROMENT```
+  - Activate the enviroment, ```source NAMEOF_ENVIROMENT/bin/activate```
+  - Install dependencies, ```pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn```
+  - Run application as a module, ```python -m source.gui.app```
     
 - To run on Windows
-  Download the .exe
-  Run the .exe
+  - Download the .exe
+  - Run the .exe
 
 ## How to use the application
 
