@@ -106,7 +106,7 @@ PCA_11.27.24-pca/
     - At the botton of the left side of the application is a dropdown that allows you to change the color palette used for the Biplot and Interactive Biplot
     - This color palette applies colors to the following groupings: fab, non-fab, non-raa pests, beneficials, and raa.
     - For any other groups or features a color-blind friendly palette is used if 10 or less are being used
-      If more than 10 but 20 or less  are being used a non-color-blind palette is used
+      If more than 10 but 20 or less are being used a non-color-blind palette is used
 
 ## Development Notes
 
@@ -116,46 +116,14 @@ PCA_11.27.24-pca/
     
 - `pca.py` contains logic for dimension reduction and variance calculation
     
-- Constants (e.g., feature groups, default columns to drop) are stored in `constant.py`
+- Constants (e.g., styling and color palettes) are stored in `constant.py`
     
 
 ### Technical Notes
 
 - Interactive plots use `plotly` (check dependencies)
 - Color grouping maps must be CSVs with valid column-to-group mappings
-- Filtering BBCH values is case-sensitive: ensure data uses formats like `"B69"`
 
-## GUI Features Overview
-
-### Data Loading & Preparation
-
-- **Load a CSV file**: Use the file browser to choose a dataset
-    
-- **Clean and Filter Data**:
-    
-    - Handle missing values (mean, median, 0, or null)
-    - Filter by specific BBCH growth stages (B59, B69, B85)
-        - _Note: BBCH stages are relevant to the KU team/data Emily was working with_
-    - Drop unwanted columns
-
-### Analysis
-
-- **Run PCA (Principal Component Analysis)**:
-    - Select how many components to extract
-    - Choose how many top features to display in the biplot
-    - Label axes based on a target variable (if desired)
-        - PCA reduces dimensionality based only on numerical features — the **target variable is not included** in this reduction
-        - When visualizing results, the **target variable is used to color data points** to show class distribution in PCA space
-
-### Visualization
-
-- **View Results**:
-    - Scree plots
-    - Standard or grouped biplots (colored by label or cluster)
-    - Heatmaps of top PCA-contributing features
-- **Save Outputs**:
-    - Cleaned CSV
-    - Scree plot, biplot, heatmap (static and/or interactive)
 
 ## Testing Workflow
 
@@ -167,10 +135,6 @@ PCA_11.27.24-pca/
     
     - You may need to override security warnings by selecting 'run anyway' or right-clicking to 'run as administrator'
 4. Maximize the window for optimal viewing
-    
-
-### Using the Tool
-
 
 
 ## Future Enhancements
