@@ -35,14 +35,13 @@ class FilterSelector(tk.Frame):
         super().__init__(main, **kwargs)
         self.app_state = app_state
 
-        # Declares Widgets for getting the user selected filter
-        self.label = None
+        # Decleares Filter Type Selector
+        self.filter_type_lbl = None
+        self.filter_type_menu = None
 
         # Declares Filter Target Selector
+        self.target_lbl = None
         self.target_entry = None
-
-        # Decleares Filter Type Selector
-        self.filter_type_menu = None
 
         # Declares filtering inputs
         self.upper_lbl=None
@@ -58,17 +57,8 @@ class FilterSelector(tk.Frame):
 
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
-        # Creates BBCH label
-        self.label = tk.Label(self, text="Data Column Filter:", **LABEL_STYLE)
-
-        # Creates filter target entry
-        self.target_entry = tk.Entry(
-            self,
-            **SMALL_ENTRY_STYLE ,
-            textvariable=self.app_state.custom_filter_target
-        )
-
         # Creates filter type selector
+        self.filter_type_lbl = tk.Label(self, text="Filter Type: ", **LABEL_STYLE)
         filters = ["None", "Equal to", "Less than", "Greater than", "Less than and Greater than", "Less than or Greater than"]
         self.filter_type_menu = tk.OptionMenu(
             self,
@@ -77,6 +67,15 @@ class FilterSelector(tk.Frame):
             command=self.update_filter_entries,
         )
         self.app_state.custom_filter_type.set(filters[0])
+
+        # Creates filter target entry
+        self.target_lbl = tk.Label(self, text="Data Column: ", **LABEL_STYLE)
+        self.target_entry = tk.Entry(
+            self,
+            **SMALL_ENTRY_STYLE ,
+            textvariable=self.app_state.custom_filter_target,
+            state="readonly",
+        )
 
         # Creates filtering entries
         self.upper_entry = tk.Entry(
@@ -101,7 +100,7 @@ class FilterSelector(tk.Frame):
             self,
             **SMALL_ENTRY_STYLE,
             textvariable=self.app_state.custom_filter_equal,
-            state="normal"
+            state="readonly"
         )
         self.equal_entry.bind("<FocusOut>", lambda e: self._on_exit_equal_exit())
 
@@ -113,14 +112,13 @@ class FilterSelector(tk.Frame):
 
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
-        # Places BBCH label on top of this frame
-        self.label.grid(row=0, column=0, columnspan=2, padx=5, pady=5, sticky="we")
+        # Places Filter Type Selector
+        self.filter_type_lbl.grid(row=0, column=0, padx=5, pady=5, sticky='e')
+        self.filter_type_menu.grid(row=0, column=1, padx=5, pady=5, sticky='w')
 
         # Places Filter Target selector
-        self.target_entry.grid(row=1, column=0, columnspan=2,  padx=5, pady=5)
-
-        # Places Filter Type Selector
-        self.filter_type_menu.grid(row=2, column=0, columnspan=2,  padx=5, pady=5)
+        self.target_lbl.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.target_entry.grid(row=1, column=1, padx=5, pady=5, sticky='w')        
 
         # Places Filter Parameter Selectors
         self.upper_lbl.grid(row=3, column=0,  padx=5, pady=5, sticky="e")
@@ -137,29 +135,41 @@ class FilterSelector(tk.Frame):
         filter_type = self.app_state.custom_filter_type.get()
 
         if filter_type == "None":
+            self.target_entry.config(state="readonly")
             self.upper_entry.config(state="readonly")
             self.lower_entry.config(state="readonly")
             self.equal_entry.config(state="readonly")
+
         elif filter_type == "Equal to":
+            self.target_entry.config(state="normal")
             self.upper_entry.config(state="readonly")
             self.lower_entry.config(state="readonly")
             self.equal_entry.config(state="normal")
+
         elif filter_type == "Less than":
+            self.target_entry.config(state="normal")
             self.upper_entry.config(state="normal")
             self.lower_entry.config(state="readonly")
             self.equal_entry.config(state="readonly")
+
         elif filter_type == "Greater than":
+            self.target_entry.config(state="normal")
             self.upper_entry.config(state="readonly")
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
+
         elif filter_type == "Less than and Greater than":
+            self.target_entry.config(state="normal")
             self.upper_entry.config(state="normal")
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
+
         elif filter_type == "Less than or Greater than":
+            self.target_entry.config(state="normal")
             self.upper_entry.config(state="normal")
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
+
         else:
             messagebox.showerror("Application Error", "An internal program error has occured trying to get the filter type")
 

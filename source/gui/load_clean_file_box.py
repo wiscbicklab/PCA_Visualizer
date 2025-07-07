@@ -181,7 +181,7 @@ class CleanFileBox(tk.Frame):
                 print(exact_value)
                 exact_value_floats = [float(val) for val in exact_value]
                 df = df[df[filter_name].apply(
-                    lambda x: any(np.isclose(x, v, atol=0.05) for v in exact_value_floats)
+                    lambda x: any(np.isclose(x, v, atol=0.001) for v in exact_value_floats)
                 )]
             elif filter_type == filters[1]:
                 df = df[df[filter_name] < upper_value]
