@@ -378,8 +378,8 @@ class PlotBox(tk.Frame):
                 continue
             
             # Get feature color
-            if self.app_state.feat_group_enable.get():
-                group = self.app_state.feat_group_map.get(feature)
+            if self.app_state.feat_group_enable.get() and feature in self.app_state.feat_group_map.keys():
+                group = self.app_state.feat_group_map[feature]
                 color = color_map.get(group)
             else:
                 color = color_map.get(feature)
@@ -700,14 +700,13 @@ class PlotBox(tk.Frame):
 
             # Get the groups from the loaded mapping and seperate it into groups with an already
             #   defined color and groups without
-            unique_groups = set()
-            for features in features:
-                try:
-                    unique_groups.add(self.app_state.feat_group_map[features])
-                except Exception:
-                    continue
-            predifined_groups = unique_groups & color_palette.keys()
-            undefined_groups = unique_groups-predifined_groups
+            predifined_groups = set()
+            undefined_groups = set()
+            for feat in features:
+                if feat in self.app_state.feat_group_map.keys():
+                    predifined_groups.add(self.app_state.feat_group_map[feat])
+                else:
+                    undefined_groups.add(feat)
 
             # Map predefined colors to a group
             color_group_map = {}
