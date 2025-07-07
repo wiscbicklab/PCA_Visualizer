@@ -60,13 +60,13 @@ class HeatmapBox(tk.Frame):
         
 
         # Heatmap Controls
-        heatmap_options = ["Top 10 Features", "Top 20 Features", "Custom Features"]
+        heatmap_options = ["Top Features", "Custom Features"]
         self.heatmap_mode_label = tk.Label(self, text="Select Heatmap Mode:", **LABEL_STYLE)
         self.heatmap_mode_menu = tk.OptionMenu( self, self.heatmap_mode_var, *heatmap_options)
         self.heatmap_mode_var.trace_add("write", self.toggle_custom_heatmap_entry)
 
         self.focus_label = tk.Label(self, text="Columns to Focus On (comma-separated):", **LABEL_STYLE)
-        self.focus_entry = tk.Entry(self, **ENTRY_STYLE)
+        self.focus_entry = tk.Entry(self, **BIG_ENTRY_STYLE)
         self.focus_entry.configure(state="disabled")
 
         self.heatmap_button = tk.Button(self, text="Plot Heatmap", command=self.create_heatmap_fig, **BUTTON_STYLE)
@@ -126,7 +126,7 @@ class HeatmapBox(tk.Frame):
             loadings = abs(self.app_state.pca_results['loadings'])
 
             # Determine focus columns
-            focus_columns = self.get_focus_cols(heatmap_mode, loadings, focus_entry=self.focus_entry.get())
+            focus_columns = self.get_focus_cols(loadings, focus_entry=self.focus_entry.get())
 
             # Update the heatmap figure
             self.display_loadings_heatmap(
@@ -144,7 +144,7 @@ class HeatmapBox(tk.Frame):
             print(error_str)
             messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
 
-    def get_focus_cols(self, heatmap_mode_var, loadings, focus_entry=None):
+    def get_focus_cols(self, loadings, focus_entry=None):
         """Determine columns to focus on based on heatmap mode."""
         try:
             # Get the column and loadings data
@@ -155,11 +155,11 @@ class HeatmapBox(tk.Frame):
             loading_series = pd.Series(pc1_loadings, index=df_cols)
             sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
 
-            if heatmap_mode_var == "Top 10 Features":
-                return sorted_columns[:10]  # Top 10 by PCA loadings
-            elif heatmap_mode_var == "Top 20 Features":
-                return sorted_columns[:20]  # Top 20 by PCA loadings
-            elif heatmap_mode_var == "Custom Features":
+            heatmap_mode = self.heatmap_mode_var.get()
+
+            if heatmap_mode == "Top Features":
+                return sorted_columns[self.app_state.num_feat.get()]  # Top 10 by PCA loadings
+            elif heatmap_mode == "Custom Features":
                 if focus_entry:
                     cols = [col.strip() for col in focus_entry.split(",") if col.strip()]
                     if not cols:
@@ -172,7 +172,7 @@ class HeatmapBox(tk.Frame):
                 else:
                     raise ValueError("No columns specified for custom heatmap.")
             else:
-                raise ValueError(f"Invalid heatmap mode: {heatmap_mode_var}")
+                raise ValueError(f"Invalid heatmap mode: {heatmap_mode}")
 
         except Exception as e:
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")

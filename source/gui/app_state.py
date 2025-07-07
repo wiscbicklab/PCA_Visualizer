@@ -28,9 +28,15 @@ class AppState:
         self.df_cleaned = tk.BooleanVar(main, value=False)
         self.df_updated = tk.BooleanVar(main, value=False)
 
-        # Varialbe to track user inputs for data cleaning
+        # Variabes to track user inputs for data cleaning
         self.missing_choice = tk.StringVar(main, value="impute_mean")
         self.bbch_choice = tk.IntVar(main, value=-1)
+        self.custom_filter_target = tk.StringVar(main, value="")
+        self.custom_filter_type = tk.StringVar(main, value="")
+
+        self.custom_filter_upper = tk.StringVar(main, value="999999.99")
+        self.custom_filter_lower = tk.StringVar(main, value="-999999.99")
+        self.custom_filter_equal = tk.StringVar(main, value="")
 
         # Variables to track user inputs for plot generation
         self.target_mode = tk.StringVar(main, "None")

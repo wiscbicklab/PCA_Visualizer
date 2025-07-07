@@ -70,6 +70,7 @@ PCA_11.27.24-pca/
     - Select the 'Number of Features'
       - If Feature Grouping is not enabled this determines the number of features to show on the biplot and interactive biplot
       - Determines the number of features to use for the 'Top Feature Loadings' plot
+      - If 'Top Features' is selected for the heatmap mode this determines the number of features to use in the heatmap
     - Select the "Focused PCA Component"
       - This determines the PCA component to sort Loadings by for both the "Top Feature Loadings' plot and heatmap
     - Select the 'Text Distance for Labels'
@@ -140,10 +141,6 @@ PCA_11.27.24-pca/
 
 ## Future Enhancements
 
-- Fix the highlighted issues
-- Fix the workflow - very clunky + not intuitive (buggy around clean csv/ run pca analysis if out of order)
-- Fix the save file interactions (add more messaging boxes? - help user understand where things are going more clearly)
-- Fix the saved plot formatting issues - view of plot is wonky in output dir
 - Generalize BBCH-specific filtering to support custom categorical filters
 - Improve interactive plotting capabilities - have it pop out or in browswer for user? something like that 
 - Add more customization (e.g. user decides color palette) 

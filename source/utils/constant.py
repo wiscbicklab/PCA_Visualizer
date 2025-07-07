@@ -33,11 +33,19 @@ RAD_BUTTON_STYLE = {
     "fg": "black",
     "activebackground": "#d0d0d0",
 }
-ENTRY_STYLE = {
+ENTRY_SYLE = {
     **FONT,
     "bg": "white",
+}
+BIG_ENTRY_STYLE = {
+    **ENTRY_SYLE,
     "width": 22
 }
+SMALL_ENTRY_STYLE = {
+    **ENTRY_SYLE,
+    "width": 14
+}
+
 
 
 

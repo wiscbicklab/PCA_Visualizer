@@ -8,6 +8,7 @@ import pandas as pd
 from sklearn.impute import SimpleImputer
 
 from source.gui.clean_widgets.bbch_selector import BbchSelector
+from source.gui.clean_widgets.filter_selector import FilterSelector
 from source.gui.clean_widgets.missing_selector import MissingSelector
 from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
@@ -53,7 +54,7 @@ class CleanFileBox(tk.Frame):
 
         # Declare selector components for user input
         self.missing_selector = None
-        self.bbch_selector = None
+        self.filter_selector = None
 
         # Declare widgets for selecting columns to drop
         self.drop_label = None
@@ -77,11 +78,11 @@ class CleanFileBox(tk.Frame):
         
         # Creates selector components for user input       
         self.missing_selector = MissingSelector(self, self.app_state, bg="#f0f0f0")
-        self.bbch_selector = BbchSelector(self, self.app_state, bg="#f0f0f0")
+        self.filter_selector = FilterSelector(self, self.app_state, bg="#f0f0f0")
         
         # Creates widgets for selecting columns to drop
         self.drop_label = tk.Label(self, text="Columns to Drop (comma-separated):", **LABEL_STYLE)
-        self.drop_entry = tk.Entry(self, **ENTRY_STYLE)
+        self.drop_entry = tk.Entry(self, **BIG_ENTRY_STYLE)
 
         # Creates button for cleaning user data
         self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, command=self.clean_data)
@@ -101,7 +102,7 @@ class CleanFileBox(tk.Frame):
 
         # Places selector components next to each other
         self.missing_selector.grid(row=2, column=0, padx=5, pady=5, sticky="nswe")
-        self.bbch_selector.grid(row=2, column=1, padx=5, pady=5, sticky="nswe")
+        self.filter_selector.grid(row=2, column=1, padx=5, pady=5, sticky="nswe")
 
         # Places column dropping widgets
         self.drop_label.grid(row=3, column=0, columnspan=2, padx=5, pady=5, sticky="nswe")
@@ -165,18 +166,35 @@ class CleanFileBox(tk.Frame):
         # Standardize column names
         df.columns = df.columns.str.strip().str.lower() 
 
-        # Filter by BBCH stage
-        selected_bbch = self.app_state.bbch_choice.get()
-        if selected_bbch != -1:
-            # Ensure BBCH column exists and is treated as string
-            if 'bbch' in df.columns:
-                df = df[np.isclose(df['bbch'], float(selected_bbch), atol=0.05)]
+        # Filter by user selection
+        filter_name = self.app_state.custom_filter_target.get().lower().strip()
+        filter_type = self.app_state.custom_filter_type.get()
+        if filter_name in df.columns:
+            filters = ["Equal to", "Less than", "Greater than", "Less than and Greater than", "Less than or Greater than"]
+            # Get filter values
+            exact_value = [col.strip().lower() for col in self.app_state.custom_filter_equal.get().split(",") if col.strip()]
+            lower_value = float(self.app_state.custom_filter_lower.get())
+            upper_value = float(self.app_state.custom_filter_upper.get())
+
+            # Apply filters
+            if filter_type == filters[0]:
+                print(exact_value)
+                exact_value_floats = [float(val) for val in exact_value]
+                df = df[df[filter_name].apply(
+                    lambda x: any(np.isclose(x, v, atol=0.05) for v in exact_value_floats)
+                )]
+            elif filter_type == filters[1]:
+                df = df[df[filter_name] < upper_value]
+            elif filter_type == filters[2]:
+                df = df[df[filter_name] > lower_value]
+            elif filter_type == filters[3]:
+                df = df[(df[filter_name] > lower_value) & (df[filter_name] < upper_value)]
+            elif filter_type == filters[4]:
+                df = df[(df[filter_name] < lower_value) | (df[filter_name] > upper_value)]
             else:
-                messagebox.showerror(
-                    "Error", 
-                    "Could not clean data. BBCH filtering selected but, BBCH could not be found"
-                )
-                return
+                messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
+        elif not filter_name == "":
+            messagebox.showerror("Invalid Column", f"Column '{filter_name}' not found in DataFrame")
         
         # Drop user-specified columns
         drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]

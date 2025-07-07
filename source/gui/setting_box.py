@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
+from tkinter import filedialog
 import traceback
 
-from matplotlib import pyplot as plt
-from matplotlib.figure import Figure
-import numpy as np
+from matplotlib import cm
+from matplotlib.colors import to_hex
 import pandas as pd
 
 from source.gui.app_state  import AppState
@@ -69,8 +69,10 @@ class SettingBox(tk.Frame):
         self.text_dist_label = None
         self.text_dist_entry = None
 
-        # Declares button for visualizing PCA
-        self.button = None
+        # Declares feature mapping components
+        self.mapping_toggle = None
+        self.mapping_label = None
+        self.mapping_bttn = None
 
         self.create_components()
         self.setup_layout()
@@ -93,7 +95,7 @@ class SettingBox(tk.Frame):
         self.custom_target_label = tk.Label(self, text="Custom Target Variable:", **LABEL_STYLE)
         self.custom_target_entry = tk.Entry(
             self,
-            **ENTRY_STYLE,
+            **BIG_ENTRY_STYLE,
             state="disabled",
             textvariable=self.app_state.custom_target
         )
@@ -107,7 +109,7 @@ class SettingBox(tk.Frame):
         self.num_pca_comp_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
         self.num_pca_comp_entry = tk.Entry(
             self,
-            **ENTRY_STYLE,
+            **BIG_ENTRY_STYLE,
             validate="key",
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.num_pca_comp
@@ -120,7 +122,7 @@ class SettingBox(tk.Frame):
         self.top_n_label = tk.Label(self, text="Number of Features:", **LABEL_STYLE)
         self.top_n_entry = tk.Entry(
             self,
-            **ENTRY_STYLE ,
+            **BIG_ENTRY_STYLE ,
             validate="key",
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.num_feat
@@ -134,7 +136,7 @@ class SettingBox(tk.Frame):
         self.pca_num_label = tk.Label(self, text="Focused PCA Component:", **LABEL_STYLE)
         self.pca_num_entry = tk.Entry(
             self,
-            **ENTRY_STYLE ,
+            **BIG_ENTRY_STYLE ,
             validate="key",
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.focused_pca_num
@@ -148,7 +150,7 @@ class SettingBox(tk.Frame):
         self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
         self.text_dist_entry = tk.Entry(
             self,
-            **ENTRY_STYLE,
+            **BIG_ENTRY_STYLE,
             validate="key",
             validatecommand=self.vcmd_non_neg_float,
             textvariable=self.app_state.text_dist
@@ -157,9 +159,16 @@ class SettingBox(tk.Frame):
         self.text_dist_entry.bind("<FocusIn>", lambda e: self.on_entry(self.text_dist_entry))
         self.text_dist_entry.bind("<Return>", lambda e: self.text_dist_entry.tk_focusNext().focus())
 
-
-        # Creates button for visualizing PCA plot
-        self.button = tk.Button(self, text="Visualize PCA", **BUTTON_STYLE, command=self.visualize_pca)
+        # Creates feature mapping components
+        self.mapping_toggle = tk.Checkbutton(
+            self,
+            text="Enable Feature Grouping",
+            variable=self.app_state.feat_group_enable,
+            command=self.update_mapping_bttn,
+            **LABEL_STYLE,
+        )
+        self.mapping_label = tk.Label(self, **LABEL_STYLE, text="Feature Grouping Map:")
+        self.mapping_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.upload_mapping, state="disabled")
         
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
@@ -169,135 +178,38 @@ class SettingBox(tk.Frame):
 
         # Places banner at top of this component
         self.banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
+
+        # Places feature grouping components
+        self.mapping_toggle.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        self.mapping_label.grid(row=2, column=0, padx=5, pady=5, sticky='e')
+        self.mapping_bttn.grid(row=2, column=1, padx=5, pady=5, sticky='w')
     
         # Places target selection widgets
-        self.target_mode_label.grid(row=1, column=0, padx=5, pady=5, sticky="e")
-        self.target_mode_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky='w')
-        self.custom_target_label.grid(row=2, column=0, padx=5, pady=5, sticky="e")
-        self.custom_target_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
+        self.target_mode_label.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        self.target_mode_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='w')
+        self.custom_target_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        self.custom_target_entry.grid(row=4, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for number of PCA components
-        self.num_pca_comp_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
-        self.num_pca_comp_entry.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+        self.num_pca_comp_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.num_pca_comp_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for number of top PCA features
-        self.top_n_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
-        self.top_n_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        self.top_n_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        self.top_n_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for PCA component to analise
-        self.pca_num_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
-        self.pca_num_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
+        self.pca_num_label.grid(row=7, column=0, padx=5, pady=5, sticky="e")
+        self.pca_num_entry.grid(row=7, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for label text distances
-        self.text_dist_label.grid(row=7, column=0, padx=5, pady=5, sticky="e")
-        self.text_dist_entry.grid(row=7, column=1, padx=5, pady=5, sticky="w")
+        self.text_dist_label.grid(row=8, column=0, padx=5, pady=5, sticky="e")
+        self.text_dist_entry.grid(row=8, column=1, padx=5, pady=5, sticky="w")
 
-        # Places PCA Visualization button
-        self.button.grid(row=8, column=0, columnspan=2, padx=5, pady=5)
-
-
-    #### 1. VISUALIZATION METHODS ####
-
-    def visualize_pca(self):
-        """
-        Creates a PCA visualization based on the given inputs and updates GUI plot
         
-        Creates a PCA plot of the first two prinicple components. Creates groupings using
-            the selected Target Variable and gives them unique colors. Displays the generated plot.
-        """
-        # Validates that the data has been cleaned
-        if not self.app_state.df_cleaned.get():
-            messagebox.showerror("Error", "Data must be cleaned in order to run PCA.")
-            return  
-        
-        # Runs PCA Analysis and get important results
-        self.app_state.main.run_analysis()
-        transformed_data = self.app_state.pca_results['transformed_data']
-        transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
-        transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
-        
-        # Gets the user selected target variable
-        target = self.get_target()
-
-        # Generate new blank figure
-        self.app_state.main.create_blank_fig()
-        # Adds title and axis lables to the figure
-        self.app_state.ax.set_title("PCA Visualization")
-        self.app_state.ax.set_xlabel("Principal Component 1")
-        self.app_state.ax.set_ylabel("Principal Component 2")
-
-        # Plot grouped by target if available
-        if target:
-            # Gets targets
-            target_vals = self.app_state.df[target].reset_index(drop=True)
-            unique_targets = sorted(target_vals.unique())
-
-            # Assign colors and adds a legend
-            colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
-            for i, t in enumerate(unique_targets):
-                mask = target_vals == t
-                color = colors[i] 
-                self.app_state.ax.scatter(transformed_df.loc[mask, "PC1"],
-                                    transformed_df.loc[mask, "PC2"],
-                                    c=[color], label=str(t), alpha=0.7,
-                )
-            self.app_state.ax.legend(title=f"{target} Groups")
-        else:
-            # Plot without grouping
-            self.app_state.ax.scatter(
-                transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
-            )
-
-        self.app_state.main.update_figure()
-
-    def get_target(self):
-        """
-        Gets the user selected target
-        
-        Returns:
-            None if None is selected, the selected target is not in the df, or an error occures
-            Otherwise the selected target stripped of whitespace and in lower case
-        """
-        # Get the user selected target mode
-        target_mode = self.app_state.target_mode.get().strip().lower()
-
-        # Determines the target given the target mode
-        if target_mode == "none":
-            return None
-        elif target_mode == "bbch":
-            if target_mode in self.app_state.df.columns.to_list():
-                return "bbch"
-            else:
-                messagebox.showerror(
-                    "Target Error",
-                    f"BBCH selected as target, but not found in the dataset!"
-                )
-                return None
-        elif target_mode == "input specific target":
-            # If the target mode is a custom target get the user specified target
-            target = self.app_state.custom_target.get().strip().lower()
-            if not target or target.isspace():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Invalid target selected.\nDefaulting to no target."
-                )
-                return None
-            if target not in self.app_state.df.columns.to_list():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Target variable '{target}' not found in the dataset!\nDefualting to no target."
-                )
-                return None
-            return target.strip().lower()
-        else:
-            messagebox.showerror(
-                "Target_Mode Error",
-                f"An internal application error occured, an impossible target_mode was selected!"
-            )
-            return None
 
 
-    #### 2. EVENT HANDLERS ####
+    #### 1. EVENT HANDLERS ####
 
     def toggle_custom_target_entry(self, *args):
         """Toggles the custom_target_entry to accept or refuse input"""
@@ -352,5 +264,57 @@ class SettingBox(tk.Frame):
                 return True
         except Exception: pass
         return False
+
+    def update_mapping_bttn(self):
+        """Toggles the mapping button state"""
+        if self.app_state.feat_group_enable.get():
+            self.mapping_bttn.config(state='normal')
+        else:
+            self.mapping_bttn.config(state='disabled')
+
+    #### 2. Feature Grouping Operations ####
+
+    def upload_mapping(self):
+        """Allow the user to upload a mapping CSV file for feature-to-group mapping."""
+        # Asks the user to select a csv file and ensures a csv file was selected
+        file_path = filedialog.askopenfilename(filetypes=[("CSV files", "*.csv")])
+        if not file_path:
+            messagebox.showerror("Error", "No file selected. Please upload a valid mapping CSV.")
+            return
+        if not file_path.lower().endswith(".csv"):
+            messagebox.showerror("File Error", f"The selected file: {file_path} is not a csv file. You must select a CSV file")
+            return
+
+        try:
+            # Load the CSV into a DataFrame and set column names to lower case
+            df = pd.read_csv(file_path)
+            df.columns = df.columns.str.lower()
+
+
+            # Validate input DataFrame
+            if "feature" not in df.columns.to_list() or "group" not in df.columns.to_list():
+                messagebox.showerror("Error", "Invalid Feature File, 'Feature' or 'Group' column not found")
+                return
+
+            # Create feature-to-group mapping and standardize to lowercase
+            self.app_state.feat_group_map = {
+                key.lower(): value.lower() for key, value in zip(df["feature"], df["group"])
+            }
+
+            # Get unique groups
+            unique_groups = sorted(df['group'].unique())
+
+            # Generate a dynamic color palette for groups
+            colormap = cm.get_cmap('tab20', len(unique_groups))  # Use a colormap with sufficient distinct colors
+            self.app_state.group_color_map = {
+                group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
+            }
+
+            messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
+        
+        except Exception as e:
+            traceback.print_exc()
+            messagebox.showerror("Error", f"Failed to load mapping CSV: {str(e)}")
+
 
 

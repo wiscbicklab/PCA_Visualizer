@@ -145,6 +145,7 @@ class PCAAnalysisApp(tk.Tk):
             self.app_state.selected_palette,
             *COLOR_PALETTES.keys(),
         )
+        self.app_state.selected_palette.set("Default")
 
         # Results Section
         self.data_insight_summary = tk.Text(self, height=15, width=50, **LABEL_STYLE)

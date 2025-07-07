@@ -11,7 +11,7 @@ from constant import (
     BUTTON_STYLE,
     OPTION_MENU_STYLE,
     RAD_BUTTON_STYLE,
-    ENTRY_STYLE,
+    BIG_ENTRY_STYLE,
     COLOR_PALETTES
 )
 from file_operations import load_csv_file, save_plot
@@ -26,7 +26,7 @@ __all__ = [
     'BUTTON_STYLE',
     'OPTION_MENU_STYLE',
     'RAD_BUTTON_STYLE',
-    'ENTRY_STYLE',
+    'BIG_ENTRY_STYLE',
     'COLOR_PALETTES',
 
     # File operations
