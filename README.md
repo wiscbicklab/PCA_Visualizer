@@ -38,8 +38,9 @@ PCA_11.27.24-pca/
   - Run application as a module, ```python -m source.gui.app```
     
 - To run on Windows
-  - Download the .exe
+  - Download the .exe from the latest release at https://github.com/wiscbicklab/PCA_11.27.24/releases
   - Run the .exe
+    - You may need to override security warnings by right-clicking to 'run as administrator'
 
 ## How to use the application
 
@@ -125,22 +126,3 @@ PCA_11.27.24-pca/
 - Interactive plots use `plotly` (check dependencies)
 - Color grouping maps must be CSVs with valid column-to-group mappings
 - Filtering BBCH values is case-sensitive: ensure data uses formats like `"B69"`
-
-
-## Testing Workflow
-
-1. Download the executable from: [https://github.com/wiscbicklab/PCA_11.27.24/releases/tag/pca](https://github.com/wiscbicklab/PCA_11.27.24/releases/tag/pca)
-    
-2. Download `KUPCA_GUI.exe`
-    
-3. Open from browser's downloads
-    
-    - You may need to override security warnings by selecting 'run anyway' or right-clicking to 'run as administrator'
-4. Maximize the window for optimal viewing
-
-
-## Future Enhancements
-
-- Generalize BBCH-specific filtering to support custom categorical filters
-- Improve interactive plotting capabilities - have it pop out or in browswer for user? something like that 
-- Add more customization (e.g. user decides color palette) 
