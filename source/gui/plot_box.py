@@ -577,8 +577,8 @@ class PlotBox(tk.Frame):
         pca_comp_num = self.app_state.focused_pca_num.get()-1
 
         # Intialize the plot
-        if not self.init_top_feat_plot(top_n):
-            messagebox("Error", "Error occured while attemping to initialize the new figure")
+        if not self.init_top_feat_plot(top_n, pca_comp_num):
+            messagebox.showerror("Error", "Error occured while attemping to initialize the new figure")
             return
         
         # Validate and retrieve loadings
@@ -608,7 +608,7 @@ class PlotBox(tk.Frame):
         self.app_state.main.update_figure()
         messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
 
-    def init_top_feat_plot(self, top_n):
+    def init_top_feat_plot(self, top_n, pca_num):
         """
         Intializes a blank top feature plot with title and labels
         
@@ -622,8 +622,8 @@ class PlotBox(tk.Frame):
         self.app_state.main.create_blank_fig(grid=False)
         try:
             # Adds title and labels to the figure
-            self.app_state.ax.set_title(f"Top {top_n} Features - Absolute Loadings", fontsize=14)
-            self.app_state.ax.set_xlabel("Absolute Loadings", fontsize=12)
+            self.app_state.ax.set_title(f"Top {top_n} Features - PCA{pca_num} Absolute Loadings", fontsize=14)
+            self.app_state.ax.set_xlabel(f"PCA{pca_num} Absolute Loadings", fontsize=12)
             self.app_state.ax.set_ylabel("Features", fontsize=12)
 
             # Sets the x and y axis variable sizes and rotation, to ensure labels fit on plot

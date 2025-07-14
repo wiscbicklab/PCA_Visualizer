@@ -1,13 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
-from tkinter import filedialog
-import chardet
 import numpy as np
 import pandas as pd
 
 from sklearn.impute import SimpleImputer
 
-from source.gui.clean_widgets.bbch_selector import BbchSelector
 from source.gui.clean_widgets.filter_selector import FilterSelector
 from source.gui.clean_widgets.missing_selector import MissingSelector
 from source.gui.app_state  import AppState
@@ -166,35 +163,37 @@ class CleanFileBox(tk.Frame):
         # Standardize column names
         df.columns = df.columns.str.strip().str.lower() 
 
-        # Filter by user selection
+        # Get filter values
         filter_name = self.app_state.custom_filter_target.get().lower().strip()
         filter_type = self.app_state.custom_filter_type.get()
-        if filter_name in df.columns:
-            filters = ["Equal to", "Less than", "Greater than", "Less than and Greater than", "Less than or Greater than"]
-            # Get filter values
-            exact_value = [col.strip().lower() for col in self.app_state.custom_filter_equal.get().split(",") if col.strip()]
-            lower_value = float(self.app_state.custom_filter_lower.get())
-            upper_value = float(self.app_state.custom_filter_upper.get())
+        exact_value = [col.strip().lower() for col in self.app_state.custom_filter_equal.get().split(",") if col.strip()]
+        lower_value = float(self.app_state.custom_filter_lower.get())
+        upper_value = float(self.app_state.custom_filter_upper.get())
 
-            # Apply filters
-            if filter_type == filters[0]:
-                print(exact_value)
-                exact_value_floats = [float(val) for val in exact_value]
-                df = df[df[filter_name].apply(
-                    lambda x: any(np.isclose(x, v, atol=0.001) for v in exact_value_floats)
-                )]
-            elif filter_type == filters[1]:
-                df = df[df[filter_name] < upper_value]
-            elif filter_type == filters[2]:
-                df = df[df[filter_name] > lower_value]
-            elif filter_type == filters[3]:
-                df = df[(df[filter_name] > lower_value) & (df[filter_name] < upper_value)]
-            elif filter_type == filters[4]:
-                df = df[(df[filter_name] < lower_value) | (df[filter_name] > upper_value)]
+        # Filter based on the filter selection
+        filters = ["None", "Equal to", "Less than", "Greater than", "Between", "Outside"]
+        if filter_type != filters[0]:
+            if filter_name not in df.columns:
+                messagebox.showerror("Column Label Error", f"The selected column, {filter_name}, was not found in the data.\nSkipping filtering!")
+            elif filter_name == "":
+                messagebox.showinfo("Select a Column", "No Column was selected for filtering")
+                
             else:
-                messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
-        elif not filter_name == "":
-            messagebox.showerror("Invalid Column", f"Column '{filter_name}' not found in DataFrame")
+                if filter_type == filters[1]:
+                    if len(exact_value) == 0:
+                        messagebox.showinfo("No Values Selected", "Filtering by Values 'Equal to' was selected, but no value were entered")
+                    exact_value_floats = [float(val) for val in exact_value]
+                    df = df[df[filter_name].apply(lambda x: any(np.isclose(x, v, atol=0.001) for v in exact_value_floats))]
+                elif filter_type == filters[2]:
+                    df = df[df[filter_name] < upper_value]
+                elif filter_type == filters[3]:
+                    df = df[df[filter_name] > lower_value]
+                elif filter_type == filters[4]:
+                    df = df[(df[filter_name] > lower_value) & (df[filter_name] < upper_value)]
+                elif filter_type == filters[5]:
+                    df = df[(df[filter_name] < lower_value) | (df[filter_name] > upper_value)]
+                else:
+                    messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
         
         # Drop user-specified columns
         drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]

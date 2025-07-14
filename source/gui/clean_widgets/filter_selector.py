@@ -59,7 +59,7 @@ class FilterSelector(tk.Frame):
         """Creates the components to be placed onto this tk Frame"""
         # Creates filter type selector
         self.filter_type_lbl = tk.Label(self, text="Filter Type: ", **LABEL_STYLE)
-        filters = ["None", "Equal to", "Less than", "Greater than", "Less than and Greater than", "Less than or Greater than"]
+        filters = ["None", "Equal to", "Less than", "Greater than", "Between", "Outside"]
         self.filter_type_menu = tk.OptionMenu(
             self,
             self.app_state.custom_filter_type,
@@ -158,20 +158,20 @@ class FilterSelector(tk.Frame):
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
 
-        elif filter_type == "Less than and Greater than":
+        elif filter_type == "Between":
             self.target_entry.config(state="normal")
             self.upper_entry.config(state="normal")
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
 
-        elif filter_type == "Less than or Greater than":
+        elif filter_type == "Outside":
             self.target_entry.config(state="normal")
             self.upper_entry.config(state="normal")
             self.lower_entry.config(state="normal")
             self.equal_entry.config(state="readonly")
 
         else:
-            messagebox.showerror("Application Error", "An internal program error has occured trying to get the filter type")
+            messagebox.showerror(f"Application Error", "An internal program error has occured trying to get the filter type\nFilter Type:{filter_type}")
 
     def _on_exit_upper_entry(self, default_value):
         """Validates that the upper entry value is a float during exit"""

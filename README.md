@@ -13,7 +13,8 @@ PCA_11.27.24-pca/
     │
     ├── gui/
     │   ├─ clean_widgets/
-    │   │   ├── bbch_selector.py    ← GUI checkbox for filtering by bbch
+    |   |   ├── bbch_selector.py    ← GUI checkbox for filtering by bbch (Depreciated)
+    │   │   ├── filter_selector.py  ← GUI selector for filtering by a selected column
     |   |   └── missing_selector.py ← GUI checkbox for filtering/interpolating missing data
     |   |
     │   ├── app.py                  ← Main GUI application (tkinter)   
@@ -41,6 +42,7 @@ PCA_11.27.24-pca/
   - Download the .exe from the latest release at https://github.com/wiscbicklab/PCA_11.27.24/releases
   - Run the .exe
     - You may need to override security warnings by right-clicking to 'run as administrator'
+    - The .exe may take a while to launch especially during first launch
 
 ## How to use the application
 
@@ -55,7 +57,17 @@ PCA_11.27.24-pca/
     
     - Select options for how to clean the data
       - Select an option for how to deal with missing values in the data
-      - Select an option for which bbch stage to filter by
+      - Select an option for how filtering by column
+        - Select A filter type
+          - None.         No filter is applied. All rows are included
+          - Equal to.     Selects all rows where the value of selected column is within .001 of the given Values
+          - Less than:    Selects all rows where the value of selected column is less than the Upper Bound(Exclusive)
+          - Greater than: Selects all rows where the value of selected column is greater than the Lower Bound(Exclusive)
+          - Between:      Selects all rows where the value of selected column is betwee the Lower and Upper Bound(Exclusive)
+          - Outside:      Selects all rows where the value of selected column is less than the Lower Bound(Exclusive) or greater than the Upper Bound(Exclusive)
+        - Select the Datat column to filter by
+        - Enter the bounds for the selected filter
+          - If entering Values seperate the values by commas.
       - Enter any columns you would like to remove from the PCA analysis seperated by columns
         IE. (year, rep, SAMPLENUM)
     - Click on the 'Clean CSV' button
@@ -125,4 +137,3 @@ PCA_11.27.24-pca/
 
 - Interactive plots use `plotly` (check dependencies)
 - Color grouping maps must be CSVs with valid column-to-group mappings
-- Filtering BBCH values is case-sensitive: ensure data uses formats like `"B69"`

@@ -38,7 +38,7 @@ class HeatmapBox(tk.Frame):
         super().__init__(main, **kwargs)
         self.app_state = app_state
 
-        self.heatmap_mode_var = tk.StringVar(value="Top 10 Features")
+        self.heatmap_mode_var = tk.StringVar(value="Top Features")
 
         # Banner
         self.heatmap_banner = None
@@ -158,7 +158,7 @@ class HeatmapBox(tk.Frame):
             heatmap_mode = self.heatmap_mode_var.get()
 
             if heatmap_mode == "Top Features":
-                return sorted_columns[self.app_state.num_feat.get()]  # Top 10 by PCA loadings
+                return sorted_columns[:self.app_state.num_feat.get()]  # Uses the user specified number of Features
             elif heatmap_mode == "Custom Features":
                 if focus_entry:
                     cols = [col.strip() for col in focus_entry.split(",") if col.strip()]
