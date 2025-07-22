@@ -55,10 +55,6 @@ class PCAAnalysisApp(tk.Tk):
         self.biplot_box = None
         self.heatmap_box = None
 
-        # Declare color palette selection
-        self.palette_label = None
-        self.palette_menu = None
-
         # Declare space for the figure to be stored
         self.plot_canvas = None
         self.plot_canvas_figure = None
@@ -124,14 +120,7 @@ class PCAAnalysisApp(tk.Tk):
         self.biplot_box = PlotBox(self.options_frame, self.app_state, **BG_COLOR)
         self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
 
-        # Color Palette Selection
-        self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
-        self.palette_menu = tk.OptionMenu(
-            self.options_frame,
-            self.app_state.selected_palette,
-            *COLOR_PALETTES.keys(),
-        )
-        self.app_state.selected_palette.set("Default")
+
 
         # Text Information Boxes
         self.program_status_text = tk.Text(self, height=2, width=20, **LABEL_STYLE)
@@ -172,10 +161,6 @@ class PCAAnalysisApp(tk.Tk):
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
         self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
         self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
-
-        # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
         self.program_status_text.grid(row=3, column=2, padx=5, pady=5, sticky='nswe')
@@ -303,12 +288,7 @@ class PCAAnalysisApp(tk.Tk):
         else:  # Windows/macOS
             self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
-    def _update_palette_menu_state(self, *args):
-        if self.app_state.feat_group_enable.get():
-            self.palette_menu.config(state="normal")
-        else:
-            self.palette_menu.config(state="disabled")
-        
+
     #### Text Generation ####
     def create_pca_text(self, pca_results):
         # Simple, clean formatting
