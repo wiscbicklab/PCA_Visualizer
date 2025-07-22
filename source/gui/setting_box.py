@@ -212,6 +212,17 @@ class SettingBox(tk.Frame):
             widget.delete(0, tk.END)
             widget.insert(0, default_value)
             current_value = default_value
+
+        # Set pca_num do defualt if it's too large
+        if attr_name == "top_n_feat" and float(current_value) > float(20.0):
+            widget.delete(0, tk.END)
+            widget.insert(0, default_value)
+            current_value = default_value
+
+        # Set pca_num do defualt if it's too large
+        if attr_name == "num_pca_comp" and float(self.app_state.focused_pca_num.get()) > float(current_value):
+            self.app_state.focused_pca_num.set(current_value)
+            current_value = default_value
         
         # Sets the dataFrame as updated if the related variables changed
         if float(current_value) != self.original_value:
