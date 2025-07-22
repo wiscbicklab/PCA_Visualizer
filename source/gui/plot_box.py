@@ -577,7 +577,7 @@ class PlotBox(tk.Frame):
         pca_comp_num = self.app_state.focused_pca_num.get()-1
 
         # Intialize the plot
-        if not self.init_top_feat_plot(top_n, pca_comp_num):
+        if not self.init_top_feat_plot(top_n, pca_comp_num+1):
             messagebox.showerror("Error", "Error occured while attemping to initialize the new figure")
             return
         
@@ -606,7 +606,6 @@ class PlotBox(tk.Frame):
         
         # Updates the figure on the GUI
         self.app_state.main.update_figure()
-        messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
 
     def init_top_feat_plot(self, top_n, pca_num):
         """

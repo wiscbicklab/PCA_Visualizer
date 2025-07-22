@@ -24,7 +24,6 @@ import source.utils.file_operations as file_ops
 
 import traceback
 
-
 class PCAAnalysisApp(tk.Tk):
     """GUI Application for PCA Analysis."""
 
@@ -37,7 +36,9 @@ class PCAAnalysisApp(tk.Tk):
         # Sets up the window, and creates a way to track the app state
         super().__init__()
         self.app_state = AppState(self)
-        self.setup_window()
+        
+        self.title("PCA Analysis Tool")
+        self.configure(bg="#f5f5f5")
 
         # Object for running PCA analysis
         self.pca_analyzer = PCAAnalyzer()
@@ -63,7 +64,9 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure = None
 
         # Results Section
-        self.data_insight_summary = None
+        self.program_status_text = None
+        self.data_text = None
+        self.pca_text = None
 
         # Save Button
         self.save_button = None
@@ -73,23 +76,6 @@ class PCAAnalysisApp(tk.Tk):
         self.setup_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-    def setup_window(self):
-        """
-        Configure the main window.
-            Set the window to fullscreen or to normal, dependent on os
-            Sets a minimum application size
-            Sets a title and background color
-        """
-        self.title("PCA Analysis Tool")
-
-        # Sets state maximized if possible
-        if self.app_state.os_type == "Windows" or self.app_state.os_type == "Darwin":
-            self.state("zoomed")
-        else: self.state('normal')
-
-        self.configure(bg="#f5f5f5")
-        self.minsize(1350, 800)
-
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates canvas and figure where plots will be displayed
@@ -97,7 +83,7 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure = self.plot_canvas.get_tk_widget()
 
         # Creates a scrollable window 
-        self.options_canvas = tk.Canvas(self)
+        self.options_canvas = tk.Canvas(self, width=450)
         self.options_scroll = Scrollbar(self, orient=VERTICAL, command=self.options_canvas.yview)
         self.options_canvas.configure(yscrollcommand=self.options_scroll.set)
         self.options_frame = tk.Frame(self.options_canvas, **BG_COLOR)
@@ -147,8 +133,12 @@ class PCAAnalysisApp(tk.Tk):
         )
         self.app_state.selected_palette.set("Default")
 
-        # Results Section
-        self.data_insight_summary = tk.Text(self, height=15, width=50, **LABEL_STYLE)
+        # Text Information Boxes
+        self.program_status_text = tk.Text(self, height=2, width=20, **LABEL_STYLE)
+        self.program_status_text.insert(tk.END, "Please Load Data")
+        self.data_text = tk.Text(self, height=15, width=25, **LABEL_STYLE)
+        self.pca_text = tk.Text(self, height=15, width=25, **LABEL_STYLE)
+        self.pca_text.insert(tk.END, "Information will appear once PCA has been run")
 
         # Save
         self.save_button = tk.Button(
@@ -167,7 +157,7 @@ class PCAAnalysisApp(tk.Tk):
         self.grid_rowconfigure(3, weight=1)
         self.grid_rowconfigure(4, weight=0)
 
-        self.grid_columnconfigure(0, weight=2)
+        self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
@@ -188,14 +178,16 @@ class PCAAnalysisApp(tk.Tk):
         self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
-        self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
+        self.program_status_text.grid(row=3, column=2, padx=5, pady=5, sticky='nswe')
+        self.data_text.grid(row=4, column=2, padx=5, pady=5, sticky="nsew")
+        self.pca_text.grid(row=4, column=3, padx=5, pady=5, sticky="nsew")
 
         # Save Button
-        self.save_button.grid(row=4, column=2, padx=5, pady=5, sticky="w")
+        self.save_button.grid(row=5, column=2, padx=5, pady=5, sticky="w")
 
         # Output Directory
-        self.output_dir_label.grid(row=4, column=3, padx=5, pady=5, sticky="w")
-        self.output_dir_button.grid(row=4, column=3, padx=5, pady=5, sticky="e")
+        self.output_dir_label.grid(row=5, column=3, padx=5, pady=5, sticky="w")
+        self.output_dir_button.grid(row=5, column=3, padx=5, pady=5, sticky="e")
 
 
     #### 1. DATA HANDLING METHODS ####
@@ -214,7 +206,8 @@ class PCAAnalysisApp(tk.Tk):
             )
 
             # Update display
-            self.update_results_display(self.app_state.pca_results)
+            text = self.create_pca_text(self.app_state.pca_results)
+            self.replace_pca_text(text)
 
             # Update df status variables
             self.app_state.df_updated.set(False)
@@ -239,45 +232,28 @@ class PCAAnalysisApp(tk.Tk):
     
     #### 4. UI UPDATE METHODS ####
 
-    def update_data_info(self):
-        """Update display with simplified data information."""
-        if self.app_state.df is not None:
-            # Simple, clean formatting
-            info_text = "Data Information\n"
-            info_text += "═══════════════\n\n"
-            info_text += f"Dataset Shape: {self.app_state.df.shape[0]} rows × {self.app_state.df.shape[1]} columns\n\n"
-            info_text += "Columns:\n"
+    def replace_program_status_text(self, text):
+        """Replaces the text in the program status text widget"""
+        self.program_status_text.delete(1.0, tk.END)
+        self.program_status_text.insert(tk.END, text)
 
-            # Simple column listing
-            columns = self.app_state.df.columns.tolist()
-            for i, col in enumerate(columns, 1):
-                info_text += f"{i}. {col}\n"
+        self.update_figure()
 
-            # Insert the info_text into the GUI widget
-            self.data_insight_summary.delete(1.0, tk.END)
-            self.data_insight_summary.insert(tk.END, info_text)
+    def replace_data_text(self, text):
+        """Replaces the text in the data text widget"""
+        # Insert the info_text into the GUI widget
+        self.data_text.delete(1.0, tk.END)
+        self.data_text.insert(tk.END, text)
 
-            self.update_figure()
+        self.update_figure()
 
-    def update_results_display(self, results: dict):
-        """Update results display with simplified formatting."""
-        # Simple, clean formatting
-        summary = "PCA Analysis Results\n"
-        summary += "══════════════════\n\n"
+    def replace_pca_text(self, text):
+        """Replaces the text in the pca text widget"""
+        self.pca_text.delete(1.0, tk.END)
+        self.pca_text.insert(tk.END, text)
 
-        # Basic Information
-        summary += f"Number of components: {results['n_components']}\n"
-        summary += f"Original shape: {results['original_shape']}\n"
-        summary += f"Prepared shape: {results['prepared_shape']}\n\n"
-
-        # Explained Variance Section
-        summary += "Explained Variance Ratios:\n"
-        for i, var in enumerate(results['explained_variance']):
-            summary += f"PC{i + 1}: {var:.3f}\n"
-
-        # Insert the summary into the GUI widget
-        self.data_insight_summary.delete(1.0, tk.END)
-        self.data_insight_summary.insert(tk.END, summary)
+        self.update_figure()
+    
 
     def update_figure(self):
         # Destroy old canvas
@@ -333,10 +309,65 @@ class PCAAnalysisApp(tk.Tk):
         else:
             self.palette_menu.config(state="disabled")
         
+    #### Text Generation ####
+    def create_pca_text(self, pca_results):
+        # Simple, clean formatting
+        text = "PCA Analysis Results\n"
+        text += "══════════════════\n\n"
+
+        # Basic Information
+        text += f"Number of components: {pca_results['n_components']}\n"
+        text += f"Original shape: {pca_results['original_shape']}\n"
+        text += f"Prepared shape: {pca_results['prepared_shape']}\n\n"
+
+        # Explained Variance Section
+        text_cols = [f"PC{i + 1}: {var:.3f}" for i, var in enumerate(pca_results['explained_variance'])]
+        text += self.format_col_text(text_cols, "Explained Variance Ratios:\t", sep=",\t")
+
+        return text
+    
+    def format_col_text(self, cols, start_text="", line_limit=80, sep=", "):
+        if cols is None or len(cols) == 0:
+            return start_text + "None\n"
+        
+        lines = []
+        current_line = start_text
+        for col in cols:
+            item_str = (sep if current_line != start_text else "") + col
+            if len(current_line) + len(item_str) > line_limit:
+                lines.append(current_line)
+                current_line = col
+            else:
+                current_line += item_str
+        if current_line:
+            lines.append(current_line)
+        
+        return "\n".join(lines) + "\n"
+
+
+
+
+
+TASKBAR_TOPBAR_HEIGHT = 125 #CHANGES OFFSET LEFT TO AVOID TASKBAR OVERLAP
+
 
 # Start App
 if __name__ == "__main__":   
-        app = PCAAnalysisApp()  
+        app = PCAAnalysisApp()
+
+        # Get screen dimensions
+        screen_width = app.winfo_screenwidth()
+        screen_height = app.winfo_screenheight()-TASKBAR_TOPBAR_HEIGHT
+
+        # Set the window geometry to the full screen size
+        app.geometry(f"{screen_width}x{screen_height}+0+0")
+
+        # Optional: prevent resizing if you want it locked
+        app.resizable(False, False)
+
+        # Optional: set title
+        app.title("Windowed Fullscreen")
+
         app.mainloop()
 
 

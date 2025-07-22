@@ -119,12 +119,15 @@ class CleanFileBox(tk.Frame):
         Checks that the df was loaded correctly and udpates status variable respectfully
         If the data is loaded creates a new blank figure and updates the data info box text
         """
-        self.app_state.df = file_ops.load_csv_file()
-
-        # Check that the data has been loaded correctly
-        if self.app_state.df is None:
-            self.app_state.df_cleaned.set(False)
+        # Loads Data
+        df = file_ops.load_csv_file()
+        if df is None:
+            if self.app_state.df is not None:
+                self.app_state.main.replace_program_status_text("Data File Not Selected: Previous Data Kept")
+            else:
+                self.app_state.main.replace_program_status_text("Data File Not Selected: Please Load Data")
             return
+        self.app_state.df = df
 
         # Updates df status variables
         self.app_state.df_updated.set(True)
@@ -134,8 +137,9 @@ class CleanFileBox(tk.Frame):
         self.app_state.main.create_blank_fig()    
 
         # Updates the GUI and shows sucess message
-        self.app_state.main.update_data_info()
-        messagebox.showinfo("Success", "File loaded successfully")
+        self.app_state.main.replace_data_text(self.create_load_data_str(df))
+        self.app_state.main.replace_program_status_text("Data Succsessfully Loaded")
+
 
     def clean_data(self):
         """
@@ -176,12 +180,13 @@ class CleanFileBox(tk.Frame):
             if filter_name not in df.columns:
                 messagebox.showerror("Column Label Error", f"The selected column, {filter_name}, was not found in the data.\nSkipping filtering!")
             elif filter_name == "":
-                messagebox.showinfo("Select a Column", "No Column was selected for filtering")
-                
+                messagebox.showerror("Select a Column", "No Column was selected for filtering")
+                return  
             else:
                 if filter_type == filters[1]:
                     if len(exact_value) == 0:
-                        messagebox.showinfo("No Values Selected", "Filtering by Values 'Equal to' was selected, but no value were entered")
+                        messagebox.showerror("No Values Selected", "Filtering by Values 'Equal to' was selected, but no value were entered")
+                        return
                     exact_value_floats = [float(val) for val in exact_value]
                     df = df[df[filter_name].apply(lambda x: any(np.isclose(x, v, atol=0.001) for v in exact_value_floats))]
                 elif filter_type == filters[2]:
@@ -196,19 +201,14 @@ class CleanFileBox(tk.Frame):
                     messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
         
         # Drop user-specified columns
-        drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]
+        user_drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]
 
         # Ensures the user columns exist and prints an error message with missing columns
-        valid_drop_cols = [col for col in drop_cols if col in df.columns]
-        missing_cols = set(drop_cols) - set(df.columns)
-        if missing_cols:
-            messagebox.showerror(
-                "Error Dropping Columns", 
-                f"Missing columns (not in dataset):\t{missing_cols}\nMissing columns will be ignored."
-            )
+        user_drop_cols = [col for col in user_drop_cols if col in df.columns]
+        missing_user_drop_cols = set(user_drop_cols) - set(df.columns)
         
         # Drops the columns from the dataset
-        df.drop(columns=valid_drop_cols, inplace=True)
+        df.drop(columns=user_drop_cols, inplace=True)
 
         # Drop non-numeric columns and columns with no values
         non_num_cols = df.select_dtypes(exclude=[float]).columns
@@ -240,8 +240,53 @@ class CleanFileBox(tk.Frame):
         self.app_state.main.create_blank_fig()
 
         # Updates the GUI and shows sucess message
-        self.app_state.main.update_data_info()
-        messagebox.showinfo("Data Cleaned", "Data cleaned successfully and ready for PCA.")
+        text = self.create_clean_data_str(df, user_drop_cols, missing_user_drop_cols, non_num_cols)
+        self.app_state.main.replace_data_text(text)
+        self.app_state.main.replace_program_status_text("Data Succsessfully Cleaned")
         
 
+    #### 2. Generate Information Strings ####
+    def create_load_data_str(self, df):
+        text = "Data Information\n"
+        text += "═══════════════════════════════════════\n\n"
+        text += f"Dataset Shape: {df.shape[0]} rows × {df.shape[1]} columns\n\n"
+        text += self.format_col_text(df.columns, "Columns:\t")
 
+        return text
+    
+    def create_clean_data_str(self, df, user_drop_cols, missing_user_drop_cols, non_num_cols):
+        text = "Cleaned Data Information\n"
+        text += "═══════════════════════════════════════\n\n"
+
+        text += self.format_col_text(user_drop_cols, "User Droped Columns:\t")
+        text += self.format_col_text(missing_user_drop_cols, "User Drop Columns Not Found:\t")
+        text += self.format_col_text(non_num_cols, "Non-numeric Columns Dropped:\t")
+        text += "═══════════════════════════════════════\n\n"
+
+        orig_rows = df.shape[0] #FIX THIS LOGIC
+        orig_cols = df.shape[1]+len(user_drop_cols)+len(non_num_cols)
+        text += f"Original Dataset Shape: {orig_rows} rows × {orig_cols} columns\n"
+        text += f"Cleanded Dataset Shape: {df.shape[0]} rows x {df.shape[1]} columns\n\n"
+        text += self.format_col_text(df.columns, "Cleaned Columns:\t")
+        
+        return text    
+    
+
+    def format_col_text(self, cols, start_text="", line_limit=80, sep=", "):
+        if cols is None or len(cols) == 0:
+            return start_text + "None\n"
+        
+        lines = []
+        current_line = start_text
+        for col in cols:
+            item_str = (sep if current_line != start_text else "") + col
+            if len(current_line) + len(item_str) > line_limit:
+                lines.append(current_line)
+                current_line = col
+            else:
+                current_line += item_str
+        if current_line:
+            lines.append(current_line)
+        
+        return "\n".join(lines) + "\n"
+    
