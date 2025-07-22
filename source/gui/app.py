@@ -1,28 +1,22 @@
-import os
-import time
 import tkinter as tk
 from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
-
 
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
 
 # Components Imports
-from source.gui.load_clean_file_box import CleanFileBox
-from source.gui.setting_box import SettingBox
-from source.gui.plot_box import PlotBox
-from source.gui.heatmap_box import HeatmapBox
-from source.gui.app_state  import AppState
+from .load_clean_file_box import CleanFileBox
+from .setting_box import SettingBox
+from .plot_box import PlotBox
+from .heatmap_box import HeatmapBox
+from .app_state  import AppState
 import source.utils.file_operations as file_ops
 
-import traceback
 
 class PCAAnalysisApp(tk.Tk):
     """GUI Application for PCA Analysis."""
@@ -64,12 +58,14 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure = None
 
         # Results Section
+        self.program_status_lbl = None
         self.program_status_text = None
         self.data_text = None
         self.pca_text = None
 
         # Save Button
-        self.save_button = None
+        self.save_data_bttn = None
+        self.save_plot_bttn = None
 
         # Set up the application
         self.create_components()
@@ -134,14 +130,21 @@ class PCAAnalysisApp(tk.Tk):
         self.app_state.selected_palette.set("Default")
 
         # Text Information Boxes
-        self.program_status_text = tk.Text(self, height=2, width=20, **LABEL_STYLE)
+        self.program_status_lbl = tk.Label(self, text="Program Status:", **LABEL_STYLE)
+        self.program_status_text = tk.Text(self, height=1, width=70, **LABEL_STYLE)
         self.program_status_text.insert(tk.END, "Please Load Data")
-        self.data_text = tk.Text(self, height=15, width=25, **LABEL_STYLE)
-        self.pca_text = tk.Text(self, height=15, width=25, **LABEL_STYLE)
+        self.data_text = tk.Text(self, height=15, width=80, **LABEL_STYLE)
+        self.pca_text = tk.Text(self, height=15, width=60, **LABEL_STYLE)
         self.pca_text.insert(tk.END, "Information will appear once PCA has been run")
 
-        # Save
-        self.save_button = tk.Button(
+        # Save buttons
+        self.save_data_bttn = tk.Button(
+            self,
+            text="Save Data",
+            **BUTTON_STYLE,
+            command=lambda: file_ops.save_data_csv(self.app_state.df, self.app_state.output_dir)
+        )
+        self.save_plot_bttn = tk.Button(
             self,
             text="Save Plot",
             **BUTTON_STYLE,
@@ -161,15 +164,17 @@ class PCAAnalysisApp(tk.Tk):
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
+        self.grid_columnconfigure(4, weight=1)
+        self.grid_columnconfigure(5, weight=1)
 
         # Adds plot and scrollable
         self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nswe")
         self.options_scroll.grid(row=0, column=1, rowspan=5, sticky="nsew")
-        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
+        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
-        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
-        self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
+        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=5, sticky="we")
+        self.pca_box.grid(row=2, column=0, padx=10, sticky="we")
         self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
         self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
 
@@ -178,16 +183,18 @@ class PCAAnalysisApp(tk.Tk):
         self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
-        self.program_status_text.grid(row=3, column=2, padx=5, pady=5, sticky='nswe')
-        self.data_text.grid(row=4, column=2, padx=5, pady=5, sticky="nsew")
-        self.pca_text.grid(row=4, column=3, padx=5, pady=5, sticky="nsew")
+        self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='sw')
+        self.program_status_text.grid(row=3, column=3, padx=5, pady=5, sticky='se')
+        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
+        self.pca_text.grid(row=4, column=4, columnspan=2, padx=5, pady=5, sticky="nsew")
 
-        # Save Button
-        self.save_button.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        # Save Buttons
+        self.save_data_bttn.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        self.save_plot_bttn.grid(row=5, column=3, padx=5, pady=5, sticky="e")
 
         # Output Directory
-        self.output_dir_label.grid(row=5, column=3, padx=5, pady=5, sticky="w")
-        self.output_dir_button.grid(row=5, column=3, padx=5, pady=5, sticky="e")
+        self.output_dir_label.grid(row=5, column=4, padx=5, pady=5, sticky="e")
+        self.output_dir_button.grid(row=5, column=5, padx=5, pady=5, sticky="e")
 
 
     #### 1. DATA HANDLING METHODS ####
@@ -267,7 +274,7 @@ class PCAAnalysisApp(tk.Tk):
 
         # Get the Tkinter widget and add it to the grid
         self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
-        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
+        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
 
     def create_blank_fig(self, grid=True):
         self.app_state.fig = Figure(self.app_state.fig_size)
