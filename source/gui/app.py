@@ -239,7 +239,7 @@ class PCAAnalysisApp(tk.Tk):
     
     #### 4. UI UPDATE METHODS ####
 
-    def replace_program_status_text(self, text):
+    def replace_status_text(self, text):
         """Replaces the text in the program status text widget"""
         self.program_status_text.delete(1.0, tk.END)
         self.program_status_text.insert(tk.END, text)

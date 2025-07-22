@@ -135,6 +135,7 @@ class HeatmapBox(tk.Frame):
             )
 
             # Ensure that the GUI updates
+            self.app_state.main.replace_status_text("Heatmap Sucessfully Generated")
             self.app_state.main.update_figure()
 
         except Exception as e:

@@ -143,7 +143,8 @@ class PlotBox(tk.Frame):
             self.app_state.ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
-
+        
+        self.app_state.main.replace_status_text("PCA Plot Successfully Generated")
         self.app_state.main.update_figure()
 
     def get_target(self):
@@ -245,6 +246,7 @@ class PlotBox(tk.Frame):
             return
 
         # Updates the figure on the GUI
+        self.app_state.main.replace_status_text("Scree Plot Sucsessfully Generated")
         self.app_state.main.update_figure()
 
 
@@ -301,6 +303,7 @@ class PlotBox(tk.Frame):
             return
         
         # Updates the figure on the GUI
+        self.app_state.main.replace_status_text("Biplot Sucsessfully Generated")
         self.app_state.main.update_figure()
 
     def init_biplot_fig(self, variance, num_feat):
@@ -451,8 +454,7 @@ class PlotBox(tk.Frame):
         # Save plot, opens it in users browser, and shows success message
         file_name = file_ops.save_interactive_plot(fig, self.app_state.output_dir)
         if file_name is not None:
-            messagebox.showinfo("Sucess", f"Interactive pca plot sucessfully created: {file_name}")
-
+            self.app_state.main.replace_status_text("Interactive Biplot Sucsessfully Generated")
     def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, scaled_loadings, magnitudes, fig):
         """
         Adds biplot groupings to an interactive biplot
@@ -549,6 +551,7 @@ class PlotBox(tk.Frame):
             return
         
         # Updates the figure on the GUI
+        self.app_state.main.replace_status_text("Top Feature Plot Sucessfully Generated")
         self.app_state.main.update_figure()
 
     def init_top_feat_plot(self, top_n, pca_num):

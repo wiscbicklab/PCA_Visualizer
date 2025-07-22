@@ -248,8 +248,10 @@ class SettingBox(tk.Frame):
         """Toggles the mapping button state"""
         if self.app_state.feat_group_enable.get():
             self.mapping_bttn.config(state='normal')
+            self.app_state.main.replace_status_text("Feature Mapping Enabled")
         else:
             self.mapping_bttn.config(state='disabled')
+            self.app_state.main.replace_status_text("Feature Mapping Disabled")
 
     #### 2. Feature Grouping Operations ####
 
@@ -289,7 +291,7 @@ class SettingBox(tk.Frame):
                 group: to_hex(colormap(i)) for i, group in enumerate(unique_groups)
             }
 
-            messagebox.showinfo("Success", "Feature-to-Group mapping loaded successfully.")
+            self.app_state.main.replace_status_text("Feature Map Loaded Successfully")
         
         except Exception as e:
             traceback.print_exc()
