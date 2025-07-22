@@ -48,27 +48,28 @@ class SettingBox(tk.Frame):
         self.banner = None
 
         # Declares target selection components
-        self.target_mode_label = None
-        self.target_mode_dropdown = None
-        self.custom_target_label = None
-        self.custom_target_entry = None
+        self.pca_target_lbl = None
+        self.pca_target_entry = None
 
         # Declares selector for the number of PCA components
-        self.num_pca_comp_label = None
+        self.num_pca_comp_lbl = None
         self.num_pca_comp_entry = None
 
         # Declares selector for number of top PCA features
-        self.top_n_label = None
+        self.top_n_lbl = None
         self.top_n_entry = None
 
         # Declares selector for PCA component to analize
-        self.pca_num_label = None
+        self.pca_num_lbl = None
         self.pca_num_entry = None
 
         # Declares feature mapping components
         self.mapping_toggle = None
-        self.mapping_label = None
         self.mapping_bttn = None
+
+        # Declares heatmap target feature components
+        self.heatmap_feat_lbl = None
+        self.heatmap_feat_entry = None
 
         self.create_components()
         self.setup_layout()
@@ -76,33 +77,22 @@ class SettingBox(tk.Frame):
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
         # Creates the Banner
-        self.banner = tk.Label(self, text="Settings", **BANNER_STYLE)
+        self.banner = tk.Label(self, text="Plot Settings", **BANNER_STYLE)
         
         # Creates compnents for seleting the target variable 
-        self.target_mode_label = tk.Label(self, text="Target Variable:", **LABEL_STYLE)
-        self.target_mode_dropdown = tk.OptionMenu(
-            self,
-            self.app_state.target_mode, 
-            "None",
-            "bbch",
-            "Input Specific Target",
-        )
-        self.target_mode_dropdown.configure(**OPTION_MENU_STYLE)
-        self.custom_target_label = tk.Label(self, text="Custom Target Variable:", **LABEL_STYLE)
-        self.custom_target_entry = tk.Entry(
+        self.pca_target_lbl = tk.Label(self, text="PCA Plot Target:", **LABEL_STYLE)
+        self.pca_target_entry = tk.Entry(
             self,
             **BIG_ENTRY_STYLE,
-            state="disabled",
             textvariable=self.app_state.custom_target
         )
-        self.app_state.target_mode.trace_add("write", self.toggle_custom_target_entry)
         
         # Creates validation commands for the text boxes
         self.vcmd_int = (self.register(self.validate_int), '%P')
         self.vcmd_non_neg_float = (self.register(self.validate_non_neg_float), '%P')
 
         # Creates components for selecting the number of PCA components
-        self.num_pca_comp_label = tk.Label(self, text="Number of PCA Components:", **LABEL_STYLE)
+        self.num_pca_comp_lbl = tk.Label(self, text="PCA Components:", **LABEL_STYLE)
         self.num_pca_comp_entry = tk.Entry(
             self,
             **BIG_ENTRY_STYLE,
@@ -115,7 +105,7 @@ class SettingBox(tk.Frame):
         self.num_pca_comp_entry.bind("<Return>", lambda e: self.num_pca_comp_entry.tk_focusNext().focus())
 
         # Creates components for selecting the number of top PCA features
-        self.top_n_label = tk.Label(self, text="Number of Features:", **LABEL_STYLE)
+        self.top_n_lbl = tk.Label(self, text="Number of Features:", **LABEL_STYLE)
         self.top_n_entry = tk.Entry(
             self,
             **BIG_ENTRY_STYLE ,
@@ -129,7 +119,7 @@ class SettingBox(tk.Frame):
 
 
         # Creates components for selecting which PCA component to analise
-        self.pca_num_label = tk.Label(self, text="Focused PCA Component:", **LABEL_STYLE)
+        self.pca_num_lbl = tk.Label(self, text="Focused PCA Component:", **LABEL_STYLE)
         self.pca_num_entry = tk.Entry(
             self,
             **BIG_ENTRY_STYLE ,
@@ -149,8 +139,11 @@ class SettingBox(tk.Frame):
             command=self.update_mapping_bttn,
             **LABEL_STYLE,
         )
-        self.mapping_label = tk.Label(self, **LABEL_STYLE, text="Feature Grouping Map:")
         self.mapping_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.upload_mapping, state="disabled")
+
+        # Creates heatmap components
+        self.heatmap_feat_lbl = tk.Label(self, text="Heatmap Targets:", **LABEL_STYLE)
+        self.heatmap_feat_entry = tk.Entry(self, **BIG_ENTRY_STYLE, textvariable=self.app_state.heatmap_feat)
         
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
@@ -161,41 +154,35 @@ class SettingBox(tk.Frame):
         # Places banner at top of this component
         self.banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
-        # Places feature grouping components
-        self.mapping_toggle.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        self.mapping_label.grid(row=2, column=0, padx=5, pady=5, sticky='e')
-        self.mapping_bttn.grid(row=2, column=1, padx=5, pady=5, sticky='w')
-    
-        # Places target selection widgets
-        self.target_mode_label.grid(row=3, column=0, padx=5, pady=5, sticky="e")
-        self.target_mode_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky='w')
-        self.custom_target_label.grid(row=4, column=0, padx=5, pady=5, sticky="e")
-        self.custom_target_entry.grid(row=4, column=1, padx=5, pady=5, sticky="w")
-
         # Places selector for number of PCA components
-        self.num_pca_comp_label.grid(row=5, column=0, padx=5, pady=5, sticky="e")
-        self.num_pca_comp_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")
+        self.num_pca_comp_lbl.grid(row=1, column=0, padx=5, pady=5, sticky="e")
+        self.num_pca_comp_entry.grid(row=1, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for number of top PCA features
-        self.top_n_label.grid(row=6, column=0, padx=5, pady=5, sticky="e")
-        self.top_n_entry.grid(row=6, column=1, padx=5, pady=5, sticky="w")
+        self.top_n_lbl.grid(row=2, column=0, padx=5, pady=5, sticky="e")
+        self.top_n_entry.grid(row=2, column=1, padx=5, pady=5, sticky="w")
 
         # Places selector for PCA component to analise
-        self.pca_num_label.grid(row=7, column=0, padx=5, pady=5, sticky="e")
-        self.pca_num_entry.grid(row=7, column=1, padx=5, pady=5, sticky="w")
+        self.pca_num_lbl.grid(row=3, column=0, padx=5, pady=5, sticky="e")
+        self.pca_num_entry.grid(row=3, column=1, padx=5, pady=5, sticky="w")
+
+        #Places custom target components
+        self.pca_target_lbl.grid(row=4, column=0, padx=5, pady=5, sticky="e")
+        self.pca_target_entry.grid(row=4, column=1, padx=5, pady=5, sticky="w")
+
+        #Places heatmap feature components
+        self.heatmap_feat_lbl.grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.heatmap_feat_entry.grid(row=5, column=1, padx=5, pady=5, sticky="w")        
+
+        # Places feature grouping components
+        self.mapping_toggle.grid(row=6, column=0, padx=5, pady=5, sticky="e")
+        self.mapping_bttn.grid(row=6, column=1, padx=5, pady=5, sticky="w")
 
 
         
 
 
     #### 1. EVENT HANDLERS ####
-
-    def toggle_custom_target_entry(self, *args):
-        """Toggles the custom_target_entry to accept or refuse input"""
-        if self.app_state.target_mode.get() == "Input Specific Target":
-            self.custom_target_entry.config(state="normal")
-        else:
-            self.custom_target_entry.config(state="disabled")
 
     def on_entry(self, widget):
         """Command for saving input value of entry option upon enter"""

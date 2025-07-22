@@ -6,6 +6,7 @@ from matplotlib.colors import to_hex
 from matplotlib.patches import Ellipse
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import plotly.graph_objects as go
 
 from scipy import stats
@@ -17,7 +18,7 @@ from source.utils.constant import *
 from adjustText import adjust_text
 
 
-class PlotBox(tk.Frame):
+class CreatePlotBox(tk.Frame):
     """
     A GUI box for generating different types of plots using PCA analysis
 
@@ -49,15 +50,19 @@ class PlotBox(tk.Frame):
         super().__init__(main, **kwargs)
         self.app_state = app_state
 
+
         # Declares frame banner
         self.biplot_banner = None
 
         # Declares plot generation buttons
         self.pca_plot_bttn = None
-        self.scree_plot_bttn = None
+        self.heatmap_mode_var = None # Variable For heatmap mode
+        self.heatmap_bttn = None
         self.biplot_bttn = None
         self.interactive_biplot_bttn = None
+        self.scree_plot_bttn = None
         self.top_feat_bttn = None
+
 
         # Creates components and sets them within the GUI
         self.create_components()
@@ -69,7 +74,8 @@ class PlotBox(tk.Frame):
         self.biplot_banner = tk.Label(self, **BANNER_STYLE, text="Plot Generation")
         
         # Creates plot generation buttons
-        self.pca_plot_bttn = tk.Button(self, text="PCA Visualization", **BUTTON_STYLE, command=self.visualize_pca)
+        self.pca_plot_bttn = tk.Button(self, text="Plot PCA", **BUTTON_STYLE, command=self.visualize_pca)
+        self.heatmap_bttn = tk.Button(self, text="Plot Heatmap", **BUTTON_STYLE, command=self.create_heatmap_fig)
         self.scree_plot_bttn = tk.Button(self, text="Scree Plot", **BUTTON_STYLE, command=self.create_scree_plot)
         self.biplot_bttn = tk.Button(self, text="Biplot", **BUTTON_STYLE, command=self.create_biplot)
         self.interactive_biplot_bttn = tk.Button(self, text="Interactive Biplot", **BUTTON_STYLE, command=self.create_interactive_biplot)
@@ -85,10 +91,11 @@ class PlotBox(tk.Frame):
         self.biplot_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
         # Places plot generation buttons
-        self.pca_plot_bttn.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        self.scree_plot_bttn.grid(row=2, column=0, padx=5, pady=5)
-        self.biplot_bttn.grid(row=2, column=1, padx=5, pady=5)
-        self.interactive_biplot_bttn.grid(row=3, column=0, padx=5, pady=5)
+        self.pca_plot_bttn.grid(row=1, column=0, padx=5, pady=5)
+        self.heatmap_bttn.grid(row=1, column=1, padx=5, pady=5)
+        self.biplot_bttn.grid(row=2, column=0, padx=5, pady=5)
+        self.interactive_biplot_bttn.grid(row=2, column=1, padx=5, pady=5)
+        self.scree_plot_bttn.grid(row=3, column=0, padx=5, pady=5)
         self.top_feat_bttn.grid(row=3, column=1, padx=5, pady=5)
 
 
@@ -704,5 +711,132 @@ class PlotBox(tk.Frame):
         return color_group_map
 
 
+#### 2. VISUALIZATION METHODS ####
+
+    def create_heatmap_fig(self):
+        """
+        Plot loadings heatmap using user-selected mode.
+        
+        Creates a heatmap using the top number of features selected or custom features.
+            Shows the number of PCA components selected, and sorts the features by absolute 
+            loadings of the selected PCA component to analize
+        """
+        if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be cleaned first!")
+            return
+        
+        try:
+            # Ensures PCA has been run
+            self.app_state.main.run_analysis()
+
+            # Creates a new blank figure
+            self.app_state.main.create_blank_fig(grid=False)
+
+            # Adds a title and x and y label 
+            self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
+            self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
+            self.app_state.ax.set_ylabel('Features', fontsize=14)
+
+            # Sets tick parameters to fit on ax
+            self.app_state.ax.tick_params(axis='x', labelsize=12)
+            self.app_state.ax.tick_params(axis='y', labelsize=10)
+
+            # Get user entered heatmap mode and PCA data
+            loadings = abs(self.app_state.pca_results['loadings'])
+
+            # Determine focus columns
+            focus_columns = self.get_focus_cols(loadings)
+
+            if focus_columns is None:
+                return
+
+            # Update the heatmap figure
+            self.display_loadings_heatmap(
+                loadings=loadings,
+                data_columns=self.app_state.df.columns.tolist(),
+                focus_columns=focus_columns,
+                cmap="coolwarm"
+            )
+
+            # Ensure that the GUI updates
+            self.app_state.main.replace_status_text("Heatmap Sucessfully Generated")
+            self.app_state.main.update_figure()
+
+        except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
+            messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
+
+    def get_focus_cols(self, loadings):
+        """Determine columns to focus on based on heatmap mode."""
+        try:
+            # Get the column and loadings data
+            df_cols = self.app_state.df.columns.tolist()
+
+            # Get absolute loadings for the first principal component
+            pc1_loadings = abs(loadings[:, self.app_state.focused_pca_num.get()-1])
+            loading_series = pd.Series(pc1_loadings, index=df_cols)
+            sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
+            
+            # Get the users heatmap targets
+            target_feats = set([feat.strip() for feat in  self.app_state.heatmap_feat.get().strip().split(',') if feat.strip()])
+
+            # Returns the top Features if the target is empty
+            if not target_feats:
+                return sorted_columns[:self.app_state.num_feat.get()]
+            else:
+                # Gets the focused columns and missing columns
+                df_feats = set(self.app_state.df.columns)
+                focus_feats = target_feats & df_feats
+                missing_feat = target_feats - focus_feats
+
+                # If there are missing features, infom the user by updating the status
+                if len(missing_feat) != 0:
+                    self.app_state.main.replace_status_text(f"Heatmap Failed! Selected Features Not Found In Data!")
+                    self.app_state.main.replace_pca_text(f"Missing Features:\t{[feat for feat in missing_feat]}")
+                
+                return_list = [feat for feat in focus_feats]
+
+            return return_list or None
+        except Exception as e:
+            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
+            return None
+
+    def display_loadings_heatmap(self, loadings, data_columns, focus_columns=None, cmap='viridis'):
+        """
+        Display a heatmap of loadings with improved design.
+
+        Args:
+            loadings: PCA loadings matrix.
+            data_columns: List of all data column names.
+            focus_columns: List of columns to focus on. Defaults to None.
+            cmap: Colormap to use for the heatmap.
+        """
+        if focus_columns is None:
+            focus_columns = data_columns  # Default to all columns if none specified
+
+        # Select only the relevant rows from the loadings matrix
+        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
+
+        # Create the heatmap
+        plt.figure(self.app_state.fig_size[0])  # Increase figure size for clarity
+        sns.heatmap(
+            selected_loadings,
+            annot=True,  # Add annotations to cells
+            fmt=".2f",  # Format numbers
+            cmap=cmap,  # Use perceptually uniform colormap
+            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
+            xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
+            yticklabels=focus_columns,
+            ax=self.app_state.ax
+        )
+
+        # Adds a title and x and y label
+        self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
+        self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
+        self.app_state.ax.set_ylabel('Features', fontsize=14)
+        # Sets axis lablel size
+        self.app_state.ax.tick_params(axis='x', labelsize=12)
+        self.app_state.ax.tick_params(axis='y', labelsize=10)
 
 

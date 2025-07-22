@@ -10,10 +10,9 @@ from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
 
 # Components Imports
-from .load_clean_file_box import CleanFileBox
+from .clean_data_box import CleanDataBox
 from .setting_box import SettingBox
-from .plot_box import PlotBox
-from .heatmap_box import HeatmapBox
+from .create_plot_box import CreatePlotBox
 from .app_state  import AppState
 import source.utils.file_operations as file_ops
 
@@ -45,9 +44,8 @@ class PCAAnalysisApp(tk.Tk):
 
         # Declare the custom component
         self.load_clean_file_box = None
-        self.pca_box = None
-        self.biplot_box = None
-        self.heatmap_box = None
+        self.settings_box = None
+        self.plot_box = None
 
         # Declare color palette selection
         self.palette_label = None
@@ -115,10 +113,9 @@ class PCAAnalysisApp(tk.Tk):
         )
 
         # Intialize Custom components
-        self.load_clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.pca_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.biplot_box = PlotBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.load_clean_file_box = CleanDataBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.plot_box = CreatePlotBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.settings_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
 
         # Color Palette Selection
         self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
@@ -174,9 +171,8 @@ class PCAAnalysisApp(tk.Tk):
         
         # Sets up custom Components
         self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=5, sticky="we")
-        self.pca_box.grid(row=2, column=0, padx=10, sticky="we")
-        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
-        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
+        self.plot_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
+        self.settings_box.grid(row=3, column=0, padx=10, sticky="we")
 
         # Feature Grouping Section/ Palette Colors
         self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
@@ -203,7 +199,9 @@ class PCAAnalysisApp(tk.Tk):
         """Execute PCA analysis."""
         # Skip analysis if data isn't cleaned or if data has not changed
         if not self.app_state.df_cleaned.get() or not self.app_state.df_updated.get():
-            return
+            # Update display
+            text = self.create_pca_text(self.app_state.pca_results)
+            self.replace_pca_text(text)
 
         try:
             # Run analysis and store the result

@@ -44,6 +44,7 @@ class AppState:
         self.num_pca_comp = tk.IntVar(main, value=2)
         self.num_feat = tk.IntVar(main, value=10)
         self.focused_pca_num = tk.IntVar(main, value=1)
+        self.heatmap_feat = tk.StringVar(main, "")
         
         # Variables for tracking feature mapping
         self.feat_group_enable = tk.BooleanVar(main, value=False)

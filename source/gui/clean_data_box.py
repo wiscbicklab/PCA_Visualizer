@@ -13,7 +13,7 @@ import source.utils.file_operations as file_ops
 from source.utils.constant import *
 
 
-class CleanFileBox(tk.Frame):
+class CleanDataBox(tk.Frame):
     """
     A GUI box for loading data, selecting cleaning options, and cleaning data
 
@@ -138,7 +138,7 @@ class CleanFileBox(tk.Frame):
 
         # Updates the GUI and shows sucess message
         self.app_state.main.replace_data_text(self.create_load_data_str(df))
-        self.app_state.main.replace_program_status_text("Data Succsessfully Loaded!")
+        self.app_state.main.replace_status_text("Data Succsessfully Loaded!")
 
 
     def clean_data(self):
@@ -243,9 +243,9 @@ class CleanFileBox(tk.Frame):
         text = self.create_clean_data_str(df, user_drop_cols, missing_user_drop_cols, non_num_cols)
         self.app_state.main.replace_data_text(text)
         if len(missing_user_drop_cols) == 0:
-            self.app_state.main.replace_program_status_text("Data Succsessfully Cleaned!")
+            self.app_state.main.replace_status_text("Data Succsessfully Cleaned!")
         else:
-            self.app_state.main.replace_program_status_text("Data Partially Cleaned! Check data section")
+            self.app_state.main.replace_status_text("Data Partially Cleaned! Check data section")
         
 
     #### 2. Generate Information Strings ####
