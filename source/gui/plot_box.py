@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 
 from scipy import stats
 
-from source.gui.app_state  import AppState
+from .app_state  import AppState
 import source.utils.file_operations as file_ops
 from source.utils.constant import *
 

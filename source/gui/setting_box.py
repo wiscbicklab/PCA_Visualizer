@@ -7,7 +7,7 @@ from matplotlib import cm
 from matplotlib.colors import to_hex
 import pandas as pd
 
-from source.gui.app_state  import AppState
+from .app_state  import AppState
 from source.utils.constant import *
 
 

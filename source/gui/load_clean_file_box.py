@@ -5,9 +5,9 @@ import pandas as pd
 
 from sklearn.impute import SimpleImputer
 
-from source.gui.clean_widgets.filter_selector import FilterSelector
-from source.gui.clean_widgets.missing_selector import MissingSelector
-from source.gui.app_state  import AppState
+from .clean_widgets.filter_selector import FilterSelector
+from .clean_widgets.missing_selector import MissingSelector
+from .app_state  import AppState
 import source.utils.file_operations as file_ops
 
 from source.utils.constant import *

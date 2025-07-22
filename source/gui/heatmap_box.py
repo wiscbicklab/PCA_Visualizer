@@ -1,14 +1,12 @@
 import tkinter as tk
 from tkinter import messagebox
 import traceback
-from matplotlib.figure import Figure
-import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 
-from source.gui.app_state import AppState
+from .app_state import AppState
 from source.utils.constant import *
 
 
