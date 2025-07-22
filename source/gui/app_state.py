@@ -39,8 +39,7 @@ class AppState:
         self.custom_filter_equal = tk.StringVar(main, value="")
 
         # Variables to track user inputs for plot generation
-        self.target_mode = tk.StringVar(main, "None")
-        self.custom_target = tk.StringVar(main, "")
+        self.pca_target = tk.StringVar(main, "")
         self.num_pca_comp = tk.IntVar(main, value=2)
         self.num_feat = tk.IntVar(main, value=10)
         self.focused_pca_num = tk.IntVar(main, value=1)

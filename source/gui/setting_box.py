@@ -84,7 +84,7 @@ class SettingBox(tk.Frame):
         self.pca_target_entry = tk.Entry(
             self,
             **BIG_ENTRY_STYLE,
-            textvariable=self.app_state.custom_target
+            textvariable=self.app_state.pca_target
         )
         
         # Creates validation commands for the text boxes

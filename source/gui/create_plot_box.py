@@ -120,7 +120,7 @@ class CreatePlotBox(tk.Frame):
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
         
         # Gets the user selected target variable
-        target = self.get_target()
+        target = self.app_state.pca_target.get().strip()
 
         # Generate new blank figure
         self.app_state.main.create_blank_fig()
@@ -128,77 +128,39 @@ class CreatePlotBox(tk.Frame):
         self.app_state.ax.set_title("PCA Visualization")
         self.app_state.ax.set_xlabel("Principal Component 1")
         self.app_state.ax.set_ylabel("Principal Component 2")
-
         # Plot grouped by target if available
-        if target:
-            # Gets targets
+        if target in self.app_state.df.columns:
+            # Gets the values for the given target
             target_vals = self.app_state.df[target].reset_index(drop=True)
-            unique_targets = sorted(target_vals.unique())
 
-            # Assign colors and adds a legend
-            colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
+            if target_vals.nunique() > 20:
+                # Bin the values into 20 equal-width intervals
+                binned = pd.cut(target_vals, bins=20, include_lowest=True)
+                target_vals = binned.astype(str)  # Convert bin intervals to strings
+                unique_targets = sorted(target_vals.unique())
+            else:
+                unique_targets = sorted(target_vals.unique())
+
+            # Assign colors and add a legend
+            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_targets)))
             for i, t in enumerate(unique_targets):
                 mask = target_vals == t
-                color = colors[i] 
-                self.app_state.ax.scatter(transformed_df.loc[mask, "PC1"],
-                                    transformed_df.loc[mask, "PC2"],
-                                    c=[color], label=str(t), alpha=0.7,
+                color = colors[i]
+                self.app_state.ax.scatter(
+                    transformed_df.loc[mask, "PC1"],
+                    transformed_df.loc[mask, "PC2"],
+                    c=[color], label=str(t), alpha=0.7,
                 )
-            self.app_state.ax.legend(title=f"{target} Groups")
+
+            self.app_state.ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
         else:
             # Plot without grouping
             self.app_state.ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
-        
+
         self.app_state.main.replace_status_text("PCA Plot Successfully Generated")
         self.app_state.main.update_figure()
-
-    def get_target(self):
-        """
-        Gets the user selected target
-        
-        Returns:
-            None if None is selected, the selected target is not in the df, or an error occures
-            Otherwise the selected target stripped of whitespace and in lower case
-        """
-        # Get the user selected target mode
-        target_mode = self.app_state.target_mode.get().strip().lower()
-
-        # Determines the target given the target mode
-        if target_mode == "none":
-            return None
-        elif target_mode == "bbch":
-            if target_mode in self.app_state.df.columns.to_list():
-                return "bbch"
-            else:
-                messagebox.showerror(
-                    "Target Error",
-                    f"BBCH selected as target, but not found in the dataset!"
-                )
-                return None
-        elif target_mode == "input specific target":
-            # If the target mode is a custom target get the user specified target
-            target = self.app_state.custom_target.get().strip().lower()
-            if not target or target.isspace():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Invalid target selected.\nDefaulting to no target."
-                )
-                return None
-            if target not in self.app_state.df.columns.to_list():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Target variable '{target}' not found in the dataset!\nDefualting to no target."
-                )
-                return None
-            return target.strip().lower()
-        else:
-            messagebox.showerror(
-                "Target_Mode Error",
-                f"An internal application error occured, an impossible target_mode was selected!"
-            )
-            return None
 
 
     #### 2. Create Scree Plot ####
