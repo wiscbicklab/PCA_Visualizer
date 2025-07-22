@@ -270,7 +270,8 @@ class PlotBox(tk.Frame):
         try:
             color_map = self.get_color_mapping(top_feat)
             for group, color in color_map.items():
-                self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
+                label = group[:35] + ('...' if len(group) > 35 else '')
+                self.app_state.ax.plot([], [], '-', color=color, label=label, linewidth=2)
             self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
         except Exception as e:
             traceback.print_exc()
@@ -362,9 +363,6 @@ class PlotBox(tk.Frame):
             magnitudes: List of all the PCA feature magnitudes
             scaled_loadings:   List of all the PCA loadings
         """
-        # List for holding generated text objects for the plot
-        texts = []
-
         # Gets the color mapping for the biplot
         color_map = self.get_color_mapping(top_feat)
 
@@ -398,39 +396,6 @@ class PlotBox(tk.Frame):
                 headwidth=3,
                 headlength=5
             )
-            
-            # Gets text distance from user Entry
-            text_dist = self.app_state.text_dist.get()
-
-            # Generates text for the plot and adds it to the list of texts
-            text = self.app_state.ax.text(
-                scaled_loadings[idx, 0] * text_dist,
-                scaled_loadings[idx, 1] * text_dist,
-                feature,
-                fontsize=10,
-                color=color,
-                ha='center',
-                va='center'
-            )
-            texts.append(text)
-
-        # Settings to control the text around arrows on the plot?
-        adjust_text(
-            texts,
-            arrowprops=dict(
-                arrowstyle='->',
-                color='gray',
-                alpha=0.5,
-                lw=0.5,
-                shrinkA=10,  # Moves arrowhead away from text
-                shrinkB=10  # Moves arrow tail away from origin
-            ),
-            force_text=1.5,  # Increased repulsion force to avoid overlaps
-            force_points=0.8,  # Avoid overlapping with points
-            expand_text=(1.5, 1.5),  # More spacing between labels
-            expand_points=(1.2, 1.2),  # Ensure spacing from points
-            lim=500  # Higher limit for iterations if overlaps persist
-        )
 
 
     #### 4. Create Interactive Biplot ####

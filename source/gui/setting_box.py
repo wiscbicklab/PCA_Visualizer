@@ -65,10 +65,6 @@ class SettingBox(tk.Frame):
         self.pca_num_label = None
         self.pca_num_entry = None
 
-        # Declares Selector for text distance labels 
-        self.text_dist_label = None
-        self.text_dist_entry = None
-
         # Declares feature mapping components
         self.mapping_toggle = None
         self.mapping_label = None
@@ -145,20 +141,6 @@ class SettingBox(tk.Frame):
         self.pca_num_entry.bind("<FocusIn>", lambda e: self.on_entry(self.pca_num_entry))
         self.pca_num_entry.bind("<Return>", lambda e: self.pca_num_entry.tk_focusNext().focus())
 
-
-        # Creates components for selecting the label text distance
-        self.text_dist_label = tk.Label(self, text="Text Distance for Labels:", **LABEL_STYLE)
-        self.text_dist_entry = tk.Entry(
-            self,
-            **BIG_ENTRY_STYLE,
-            validate="key",
-            validatecommand=self.vcmd_non_neg_float,
-            textvariable=self.app_state.text_dist
-        )
-        self.text_dist_entry.bind("<FocusOut>", lambda e: self.on_exit(self.text_dist_entry, "1.1", "text_dist"))
-        self.text_dist_entry.bind("<FocusIn>", lambda e: self.on_entry(self.text_dist_entry))
-        self.text_dist_entry.bind("<Return>", lambda e: self.text_dist_entry.tk_focusNext().focus())
-
         # Creates feature mapping components
         self.mapping_toggle = tk.Checkbutton(
             self,
@@ -202,9 +184,6 @@ class SettingBox(tk.Frame):
         self.pca_num_label.grid(row=7, column=0, padx=5, pady=5, sticky="e")
         self.pca_num_entry.grid(row=7, column=1, padx=5, pady=5, sticky="w")
 
-        # Places selector for label text distances
-        self.text_dist_label.grid(row=8, column=0, padx=5, pady=5, sticky="e")
-        self.text_dist_entry.grid(row=8, column=1, padx=5, pady=5, sticky="w")
 
         
 
