@@ -131,10 +131,10 @@ class PCAAnalysisApp(tk.Tk):
 
         # Text Information Boxes
         self.program_status_lbl = tk.Label(self, text="Program Status:", **LABEL_STYLE)
-        self.program_status_text = tk.Text(self, height=1, width=70, **LABEL_STYLE)
+        self.program_status_text = tk.Text(self, height=1, width=48, **LABEL_STYLE)
         self.program_status_text.insert(tk.END, "Please Load Data")
-        self.data_text = tk.Text(self, height=15, width=80, **LABEL_STYLE)
-        self.pca_text = tk.Text(self, height=15, width=60, **LABEL_STYLE)
+        self.data_text = tk.Text(self, height=15, width=75, **LABEL_STYLE)
+        self.pca_text = tk.Text(self, height=15, width=80, **LABEL_STYLE)
         self.pca_text.insert(tk.END, "Information will appear once PCA has been run")
 
         # Save buttons
@@ -183,9 +183,9 @@ class PCAAnalysisApp(tk.Tk):
         self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
         
         # Results Section
-        self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='sw')
-        self.program_status_text.grid(row=3, column=3, padx=5, pady=5, sticky='se')
-        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
+        self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='se')
+        self.program_status_text.grid(row=3, column=3, padx=5, pady=5, sticky='sw')
+        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsw")
         self.pca_text.grid(row=4, column=4, columnspan=2, padx=5, pady=5, sticky="nsew")
 
         # Save Buttons

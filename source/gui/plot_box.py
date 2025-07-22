@@ -261,7 +261,7 @@ class PlotBox(tk.Frame):
             messagebox.showerror("Error", "DataFrame must be cleaned")
             return
         # Runs PCA analysis and gets relavent values
-        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, num_feat = self.validate_biplot_data()
+        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, __, num_feat = self.validate_biplot_data()
 
         # Intializes the figure
         if not self.init_biplot_fig(variance, num_feat): return 
@@ -291,7 +291,7 @@ class PlotBox(tk.Frame):
             self.set_biplot_axis_limits(scaled_loadings, top_idx)
 
             # Creates biplot arrows and arrow text
-            self.add_biplot_arrows(top_feat, top_idx, feat_names, magnitudes, scaled_loadings)
+            self.add_biplot_arrows(top_feat, top_idx, feat_names, scaled_loadings)
 
             # Creates Scatter Plot
             self.app_state.ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
@@ -352,7 +352,7 @@ class PlotBox(tk.Frame):
         self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
         self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
 
-    def add_biplot_arrows(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings):
+    def add_biplot_arrows(self, top_feat, top_idx, feat_names, scaled_loadings):
         """
         Adds arrows and arrow text to a biplot
         
@@ -360,7 +360,6 @@ class PlotBox(tk.Frame):
             top_feat:  List of the top PCA features
             top_idx:   List of the indexes of the top PCA features
             feat_names: List of all the PCA feature Names
-            magnitudes: List of all the PCA feature magnitudes
             scaled_loadings:   List of all the PCA loadings
         """
         # Gets the color mapping for the biplot
@@ -369,11 +368,6 @@ class PlotBox(tk.Frame):
         # Use the color mapping to add arrows to the plot
         for idx in top_idx:
             feature = feat_names[idx]
-            magnitude = magnitudes[idx]
-
-            # Skip if magnitude isn't large enough
-            if magnitude < 0.2:
-                continue
             
             # Get feature color
             if self.app_state.feat_group_enable.get() and feature in self.app_state.feat_group_map.keys():
@@ -412,7 +406,7 @@ class PlotBox(tk.Frame):
             # Sets axis limits
             variance_scale = np.sqrt(eigvals)
             scaled_loadings = loadings[:, :2] * variance_scale
-            self.add_interactive_biplot_groups(top_feat, top_idx, feat_names, magnitudes, scaled_loadings, fig)
+            self.add_interactive_biplot_groups(top_feat, top_idx, feat_names, scaled_loadings, magnitudes, fig)
 
             #Add interactivity to figure
             fig.update_layout(
@@ -433,16 +427,6 @@ class PlotBox(tk.Frame):
                     "xanchor": "left",
                     "yanchor": "top"
                 }],
-                sliders=[{
-                    "steps": [
-                        dict(
-                            method="update",
-                            args=[{"visible": [abs(magnitudes[i]) > t for i in range(len(top_idx))]}],
-                            label=f"{t:.1f}"
-                        ) for t in np.linspace(0, 1, 10)
-                    ],
-                    "currentvalue": {"prefix": "Significance Threshold: "}
-                }]
             )
             fig.update_layout(
                 title=f"Interactive Biplot with Top {self.app_state.num_feat.get()} Significant Features",
@@ -469,7 +453,7 @@ class PlotBox(tk.Frame):
         if file_name is not None:
             messagebox.showinfo("Sucess", f"Interactive pca plot sucessfully created: {file_name}")
 
-    def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings, fig):
+    def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, scaled_loadings, magnitudes, fig):
         """
         Adds biplot groupings to an interactive biplot
 
@@ -477,7 +461,6 @@ class PlotBox(tk.Frame):
             top_feat:  List of the top PCA features
             top_idx:   List of the indexes of the top PCA features
             feat_names: List of all the PCA feature Names
-            magnitudes: List of all the PCA feature magnitudes
             scaled_loadings:   List of all the PCA loadings
             fig:    The figure to generate the biplot groupings on
         """
@@ -490,10 +473,6 @@ class PlotBox(tk.Frame):
         for idx in top_idx:
             feature = feat_names[idx]
             magnitude = magnitudes[idx]
-
-            # Skip if magnitude isn't large enough
-            if magnitude < 0.2:
-                continue
 
             # Get feature color
             if self.app_state.feat_group_enable.get():

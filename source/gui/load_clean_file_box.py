@@ -138,7 +138,7 @@ class CleanFileBox(tk.Frame):
 
         # Updates the GUI and shows sucess message
         self.app_state.main.replace_data_text(self.create_load_data_str(df))
-        self.app_state.main.replace_program_status_text("Data Succsessfully Loaded")
+        self.app_state.main.replace_program_status_text("Data Succsessfully Loaded!")
 
 
     def clean_data(self):
@@ -201,11 +201,11 @@ class CleanFileBox(tk.Frame):
                     messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
         
         # Drop user-specified columns
-        user_drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]
+        missing_user_drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]
 
         # Ensures the user columns exist and prints an error message with missing columns
-        user_drop_cols = [col for col in user_drop_cols if col in df.columns]
-        missing_user_drop_cols = set(user_drop_cols) - set(df.columns)
+        user_drop_cols = [col for col in missing_user_drop_cols if col in df.columns]
+        missing_user_drop_cols = set(missing_user_drop_cols) - set(user_drop_cols)
         
         # Drops the columns from the dataset
         df.drop(columns=user_drop_cols, inplace=True)
@@ -242,7 +242,10 @@ class CleanFileBox(tk.Frame):
         # Updates the GUI and shows sucess message
         text = self.create_clean_data_str(df, user_drop_cols, missing_user_drop_cols, non_num_cols)
         self.app_state.main.replace_data_text(text)
-        self.app_state.main.replace_program_status_text("Data Succsessfully Cleaned")
+        if len(missing_user_drop_cols) == 0:
+            self.app_state.main.replace_program_status_text("Data Succsessfully Cleaned!")
+        else:
+            self.app_state.main.replace_program_status_text("Data Partially Cleaned! Check data section")
         
 
     #### 2. Generate Information Strings ####
