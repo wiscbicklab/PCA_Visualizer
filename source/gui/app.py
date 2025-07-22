@@ -43,10 +43,9 @@ class PCAAnalysisApp(tk.Tk):
         self.options_frame = None
 
         # Declare the custom component
-        self.load_clean_file_box = None
         self.pca_box = None
-        self.biplot_box = None
-        self.heatmap_box = None
+        self.plot_box = None
+        self.settings_box = None
 
         # Declare space for the figure to be stored
         self.plot_canvas = None
@@ -110,7 +109,7 @@ class PCAAnalysisApp(tk.Tk):
         )
 
         # Intialize Custom components
-        self.load_clean_file_box = CleanDataBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.pca_box = CleanDataBox(self.options_frame, self.app_state, **BG_COLOR)
         self.plot_box = CreatePlotBox(self.options_frame, self.app_state, **BG_COLOR)
         self.settings_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
 
@@ -160,10 +159,9 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
-        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
-        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
-        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
+        self.plot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
+        self.settings_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
         
         # Results Section
         self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='se')
