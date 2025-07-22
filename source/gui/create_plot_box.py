@@ -243,7 +243,7 @@ class CreatePlotBox(tk.Frame):
             for group, color in color_map.items():
                 label = group[:35] + ('...' if len(group) > 35 else '')
                 self.app_state.ax.plot([], [], '-', color=color, label=label, linewidth=2)
-            self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            self.app_state.ax.legend(title="Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
         except Exception as e:
             traceback.print_exc()
             return

@@ -275,7 +275,7 @@ class CleanDataBox(tk.Frame):
         return text    
     
 
-    def format_col_text(self, cols, start_text="", line_limit=80, sep=", "):
+    def format_col_text(self, cols, start_text="", line_limit=80, sep=",    "):
         if cols is None or len(cols) == 0:
             return start_text + "None\n"
         

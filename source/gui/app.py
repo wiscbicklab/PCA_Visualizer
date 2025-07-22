@@ -274,9 +274,9 @@ class PCAAnalysisApp(tk.Tk):
         self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
         self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
 
-    def create_blank_fig(self, grid=True):
+    def create_blank_fig(self, grid=True, subplot_shape=111):
         self.app_state.fig = Figure(self.app_state.fig_size)
-        self.app_state.ax = self.app_state.fig.add_subplot(111)
+        self.app_state.ax = self.app_state.fig.add_subplot(subplot_shape)
         self.app_state.ax.grid(grid)
 
 
