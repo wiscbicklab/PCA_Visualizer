@@ -604,60 +604,26 @@ class CreatePlotBox(tk.Frame):
                     if feature gouping is disabled and no top_features are provided
             ValueError: If the number of features/groups without predefined colors is greater then 20
         """
-        # Get the current color palette
-        color_palette = COLOR_PALETTES[self.app_state.selected_palette.get()]
-        # Color Mapping if a feature grouping is enables
-        if self.app_state.feat_group_enable.get():
-            # Show error and return if a mapping hasn't been loaded
-            if self.app_state.feat_group_map is None:
-                messagebox.showerror("Mapping Error", "Feature grouping is enabled, but a feature group map hasn't been loaded")
-                raise AttributeError("Mapping error, feature grouping is enabled, but no feature map found")
+        # Show error and return if a mapping hasn't been loaded
+        if self.app_state.feat_group_enable.get() and self.app_state.feat_group_map is None:
+            messagebox.showerror("Mapping Error", "Feature grouping is enabled, but a feature group map hasn't been loaded")
+            raise AttributeError("Mapping error, feature grouping is enabled, but no feature map found")
 
-            # Get the groups from the loaded mapping and seperate it into groups with an already
-            #   defined color and groups without
-            predifined_groups = set()
-            undefined_groups = set()
-            for feat in features:
-                if feat in self.app_state.feat_group_map.keys():
-                    predifined_groups.add(self.app_state.feat_group_map[feat])
-                else:
-                    undefined_groups.add(feat)
+        # Get the groups from the loaded mapping and seperate it into groups with an already
+        #   defined color and groups without
+        feat_groups = set()
+        for feat in features:
+            if self.app_state.feat_group_enable.get() and feat in self.app_state.feat_group_map.keys():
+                feat_groups.add(self.app_state.feat_group_map[feat])
+            elif self.app_state.feat_group_enable.get():
+                self.app_state.feat_group_map[feat] = feat
+                feat_groups.add(feat)
+            else:
+                feat_groups.add(feat)
 
-            # Map predefined colors to a group
-            color_group_map = {}
-            for group in predifined_groups:
-                color_group_map[group] = color_palette[group]
-
-            # Map undefined colors to the group
-            color_group_map.update(self.map_generic_colors(undefined_groups))
-
-            return color_group_map
-        
-        # Color Mapping without feature grouping
-        else:
-            if len(features) == 0:
-                raise AttributeError("No features have been provided")
-            return self.map_generic_colors(features)
-            
-    def map_generic_colors(self, feat):
-        """
-        Generates a generic color map
-        
-        Uses tab10 color blind friendly colors if possible, otherwise uses tab20 colors.
-            Maps the features to unique colors
-
-        Args:
-            feat: The features to be color mapped
-        
-        Returns:
-            A dictionary with the features as keys and the mapped colors as values
-        
-        Raises:
-            ValueError: If the number of features is greater then 20
-        """
         # Parameter Validation
-        if (len(feat) > 20):
-            messagebox.showerror("Mapping Error", f"{len(feat)} groups without predfined colors where requested, but only 20 colors are available")
+        if (len(feat_groups) > 20):
+            messagebox.showerror("Mapping Error", f"{len(feat_groups)} groups without predfined colors where requested, but only 20 colors are available")
             raise ValueError("Mapping Error, not enough colors available for requested groups")
         
         # Color blind friendly colors used if possible       
@@ -668,9 +634,11 @@ class CreatePlotBox(tk.Frame):
             colors = [to_hex(c) for c in plt.get_cmap('tab20').colors]
         # Map newly generated colors to a group
         color_group_map = {}
-        for group, color in zip(feat, colors):
+        for group, color in zip(feat_groups, colors):
                 color_group_map[group] = color
         return color_group_map
+            
+    
 
 
 #### 2. VISUALIZATION METHODS ####

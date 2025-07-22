@@ -267,11 +267,15 @@ class SettingBox(tk.Frame):
         try:
             # Load the CSV into a DataFrame and set column names to lower case
             df = pd.read_csv(file_path)
-            df.columns = df.columns.str.lower()
+            df.columns = df.columns.str.lower().str.strip()
 
 
             # Validate input DataFrame
             if "feature" not in df.columns.to_list() or "group" not in df.columns.to_list():
+                print(df.columns.to_list())
+                print("feature" not in df.columns.to_list())
+                print("group" not in df.columns.to_list())
+                print("\n\n\n")
                 messagebox.showerror("Error", "Invalid Feature File, 'Feature' or 'Group' column not found")
                 return
 

@@ -44,12 +44,9 @@ class PCAAnalysisApp(tk.Tk):
 
         # Declare the custom component
         self.load_clean_file_box = None
-        self.settings_box = None
-        self.plot_box = None
-
-        # Declare color palette selection
-        self.palette_label = None
-        self.palette_menu = None
+        self.pca_box = None
+        self.biplot_box = None
+        self.heatmap_box = None
 
         # Declare space for the figure to be stored
         self.plot_canvas = None
@@ -117,14 +114,7 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_box = CreatePlotBox(self.options_frame, self.app_state, **BG_COLOR)
         self.settings_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
 
-        # Color Palette Selection
-        self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
-        self.palette_menu = tk.OptionMenu(
-            self.options_frame,
-            self.app_state.selected_palette,
-            *COLOR_PALETTES.keys(),
-        )
-        self.app_state.selected_palette.set("Default")
+
 
         # Text Information Boxes
         self.program_status_lbl = tk.Label(self, text="Program Status:", **LABEL_STYLE)
@@ -170,13 +160,10 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
-        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=5, sticky="we")
-        self.plot_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
-        self.settings_box.grid(row=3, column=0, padx=10, sticky="we")
-
-        # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
+        self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
+        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
+        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
         
         # Results Section
         self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='se')
@@ -308,12 +295,7 @@ class PCAAnalysisApp(tk.Tk):
         else:  # Windows/macOS
             self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
-    def _update_palette_menu_state(self, *args):
-        if self.app_state.feat_group_enable.get():
-            self.palette_menu.config(state="normal")
-        else:
-            self.palette_menu.config(state="disabled")
-        
+
     #### Text Generation ####
     def create_pca_text(self, pca_results):
         # Simple, clean formatting

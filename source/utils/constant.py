@@ -46,33 +46,6 @@ SMALL_ENTRY_STYLE = {
     "width": 14
 }
 
-
-
-
-COLOR_PALETTES = {
-    "Default": {
-        "fab": "black",
-        "non-fab": "silver",
-        "non-raa pests": "pink",
-        "beneficials": "green",
-        "raa": "red"
-    },
-    "Colorblind-Friendly": {
-        "fab": "#117733",
-        "non-fab": "#88CCEE",
-        "non-raa pests": "#CC6677",
-        "beneficials": "#DDCC77",
-        "raa": "#332288"
-    },
-    "Bright": {
-        "fab": "#FF0000",
-        "non-fab": "#00FF00",
-        "non-raa pests": "#0000FF",
-        "beneficials": "#FFFF00",
-        "raa": "#FF00FF"
-    }
-}
-
 # Leftovers from previous build
 DEFAULT_COLUMNS_TO_DROP = [
     "Site", "SampleNum", "Type", "farm", "EventId", "SampleID",
