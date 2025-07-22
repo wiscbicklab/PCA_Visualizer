@@ -126,7 +126,7 @@ class PlotBox(tk.Frame):
         if target:
             # Gets targets
             target_vals = self.app_state.df[target].reset_index(drop=True)
-            unique_targets = sorted(target_vals.unique())
+            unique_targets = sorted(target_vals.unique())[:20]
 
             # Assign colors and adds a legend
             colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
@@ -137,7 +137,7 @@ class PlotBox(tk.Frame):
                                     transformed_df.loc[mask, "PC2"],
                                     c=[color], label=str(t), alpha=0.7,
                 )
-            self.app_state.ax.legend(title=f"{target} Groups")
+            self.app_state.ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc="upper left")
         else:
             # Plot without grouping
             self.app_state.ax.scatter(
@@ -272,7 +272,7 @@ class PlotBox(tk.Frame):
             for group, color in color_map.items():
                 label = group[:35] + ('...' if len(group) > 35 else '')
                 self.app_state.ax.plot([], [], '-', color=color, label=label, linewidth=2)
-            self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+            self.app_state.ax.legend(title="Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
         except Exception as e:
             traceback.print_exc()
             return

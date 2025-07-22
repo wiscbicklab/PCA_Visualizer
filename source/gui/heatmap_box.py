@@ -111,13 +111,13 @@ class HeatmapBox(tk.Frame):
             self.app_state.main.create_blank_fig(grid=False)
 
             # Adds a title and x and y label 
-            self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
-            self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
-            self.app_state.ax.set_ylabel('Features', fontsize=14)
+            self.app_state.axes.set_title('Loadings Heatmap', fontsize=16)
+            self.app_state.axes.set_xlabel('Principal Components', fontsize=14)
+            self.app_state.axes.set_ylabel('Features', fontsize=14)
 
             # Sets tick parameters to fit on ax
-            self.app_state.ax.tick_params(axis='x', labelsize=12)
-            self.app_state.ax.tick_params(axis='y', labelsize=10)
+            self.app_state.axes.tick_params(axis='x', labelsize=12)
+            self.app_state.axes.tick_params(axis='y', labelsize=10)
 
             # Get user entered heatmap mode and PCA data
             heatmap_mode = self.heatmap_mode_var.get()
@@ -202,16 +202,16 @@ class HeatmapBox(tk.Frame):
             cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
             xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
             yticklabels=focus_columns,
-            ax=self.app_state.ax
+            ax=self.app_state.axes
         )
 
         # Adds a title and x and y label
-        self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
-        self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
-        self.app_state.ax.set_ylabel('Features', fontsize=14)
+        self.app_state.axes.set_title('Loadings Heatmap', fontsize=16)
+        self.app_state.axes.set_xlabel('Principal Components', fontsize=14)
+        self.app_state.axes.set_ylabel('Features', fontsize=14)
         # Sets axis lablel size
-        self.app_state.ax.tick_params(axis='x', labelsize=12)
-        self.app_state.ax.tick_params(axis='y', labelsize=10)
+        self.app_state.axes.tick_params(axis='x', labelsize=12)
+        self.app_state.axes.tick_params(axis='y', labelsize=10)
 
     #### 3. EVENT HANDLERS ####
 
