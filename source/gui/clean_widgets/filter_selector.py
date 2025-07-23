@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox
 
-from ..app_state  import AppState
+from source.gui.app_state  import AppState
 from source.utils.constant import *
 import source.utils.input_validation as vcmd
 

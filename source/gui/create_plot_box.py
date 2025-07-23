@@ -11,7 +11,7 @@ import plotly.graph_objects as go
 
 from scipy import stats
 
-from .app_state  import AppState
+from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
 from source.utils.constant import *
 
@@ -153,13 +153,15 @@ class CreatePlotBox(tk.Frame):
                 )
 
             self.app_state.ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
+            self.app_state.main.replace_status_text("PCA Plot Successfully Generated")
         else:
             # Plot without grouping
             self.app_state.ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
+            self.app_state.main.replace_status_text(f"{target} not found! Default PCA Plot Successfully Generated ")
 
-        self.app_state.main.replace_status_text("PCA Plot Successfully Generated")
+
         self.app_state.main.update_figure()
 
 

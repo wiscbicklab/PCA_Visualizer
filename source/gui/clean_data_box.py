@@ -5,9 +5,9 @@ import pandas as pd
 
 from sklearn.impute import SimpleImputer
 
-from .clean_widgets.filter_selector import FilterSelector
-from .clean_widgets.missing_selector import MissingSelector
-from .app_state  import AppState
+from source.gui.clean_widgets.filter_selector import FilterSelector
+from source.gui.clean_widgets.missing_selector import MissingSelector
+from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
 
 from source.utils.constant import *
@@ -123,9 +123,9 @@ class CleanDataBox(tk.Frame):
         df = file_ops.load_csv_file()
         if df is None:
             if self.app_state.df is not None:
-                self.app_state.main.replace_program_status_text("Data File Not Selected: Previous Data Kept")
+                self.app_state.main.replace_status_text("Data File Not Selected: Previous Data Kept")
             else:
-                self.app_state.main.replace_program_status_text("Data File Not Selected: Please Load Data")
+                self.app_state.main.replace_status_text("Data File Not Selected: Please Load Data")
             return
         self.app_state.df = df
 

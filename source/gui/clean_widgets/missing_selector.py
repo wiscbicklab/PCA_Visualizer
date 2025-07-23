@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import Radiobutton as RadBttn
 
 # Imports constants for styling tkinter components
-from ..app_state import AppState
+from source.gui.app_state import AppState
 from source.utils.constant import *
 
 

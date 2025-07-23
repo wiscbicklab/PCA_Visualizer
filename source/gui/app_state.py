@@ -11,9 +11,6 @@ class AppState:
         # Holds the main window
         self.main = main
 
-        # Gets the name of the os
-        self.os_type = platform.system()
-
         # Selects application color palette
         self.selected_palette = tk.StringVar(value="Default")
 

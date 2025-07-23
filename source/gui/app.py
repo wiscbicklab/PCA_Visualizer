@@ -1,3 +1,4 @@
+import platform
 import tkinter as tk
 from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
@@ -10,10 +11,10 @@ from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
 
 # Components Imports
-from .clean_data_box import CleanDataBox
-from .setting_box import SettingBox
-from .create_plot_box import CreatePlotBox
-from .app_state  import AppState
+from source.gui.clean_data_box import CleanDataBox
+from source.gui.setting_box import SettingBox
+from source.gui.create_plot_box import CreatePlotBox
+from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
 
 
@@ -340,18 +341,22 @@ TASKBAR_TOPBAR_HEIGHT = 125 #CHANGES OFFSET LEFT TO AVOID TASKBAR OVERLAP
 if __name__ == "__main__":   
         app = PCAAnalysisApp()
 
-        # Get screen dimensions
-        screen_width = app.winfo_screenwidth()
-        screen_height = app.winfo_screenheight()-TASKBAR_TOPBAR_HEIGHT
+        os_type = platform.system()
 
-        # Set the window geometry to the full screen size
-        app.geometry(f"{screen_width}x{screen_height}+0+0")
+        if os_type == "Windows" or os_type == "Darwin":
+            app.state("zoomed")
+        else: 
+            # Get screen dimensions
+            screen_width = app.winfo_screenwidth()
+            screen_height = app.winfo_screenheight()-TASKBAR_TOPBAR_HEIGHT
 
-        # Optional: prevent resizing if you want it locked
+            # Set the window geometry to the full screen size
+            app.geometry(f"{screen_width}x{screen_height}+0+0")
+
+
+        # Prevent window Resizing
         app.resizable(False, False)
-
-        # Optional: set title
-        app.title("Windowed Fullscreen")
+        app.title("PCA Visualizer")
 
         app.mainloop()
 
