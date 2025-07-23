@@ -14,7 +14,6 @@ def load_csv_file():
 
     # Ensures the user selected an appropriate file
     if not file_path:
-        messagebox.showerror("File Error", "No file was selected. File loadings aborted!")
         return None
     if not file_path.lower().endswith(".csv"):
         messagebox.showerror("File Error", f"You selected: {file_path}\nYou must select a .csv file instead!")

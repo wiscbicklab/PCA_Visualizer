@@ -136,10 +136,19 @@ class CreatePlotBox(tk.Frame):
             if target_vals.nunique() > 20:
                 # Bin the values into 20 equal-width intervals
                 binned = pd.cut(target_vals, bins=20, include_lowest=True)
-                target_vals = binned.astype(str)  # Convert bin intervals to strings
+                
+                # Format the interval labels to show up to 6 significant digits
+                def format_interval(interval):
+                    left = f"{interval.left:.6g}"
+                    right = f"{interval.right:.6g}"
+                    return f"({left}, {right}]"
+
+                formatted_bins = binned.apply(format_interval)
+                target_vals = formatted_bins
                 unique_targets = sorted(target_vals.unique())
             else:
                 unique_targets = sorted(target_vals.unique())
+
 
             # Assign colors and add a legend
             colors = plt.cm.tab20(np.linspace(0, 1, len(unique_targets)))
@@ -159,7 +168,7 @@ class CreatePlotBox(tk.Frame):
             self.app_state.ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
-            self.app_state.main.replace_status_text(f"{target} not found! Default PCA Plot Successfully Generated ")
+            self.app_state.main.replace_status_text(f"{target} not found! Showing Default PCA Plot")
 
 
         self.app_state.main.update_figure()
