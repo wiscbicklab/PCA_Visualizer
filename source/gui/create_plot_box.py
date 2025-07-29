@@ -178,31 +178,34 @@ class CreatePlotBox(tk.Frame):
 
     def create_scree_plot(self):
         """Creates scree plot and puts it in the GUI"""
+        app_state = self.app_state
+        main = app_state.main
         # Validates required input data
-        if not self.app_state.df_cleaned.get():
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
             return
 
         # Ensures that pca analysis has been run
-        self.app_state.main.run_analysis()
+        main.run_analysis()
         
         # Creates a new blank figure without a grid
-        self.app_state.main.create_blank_fig(grid=False)
+        main.create_blank_fig(grid=False)
+        ax = app_state.ax
 
         # Get the explained variance
-        explained_variance = self.app_state.pca_results['explained_variance']
+        explained_variance = app_state.pca_results['explained_variance']
 
         try:
             # Adds a title and an x and y label
-            self.app_state.ax.set_title('Scree Plot')
-            self.app_state.ax.set_xlabel('Principal Component Index')
-            self.app_state.ax.set_ylabel('Explained Variance Ratio')
+            ax.set_title('Scree Plot')
+            ax.set_xlabel('Principal Component Index')
+            ax.set_ylabel('Explained Variance Ratio')
             
             # Create a range for principal components
             pc_indices = range(1, len(explained_variance) + 1)
 
             # Creates bar plot of individual explained variance
-            self.app_state.ax.bar(
+            ax.bar(
                 pc_indices,
                 explained_variance,
                 alpha=0.7,
@@ -210,7 +213,7 @@ class CreatePlotBox(tk.Frame):
             )
             
             # Creates step plot of cumulative explained variance
-            self.app_state.ax.step(
+            ax.step(
                 pc_indices,
                 np.cumsum(explained_variance),
                 where='mid',
@@ -218,7 +221,7 @@ class CreatePlotBox(tk.Frame):
             )
 
             # Set x-axis ticks to whole numbers only
-            self.app_state.ax.set_xticks(pc_indices)
+            ax.set_xticks(pc_indices)
             
         except Exception as e:
             traceback.print_exc()
@@ -226,8 +229,8 @@ class CreatePlotBox(tk.Frame):
             return
 
         # Updates the figure on the GUI
-        self.app_state.main.replace_status_text("Scree Plot Sucsessfully Generated")
-        self.app_state.main.update_figure()
+        main.replace_status_text("Scree Plot Sucsessfully Generated")
+        main.update_figure()
 
 
     #### 3. Create Biplot ####
@@ -252,7 +255,7 @@ class CreatePlotBox(tk.Frame):
 
         # Add legend for groups
         try:
-            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, self.app_state)
+            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, app_state)
             for group, color in color_map.items():
                 label = group[:35] + ('...' if len(group) > 35 else '')
                 ax.plot([], [], '-', color=color, label=label, linewidth=2)
@@ -277,7 +280,7 @@ class CreatePlotBox(tk.Frame):
 
 
             # Creates biplot arrows and arrow text
-            self.add_biplot_arrows( top_idx, feat_names, scaled_loadings, color_map, ax)
+            self.add_biplot_arrows(top_idx, feat_names, scaled_loadings, color_map, ax)
 
 
             # Creates Scatter Plot
@@ -288,12 +291,13 @@ class CreatePlotBox(tk.Frame):
             return
         
         # Updates the figure on the GUI
-        if user_mapping_enabled and app_state.feat_group_enabled:
-            app_state.main.replace_status_text("No Feature Grouping Loaded! Generic Biplot Generated")
+        main = app_state.main
+        if user_mapping_enabled and app_state.feat_group_enabled.get():
+            main.replace_status_text("No Feature Grouping Loaded! Generic Biplot Generated")
         else:
-            app_state.main.replace_status_text("Biplot Sucsessfully Generated")
+            main.replace_status_text("Biplot Sucsessfully Generated")
 
-        self.app_state.main.update_figure()
+        main.update_figure()
 
     def init_biplot_fig(self, variance, num_feat, app_state: AppState):
         """
@@ -385,8 +389,9 @@ class CreatePlotBox(tk.Frame):
 
     def create_interactive_biplot(self):
         """Creates an interactive biplot visualization and opens it in users webbrowser"""
+        app_state = self.app_state
         # Runs PCA analysis and gets relavent values
-        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data(self.app_state)
+        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data(app_state)
 
         try:
             # Intializes figure
@@ -395,7 +400,8 @@ class CreatePlotBox(tk.Frame):
             # Sets axis limits
             variance_scale = np.sqrt(eigvals)
             scaled_loadings = loadings[:, :2] * variance_scale
-            self.add_interactive_biplot_groups(top_feat, top_idx, feat_names, scaled_loadings, magnitudes, fig)
+            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, app_state)
+            self.add_interactive_biplot_groups(top_idx, feat_names, scaled_loadings, magnitudes, color_map, fig, app_state.feat_group_map)
 
             #Add interactivity to figure
             fig.update_layout(
@@ -438,10 +444,11 @@ class CreatePlotBox(tk.Frame):
             return
         
         # Save plot, opens it in users browser, and shows success message
-        file_name = file_ops.save_interactive_plot(fig, self.app_state.output_dir)
+        file_name = file_ops.save_interactive_plot(fig, app_state.output_dir)
         if file_name is not None:
-            self.app_state.main.replace_status_text("Interactive Biplot Sucsessfully Generated")
-    def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, scaled_loadings, magnitudes, fig):
+            app_state.main.replace_status_text("Interactive Biplot Sucsessfully Generated")
+    
+    def add_interactive_biplot_groups(self, top_idx, feat_names, scaled_loadings, magnitudes, color_map, fig, feat_group_map):
         """
         Adds biplot groupings to an interactive biplot
 
@@ -452,9 +459,6 @@ class CreatePlotBox(tk.Frame):
             scaled_loadings:   List of all the PCA loadings
             fig:    The figure to generate the biplot groupings on
         """
-        # Gets the color mapping for the biplot
-        color_map, user_mapping_enabled = self.get_color_mapping(top_feat, self.app_state)
-
         # Set for holding legend groups to avoid duplicate legend entries
         legend_groups = set()
 
@@ -463,12 +467,8 @@ class CreatePlotBox(tk.Frame):
             magnitude = magnitudes[idx]
 
             # Get feature color
-            if self.app_state.feat_group_enabled.get():
-                group = self.app_state.feat_group_map.get(feature)
-                color = color_map.get(group)
-            else:
-                group = feature
-                color = color_map.get(feature)
+            group = feat_group_map.get(feature)
+            color = color_map.get(group)
 
             # Only show legend for the group once; check if it's already been shown
             showlegend = group not in legend_groups
@@ -497,25 +497,26 @@ class CreatePlotBox(tk.Frame):
 
     def create_top_n_feat_plot(self):
         """Creates a plot showing the top feature loadings of the selected PCA component and Update the GUI plot"""
-        if not self.app_state.df_cleaned.get():
+        app_state = self.app_state
+        main = app_state.main
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
             return
         
         # Ensures PCA has been run
-        self.app_state.main.run_analysis()
+        pca_results = main.run_analysis()
 
         # Get top N features from user input
-        top_n = self.app_state.num_feat.get()
-        pca_comp_num = self.app_state.focused_pca_num.get()-1
+        top_n = app_state.num_feat.get()
+        pca_comp_num = app_state.focused_pca_num.get()-1
 
         # Intialize the plot
-        if not self.init_top_feat_plot(top_n, pca_comp_num+1):
-            messagebox.showerror("Error", "Error occured while attemping to initialize the new figure")
-            return
+        if not self.init_top_feat_plot(top_n, pca_comp_num+1, app_state): return
+        ax = app_state.ax
         
         # Validate and retrieve loadings
-        loadings = abs(self.app_state.pca_results['components'][pca_comp_num])
-        feat_names = self.app_state.pca_results['feature_names']
+        loadings = abs(pca_results['components'][pca_comp_num])
+        feat_names = pca_results['feature_names']
         
         # Sorting the loadings
         sorted_pairs = sorted(zip(feat_names, loadings), key=lambda x: abs(x[1]), reverse=True)
@@ -525,7 +526,7 @@ class CreatePlotBox(tk.Frame):
         
         try:
             # Plot top feature loadings
-            self.app_state.ax.barh(
+            ax.barh(
                 sorted_loadings[:top_n],
                 sorted_feat_names[:top_n],
                 color='steelblue',
@@ -537,10 +538,10 @@ class CreatePlotBox(tk.Frame):
             return
         
         # Updates the figure on the GUI
-        self.app_state.main.replace_status_text("Top Feature Plot Sucessfully Generated")
-        self.app_state.main.update_figure()
+        main.replace_status_text("Top Feature Plot Sucessfully Generated")
+        main.update_figure()
 
-    def init_top_feat_plot(self, top_n, pca_num):
+    def init_top_feat_plot(self, top_n, pca_num, app_state):
         """
         Intializes a blank top feature plot with title and labels
         
@@ -550,24 +551,162 @@ class CreatePlotBox(tk.Frame):
         Returns:
             True if the initialization was successful and False if an exception occured
         """
+        main = app_state.main
         # Generates a new blank figure
-        self.app_state.main.create_blank_fig(grid=False)
+        main.create_blank_fig(grid=False)
+        ax = app_state.ax
         try:
             # Adds title and labels to the figure
-            self.app_state.ax.set_title(f"Top {top_n} Features - PCA{pca_num} Absolute Loadings", fontsize=14)
-            self.app_state.ax.set_xlabel(f"PCA{pca_num} Absolute Loadings", fontsize=12)
-            self.app_state.ax.set_ylabel("Features", fontsize=12)
+            ax.set_title(f"Top {top_n} Features - PCA{pca_num} Absolute Loadings", fontsize=14)
+            ax.set_xlabel(f"PCA{pca_num} Absolute Loadings", fontsize=12)
+            ax.set_ylabel("Features", fontsize=12)
 
             # Sets the x and y axis variable sizes and rotation, to ensure labels fit on plot
-            self.app_state.ax.tick_params(axis='x', labelsize=10)
-            self.app_state.ax.tick_params(axis='y', labelsize=10, rotation=45)
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10, rotation=45)
             return True
         except Exception as e:
             traceback.print_exc()
             return False
-    
+
+
+    #### 6. Create Heatmap ####
+
+    def create_heatmap_fig(self):
+        """
+        Plot loadings heatmap using user-selected mode.
+        
+        Creates a heatmap using the top number of features selected or custom features.
+            Shows the number of PCA components selected, and sorts the features by absolute 
+            loadings of the selected PCA component to analize
+        """
+        app_state = self.app_state
+        main = app_state.main
+        if not self.app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be cleaned first!")
+            return
+        
+        try:
+            # Ensures PCA has been run
+            main.run_analysis()
+
+            # Creates a new blank figure
+            __, ax  = main.create_blank_fig(grid=False)
+
+            # Adds a title and x and y label 
+            ax.set_title('Loadings Heatmap', fontsize=16)
+            ax.set_xlabel('Principal Components', fontsize=14)
+            ax.set_ylabel('Features', fontsize=14)
+
+            # Sets tick parameters to fit on ax
+            ax.tick_params(axis='x', labelsize=12)
+            ax.tick_params(axis='y', labelsize=10)
+
+            # Determine focus columns
+            focus_columns = self.get_focus_cols(app_state)
+
+            if focus_columns is None:
+                return
+
+            # Update the heatmap figure
+            self.display_loadings_heatmap(
+                loadings=loadings,
+                data_columns=app_state.df.columns.tolist(),
+                focus_columns=focus_columns,
+                cmap="coolwarm"
+            )
+
+            # Ensure that the GUI updates
+            main.replace_status_text("Heatmap Sucessfully Generated")
+            main.update_figure()
+
+        except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
+            messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
+
+    def get_focus_cols(self, app_state):
+        """Determine columns to focus on based on heatmap mode."""
+        # Get user Settings
+        df = app_state.df
+        focused_pca_num = app_state.focused_pca_num.get()-1
+        heatmap_feats = app_state.heatmap_feat.get().strip().split(',')
+        num_feat = app_state.num_feat.get()
+        main = app_state.main
+
+        try:
+            # Get the column and loadings data
+            df_cols = df.columns.tolist()
+            loadings = abs(app_state.pca_results['loadings'])
+
+            # Get absolute loadings for the first principal component
+            pc1_loadings = abs(loadings[:,focused_pca_num])
+            loading_series = pd.Series(pc1_loadings, index=df_cols)
+            sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
+
+            target_feats = set([feat.strip() for feat in  heatmap_feats if feat.strip()])
+            # Returns the top Features if the target is empty
+            if not target_feats:
+                return sorted_columns[:]
+            else:
+                # Gets the focused columns and missing columns
+                df_feats = set(df.columns)
+                focus_feats = target_feats & df_feats
+                missing_feat = target_feats - focus_feats
+
+                # If there are missing features, infom the user by updating the status
+                if len(missing_feat) != 0:
+                    main.replace_status_text(f"Heatmap Failed! Selected Features Not Found In Data!")
+                    main.replace_pca_text(f"Missing Features:\t{[feat for feat in missing_feat]}")
+                
+                return_list = [feat for feat in focus_feats]
+
+            return return_list or None
+        except Exception as e:
+            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
+            return None
+
+    def display_loadings_heatmap(self, loadings, data_columns, app_state: AppState, focus_columns=None, cmap='viridis'):
+        """
+        Display a heatmap of loadings with improved design.
+
+        Args:
+            loadings: PCA loadings matrix.
+            data_columns: List of all data column names.
+            focus_columns: List of columns to focus on. Defaults to None.
+            cmap: Colormap to use for the heatmap.
+        """
+        ax = app_state.ax
+
+        if focus_columns is None:
+            focus_columns = data_columns  # Default to all columns if none specified
+
+        # Select only the relevant rows from the loadings matrix
+        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
+
+        # Create the heatmap
+        plt.figure(app_state.fig_size[0])  # Increase figure size for clarity
+        sns.heatmap(
+            selected_loadings,
+            annot=True,  # Add annotations to cells
+            fmt=".2f",  # Format numbers
+            cmap=cmap,  # Use perceptually uniform colormap
+            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
+            xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
+            yticklabels=focus_columns,
+            ax=ax
+        )
+
+        # Adds a title and x and y label
+        ax.set_title('Loadings Heatmap', fontsize=16)
+        ax.set_xlabel('Principal Components', fontsize=14)
+        ax.set_ylabel('Features', fontsize=14)
+        # Sets axis lablel size
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=10)
+
  
-    #### 6. Data Functions ####
+    #### 7. Data Functions ####
 
     def validate_biplot_data(self, app_state: AppState):
         """Runs PCA analysis and gets important pca results"""
@@ -653,134 +792,5 @@ class CreatePlotBox(tk.Frame):
         return color_group_map, grouping_enabled
             
     
-
-
-#### 2. VISUALIZATION METHODS ####
-
-    def create_heatmap_fig(self):
-        """
-        Plot loadings heatmap using user-selected mode.
-        
-        Creates a heatmap using the top number of features selected or custom features.
-            Shows the number of PCA components selected, and sorts the features by absolute 
-            loadings of the selected PCA component to analize
-        """
-        if not self.app_state.df_cleaned.get():
-            messagebox.showerror("Error", "Data must be cleaned first!")
-            return
-        
-        try:
-            # Ensures PCA has been run
-            self.app_state.main.run_analysis()
-
-            # Creates a new blank figure
-            self.app_state.main.create_blank_fig(grid=False)
-
-            # Adds a title and x and y label 
-            self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
-            self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
-            self.app_state.ax.set_ylabel('Features', fontsize=14)
-
-            # Sets tick parameters to fit on ax
-            self.app_state.ax.tick_params(axis='x', labelsize=12)
-            self.app_state.ax.tick_params(axis='y', labelsize=10)
-
-            # Get user entered heatmap mode and PCA data
-            loadings = abs(self.app_state.pca_results['loadings'])
-
-            # Determine focus columns
-            focus_columns = self.get_focus_cols(loadings)
-
-            if focus_columns is None:
-                return
-
-            # Update the heatmap figure
-            self.display_loadings_heatmap(
-                loadings=loadings,
-                data_columns=self.app_state.df.columns.tolist(),
-                focus_columns=focus_columns,
-                cmap="coolwarm"
-            )
-
-            # Ensure that the GUI updates
-            self.app_state.main.replace_status_text("Heatmap Sucessfully Generated")
-            self.app_state.main.update_figure()
-
-        except Exception as e:
-            error_str = traceback.print_exc()  # Keep detailed error tracking
-            print(error_str)
-            messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
-
-    def get_focus_cols(self, loadings):
-        """Determine columns to focus on based on heatmap mode."""
-        try:
-            # Get the column and loadings data
-            df_cols = self.app_state.df.columns.tolist()
-
-            # Get absolute loadings for the first principal component
-            pc1_loadings = abs(loadings[:, self.app_state.focused_pca_num.get()-1])
-            loading_series = pd.Series(pc1_loadings, index=df_cols)
-            sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
-            
-            # Get the users heatmap targets
-            target_feats = set([feat.strip() for feat in  self.app_state.heatmap_feat.get().strip().split(',') if feat.strip()])
-
-            # Returns the top Features if the target is empty
-            if not target_feats:
-                return sorted_columns[:self.app_state.num_feat.get()]
-            else:
-                # Gets the focused columns and missing columns
-                df_feats = set(self.app_state.df.columns)
-                focus_feats = target_feats & df_feats
-                missing_feat = target_feats - focus_feats
-
-                # If there are missing features, infom the user by updating the status
-                if len(missing_feat) != 0:
-                    self.app_state.main.replace_status_text(f"Heatmap Failed! Selected Features Not Found In Data!")
-                    self.app_state.main.replace_pca_text(f"Missing Features:\t{[feat for feat in missing_feat]}")
-                
-                return_list = [feat for feat in focus_feats]
-
-            return return_list or None
-        except Exception as e:
-            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
-            return None
-
-    def display_loadings_heatmap(self, loadings, data_columns, focus_columns=None, cmap='viridis'):
-        """
-        Display a heatmap of loadings with improved design.
-
-        Args:
-            loadings: PCA loadings matrix.
-            data_columns: List of all data column names.
-            focus_columns: List of columns to focus on. Defaults to None.
-            cmap: Colormap to use for the heatmap.
-        """
-        if focus_columns is None:
-            focus_columns = data_columns  # Default to all columns if none specified
-
-        # Select only the relevant rows from the loadings matrix
-        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
-
-        # Create the heatmap
-        plt.figure(self.app_state.fig_size[0])  # Increase figure size for clarity
-        sns.heatmap(
-            selected_loadings,
-            annot=True,  # Add annotations to cells
-            fmt=".2f",  # Format numbers
-            cmap=cmap,  # Use perceptually uniform colormap
-            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
-            xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
-            yticklabels=focus_columns,
-            ax=self.app_state.ax
-        )
-
-        # Adds a title and x and y label
-        self.app_state.ax.set_title('Loadings Heatmap', fontsize=16)
-        self.app_state.ax.set_xlabel('Principal Components', fontsize=14)
-        self.app_state.ax.set_ylabel('Features', fontsize=14)
-        # Sets axis lablel size
-        self.app_state.ax.tick_params(axis='x', labelsize=12)
-        self.app_state.ax.tick_params(axis='y', labelsize=10)
 
 
