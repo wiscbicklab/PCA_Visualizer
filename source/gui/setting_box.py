@@ -54,14 +54,17 @@ class SettingBox(tk.Frame):
         # Declares selector for the number of PCA components
         self.num_pca_comp_lbl = None
         self.num_pca_comp_entry = None
+        self.last_num_pca_comp = None
 
         # Declares selector for number of top PCA features
         self.top_n_lbl = None
         self.top_n_entry = None
+        self.last_top_n = None
 
         # Declares selector for PCA component to analize
         self.pca_num_lbl = None
         self.pca_num_entry = None
+        self.last_pca_num = None
 
         # Declares feature mapping components
         self.mapping_toggle = None
@@ -88,8 +91,8 @@ class SettingBox(tk.Frame):
         )
         
         # Creates validation commands for the text boxes
-        self.vcmd_int = (self.register(self.validate_int), '%P')
-        self.vcmd_non_neg_float = (self.register(self.validate_non_neg_float), '%P')
+        self.vcmd_int = (self.register(self._validate_int), '%P')
+        self.vcmd_non_neg_float = (self.register(self._validate_non_neg_float), '%P')
 
         # Creates components for selecting the number of PCA components
         self.num_pca_comp_lbl = tk.Label(self, text="PCA Components:", **LABEL_STYLE)
@@ -100,8 +103,9 @@ class SettingBox(tk.Frame):
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.num_pca_comp
         )
-        self.num_pca_comp_entry.bind("<FocusOut>", lambda e: self.on_exit(self.num_pca_comp_entry, "2", "num_pca_comp"))
-        self.num_pca_comp_entry.bind("<FocusIn>", lambda e: self.on_entry(self.num_pca_comp_entry))
+        self.last_num_pca_comp = "2"
+        self.num_pca_comp_entry.bind("<FocusOut>", lambda e: self._on_exit_num_pca_comp("2"))
+        self.num_pca_comp_entry.bind("<FocusIn>", self._on_entry_num_pca_comp)
         self.num_pca_comp_entry.bind("<Return>", lambda e: self.num_pca_comp_entry.tk_focusNext().focus())
 
         # Creates components for selecting the number of top PCA features
@@ -113,8 +117,9 @@ class SettingBox(tk.Frame):
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.num_feat
         )
-        self.top_n_entry.bind("<FocusOut>", lambda e: self.on_exit(self.top_n_entry, "10", "top_n_feat"))
-        self.top_n_entry.bind("<FocusIn>", lambda e: self.on_entry(self.top_n_entry))
+        self.last_top_n = "10"
+        self.top_n_entry.bind("<FocusOut>", lambda e: self._on_exit_top_n("10"))
+        self.top_n_entry.bind("<FocusIn>", self._on_entry_top_n)
         self.top_n_entry.bind("<Return>", lambda e: self.top_n_entry.tk_focusNext().focus())
 
 
@@ -127,8 +132,9 @@ class SettingBox(tk.Frame):
             validatecommand=self.vcmd_int,
             textvariable=self.app_state.focused_pca_num
         )
-        self.pca_num_entry.bind("<FocusOut>", lambda e: self.on_exit(self.pca_num_entry, "1", "pca_num"))
-        self.pca_num_entry.bind("<FocusIn>", lambda e: self.on_entry(self.pca_num_entry))
+        self.last_pca_num = "1"
+        self.pca_num_entry.bind("<FocusOut>", lambda e: self._on_exit_pca_num("1"))
+        self.pca_num_entry.bind("<FocusIn>", self._on_entry_pca_num)
         self.pca_num_entry.bind("<Return>", lambda e: self.pca_num_entry.tk_focusNext().focus())
 
         # Creates feature mapping components
@@ -136,7 +142,7 @@ class SettingBox(tk.Frame):
             self,
             text="Enable Feature Grouping",
             variable=self.app_state.feat_group_enable,
-            command=self.update_mapping_bttn,
+            command=self._update_mapping_bttn,
             **LABEL_STYLE,
         )
         self.mapping_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.upload_mapping, state="disabled")
@@ -144,7 +150,7 @@ class SettingBox(tk.Frame):
         # Creates heatmap components
         self.heatmap_feat_lbl = tk.Label(self, text="Heatmap Targets:", **LABEL_STYLE)
         self.heatmap_feat_entry = tk.Text(self, height=4, **BIG_ENTRY_STYLE)
-        self.heatmap_feat_entry.bind("<KeyRelease>", self.on_text_change)
+        self.heatmap_feat_entry.bind("<KeyRelease>", self._on_text_change)
         
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
@@ -185,57 +191,63 @@ class SettingBox(tk.Frame):
 
     #### 1. EVENT HANDLERS ####
 
-    def on_entry(self, widget):
-        """Command for saving input value of entry option upon enter"""
-        self.original_value = float(widget.get().strip())
+    def _on_entry_num_pca_comp(self):
+        """Command for saving the value in num_pca_comp"""
+        self.last_num_pca_comp = self.num_pca_comp_entry.get()
 
-    def on_exit(self, widget, default_value, attr_name):
-        """Command for verifiying entry option value upon exit"""
-        # Get the value in the selected Attribute
-        current_value = widget.get().strip()
+    def _on_entry_top_n(self):
+        """Command for saving the value in top_n"""
+        self.last_top_n = self.top_n_entry.get()
 
-        # Set minimum value for the selected Attribute
-        if attr_name == "num_pca_comp":
-            min_value = 1.9
-        elif attr_name == "top_n_feat" or attr_name == "pca_num":
-            min_value = 0.9
-        else:
-            min_value = 0.0
+    def _on_entry_pca_num(self):
+        """Command for saving the value in pca_num"""
+        self.last_pca_num = self.pca_num_entry.get()
 
-        # Set value to the default if it's too small
-        if current_value == "" or current_value == "." or float(current_value) <= min_value:
-            widget.delete(0, tk.END)
-            widget.insert(0, default_value)
-            current_value = default_value
+    def _on_exit_num_pca_comp(self, default_val):
+        """Command for validating num_pca_comp entry during exit"""
+        # Replaces the current value if it is not correct
+        val = self.num_pca_comp_entry.get()
+        df = self.app_state.df
+        if val == "" or int(val) < 2 or df is None or int(val) > len(df.columns):
+            self.num_pca_comp_entry.delete(0, tk.END)
+            self.num_pca_comp_entry.insert(0, default_val)
 
-        # Set pca_num do defualt if it's too large
-        if attr_name == "pca_num" and float(current_value) > float(self.app_state.num_pca_comp.get()):
-            widget.delete(0, tk.END)
-            widget.insert(0, default_value)
-            current_value = default_value
-
-        # Set pca_num do defualt if it's too large
-        if attr_name == "top_n_feat" and float(current_value) > float(20.0):
-            widget.delete(0, tk.END)
-            widget.insert(0, default_value)
-            current_value = default_value
-
-        # Set pca_num do defualt if it's too large
-        if attr_name == "num_pca_comp" and float(self.app_state.focused_pca_num.get()) > float(current_value):
-            self.app_state.focused_pca_num.set(current_value)
-            current_value = default_value
-        
-        # Sets the dataFrame as updated if the related variables changed
-        if float(current_value) != self.original_value:
+        # Sets PCA to run again if the value has changed
+        if self.num_pca_comp_entry.get() != self.last_num_pca_comp:
             self.app_state.df_updated.set(True)
 
-    def validate_int(self, proposed_value):
+    def _on_exit_top_n(self, default_val):
+        """Command for validating top_n entry during exit"""
+        # Replaces the current value if it is not correct
+        val = self.top_n_entry.get()
+        df = self.app_state.df
+        if val == "" or int(val) < 1 or df is None or int(val) > len(df.columns):
+            self.top_n_entry.delete(0, tk.END)
+            self.top_n_entry.insert(0, default_val)
+
+        # Sets PCA to run again if the value has changed
+        if self.top_n_entry.get() != self.last_top_n:
+            self.app_state.df_updated.set(True)
+
+    def _on_exit_pca_num(self, default_val):
+        """Command for validating top_n entry during exit"""
+        # Replaces the current value if it is not correct
+        val = self.pca_num_entry.get()
+        if val == "" or int(val) < 1 or int(val) > int(self.num_pca_comp_entry.get()):
+            self.pca_num_entry.delete(0, tk.END)
+            self.pca_num_entry.insert(0, default_val)
+
+        # Sets PCA to run again if the value has changed
+        if self.pca_num_entry.get() != self.last_top_n:
+            self.app_state.df_updated.set(True)
+
+    def _validate_int(self, proposed_value):
         """Validate that user iput is an integer or is blank"""
         if proposed_value == "" or proposed_value.isdigit():
             return True 
         return False
     
-    def validate_non_neg_float(self, proposed_value):
+    def _validate_non_neg_float(self, proposed_value):
         """Validates that user input is in float format"""
         try:
             if proposed_value == "" or proposed_value == "." or float(proposed_value) >= 0:
@@ -243,7 +255,7 @@ class SettingBox(tk.Frame):
         except Exception: pass
         return False
 
-    def update_mapping_bttn(self):
+    def _update_mapping_bttn(self):
         """Toggles the mapping button state"""
         if self.app_state.feat_group_enable.get():
             self.mapping_bttn.config(state='normal')
@@ -252,7 +264,7 @@ class SettingBox(tk.Frame):
             self.mapping_bttn.config(state='disabled')
             self.app_state.main.replace_status_text("Feature Mapping Disabled")
 
-    def on_text_change(self, event):
+    def _on_text_change(self, event):
         self.app_state.heatmap_feat.set(self.heatmap_feat_entry.get('1.0', 'end-1c'))
 
     #### 2. Feature Grouping Operations ####
