@@ -44,8 +44,8 @@ class AppState:
         self.heatmap_feat = tk.StringVar(main, "")
         
         # Variables for tracking feature mapping
-        self.feat_group_enable = tk.BooleanVar(main, value=False)
-        self.feat_group_map = None
+        self.feat_group_enabled = tk.BooleanVar(main, value=False)
+        self.feat_group_map = {}
 
         # Variables for the current figure being displayed
         self.fig_size = (10, 5)

@@ -141,7 +141,7 @@ class SettingBox(tk.Frame):
         self.mapping_toggle = tk.Checkbutton(
             self,
             text="Enable Feature Grouping",
-            variable=self.app_state.feat_group_enable,
+            variable=self.app_state.feat_group_enabled,
             command=self._update_mapping_bttn,
             **LABEL_STYLE,
         )
@@ -257,7 +257,7 @@ class SettingBox(tk.Frame):
 
     def _update_mapping_bttn(self):
         """Toggles the mapping button state"""
-        if self.app_state.feat_group_enable.get():
+        if self.app_state.feat_group_enabled.get():
             self.mapping_bttn.config(state='normal')
             self.app_state.main.replace_status_text("Feature Mapping Enabled")
         else:

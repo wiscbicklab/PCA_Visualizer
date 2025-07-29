@@ -6,6 +6,8 @@ from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
 
+import screeninfo
+
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
@@ -168,7 +170,7 @@ class PCAAnalysisApp(tk.Tk):
         # Results Section
         self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='se')
         self.program_status_text.grid(row=3, column=3, padx=5, pady=5, sticky='sw')
-        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsw")
+        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
         self.pca_text.grid(row=4, column=4, columnspan=2, padx=5, pady=5, sticky="nsew")
 
         # Save Buttons
@@ -347,13 +349,14 @@ if __name__ == "__main__":
         if os_type == "Windows" or os_type == "Darwin":
             app.state("zoomed")
         else: 
-            # Get screen dimensions
-            screen_width = app.winfo_screenwidth()
-            screen_height = app.winfo_screenheight()-TASKBAR_TOPBAR_HEIGHT
+            moniter = screeninfo.get_monitors()[0]
 
-            # Set the window geometry to the full screen size
-            app.geometry(f"{screen_width}x{screen_height}+0+0")
+            x = moniter.x
+            y = moniter.y
+            w = moniter.width
+            h = moniter.height - TASKBAR_TOPBAR_HEIGHT
 
+            app.geometry(f"{w}x{h}+{x}+{y}")
 
         # Prevent window Resizing
         app.resizable(False, False)

@@ -239,22 +239,24 @@ class CreatePlotBox(tk.Frame):
         Creates a biplot using the Top N features selected by the user. Uses the top two
             priniciple components for the biplot. Creates a color map and addes it as a legend.
         """
-        if not self.app_state.df_cleaned:
+        app_state = self.app_state
+        if not app_state.df_cleaned:
             messagebox.showerror("Error", "DataFrame must be cleaned")
             return
         # Runs PCA analysis and gets relavent values
-        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, __, num_feat = self.validate_biplot_data()
+        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, __, num_feat = self.validate_biplot_data(app_state)
 
         # Intializes the figure
-        if not self.init_biplot_fig(variance, num_feat): return 
+        if not self.init_biplot_fig(variance, num_feat, app_state): return 
+        ax = app_state.ax
 
         # Add legend for groups
         try:
-            color_map = self.get_color_mapping(top_feat)
+            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, self.app_state)
             for group, color in color_map.items():
                 label = group[:35] + ('...' if len(group) > 35 else '')
-                self.app_state.ax.plot([], [], '-', color=color, label=label, linewidth=2)
-            self.app_state.ax.legend(title="Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
+                ax.plot([], [], '-', color=color, label=label, linewidth=2)
+            ax.legend(title="Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
         except Exception as e:
             traceback.print_exc()
             return
@@ -266,27 +268,34 @@ class CreatePlotBox(tk.Frame):
         ellipse = Ellipse((0, 0), width=width, height=height, alpha=0.1, color='gray', linestyle='--')
         try:
             # Adds elipse to figure
-            self.app_state.ax.add_patch(ellipse)
+            ax.add_patch(ellipse)
+
             # Sets axis limits
             variance_scale = np.sqrt(eigvals)
             scaled_loadings = loadings[:, :2] * variance_scale
-            self.set_biplot_axis_limits(scaled_loadings, top_idx)
+            self.set_biplot_axis_limits(scaled_loadings, top_idx, ax)
+
 
             # Creates biplot arrows and arrow text
-            self.add_biplot_arrows(top_feat, top_idx, feat_names, scaled_loadings)
+            self.add_biplot_arrows( top_idx, feat_names, scaled_loadings, color_map, ax)
+
 
             # Creates Scatter Plot
-            self.app_state.ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
+            ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
         except Exception as e:
             traceback.print_exc()
             messagebox.showerror("Error", f"An error occures while generating the biplot: {e}")
             return
         
         # Updates the figure on the GUI
-        self.app_state.main.replace_status_text("Biplot Sucsessfully Generated")
+        if user_mapping_enabled and app_state.feat_group_enabled:
+            app_state.main.replace_status_text("No Feature Grouping Loaded! Generic Biplot Generated")
+        else:
+            app_state.main.replace_status_text("Biplot Sucsessfully Generated")
+
         self.app_state.main.update_figure()
 
-    def init_biplot_fig(self, variance, num_feat):
+    def init_biplot_fig(self, variance, num_feat, app_state: AppState):
         """
         Intializes a blank biplot with title and labels
 
@@ -298,25 +307,28 @@ class CreatePlotBox(tk.Frame):
             True if the initialization was successful and False if an exception occured
         """
         # Generates a new blank figure
-        self.app_state.main.create_blank_fig()
+        main = app_state.main
+        main.create_blank_fig()        
+        ax = app_state.ax
+        
         try:
             # Adds title and labels to the figure
-            self.app_state.ax.set_title(f"Biplot with Top {num_feat} Significant Features")
-            self.app_state.ax.set_xlabel(f"PC1 ({variance[0]:.1%} explained var.)")
-            self.app_state.ax.set_ylabel(f"PC2 ({variance[1]:.1%} explained var.)")
+            ax.set_title(f"Biplot with Top {num_feat} Significant Features")
+            ax.set_xlabel(f"PC1 ({variance[0]:.1%} explained var.)")
+            ax.set_ylabel(f"PC2 ({variance[1]:.1%} explained var.)")
 
             # Set grid appearance and aspect ratio
-            self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
-            self.app_state.ax.set_aspect('equal', adjustable='box')
+            ax.grid(True, linestyle='--', alpha=0.3)
+            ax.set_aspect('equal', adjustable='box')
 
             # Sets the background color of the plot
-            self.app_state.ax.set_facecolor('#f8f9fa')
+            ax.set_facecolor('#f8f9fa')
             return True
         except Exception as e:
             traceback.print_exc()
             return False
 
-    def set_biplot_axis_limits(self, scaled_loadings, top_idx):
+    def set_biplot_axis_limits(self, scaled_loadings, top_idx, ax):
         """
         Sets the figure axis limits for a biplot
 
@@ -332,10 +344,10 @@ class CreatePlotBox(tk.Frame):
         margin = 0.2 * max(x_max - x_min, y_max - y_min)
 
         # Uses the x-y value range and margin to set the x and y axis limits
-        self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
-        self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
+        ax.set_xlim(x_min - margin, x_max + margin)
+        ax.set_ylim(y_min - margin, y_max + margin)
 
-    def add_biplot_arrows(self, top_feat, top_idx, feat_names, scaled_loadings):
+    def add_biplot_arrows(self, top_idx, feat_names, scaled_loadings, color_map, ax):
         """
         Adds arrows and arrow text to a biplot
         
@@ -345,22 +357,16 @@ class CreatePlotBox(tk.Frame):
             feat_names: List of all the PCA feature Names
             scaled_loadings:   List of all the PCA loadings
         """
-        # Gets the color mapping for the biplot
-        color_map = self.get_color_mapping(top_feat)
-
         # Use the color mapping to add arrows to the plot
         for idx in top_idx:
             feature = feat_names[idx]
             
-            # Get feature color
-            if self.app_state.feat_group_enable.get() and feature in self.app_state.feat_group_map.keys():
-                group = self.app_state.feat_group_map[feature]
-                color = color_map.get(group)
-            else:
-                color = color_map.get(feature)
+            # Get feature group and group color
+            group = self.app_state.feat_group_map[feature]
+            color = color_map.get(group)
 
             # Generate arrow
-            self.app_state.ax.quiver(
+            ax.quiver(
                 0, 0,
                 scaled_loadings[idx, 0],
                 scaled_loadings[idx, 1],
@@ -380,7 +386,7 @@ class CreatePlotBox(tk.Frame):
     def create_interactive_biplot(self):
         """Creates an interactive biplot visualization and opens it in users webbrowser"""
         # Runs PCA analysis and gets relavent values
-        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data()
+        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data(self.app_state)
 
         try:
             # Intializes figure
@@ -447,7 +453,7 @@ class CreatePlotBox(tk.Frame):
             fig:    The figure to generate the biplot groupings on
         """
         # Gets the color mapping for the biplot
-        color_map = self.get_color_mapping(top_feat)
+        color_map, user_mapping_enabled = self.get_color_mapping(top_feat, self.app_state)
 
         # Set for holding legend groups to avoid duplicate legend entries
         legend_groups = set()
@@ -457,7 +463,7 @@ class CreatePlotBox(tk.Frame):
             magnitude = magnitudes[idx]
 
             # Get feature color
-            if self.app_state.feat_group_enable.get():
+            if self.app_state.feat_group_enabled.get():
                 group = self.app_state.feat_group_map.get(feature)
                 color = color_map.get(group)
             else:
@@ -563,19 +569,16 @@ class CreatePlotBox(tk.Frame):
  
     #### 6. Data Functions ####
 
-    def validate_biplot_data(self):
+    def validate_biplot_data(self, app_state: AppState):
         """Runs PCA analysis and gets important pca results"""
         # Validates required input data
-        if not self.app_state.df_cleaned.get():
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
-            return False
-        if self.app_state.feat_group_enable.get() and self.app_state.feat_group_map is None:
-            messagebox.showerror("Error", "Feature Groups is enabled, but a feature group has not been uploaded!")
-            return False
+            raise AttributeError("No data to Validate")
 
         # Ensure that PCA has been run and get results
-        self.app_state.main.run_analysis()
-        pca_results = self.app_state.pca_results
+        app_state.main.run_analysis()
+        pca_results = app_state.pca_results
         
         # Grab important results
         scores = pca_results['transformed_data']
@@ -587,16 +590,16 @@ class CreatePlotBox(tk.Frame):
         eigenvals = variance[:2]
 
         # Gets Users number of PCA results
-        num_feat = self.app_state.num_feat.get()
+        num_feat = app_state.num_feat.get()
 
         # Calculates PCA magnitudes and gets top indexes and features
         magnitudes = np.sqrt(loadings[:, 0] ** 2 + loadings[:, 1] ** 2)
         top_idx = np.argsort(magnitudes)[::-1][:num_feat]
-        top_feat = self.app_state.df.columns[top_idx]
+        top_feat = app_state.df.columns[top_idx]
 
         return scores, loadings, variance, eigenvals, feat_names, top_idx, top_feat, magnitudes, num_feat
     
-    def get_color_mapping(self, features):
+    def get_color_mapping(self, features, app_state: AppState):
         """
         Creates a color mapping for biplot groups or features
 
@@ -615,39 +618,39 @@ class CreatePlotBox(tk.Frame):
                     if feature gouping is disabled and no top_features are provided
             ValueError: If the number of features/groups without predefined colors is greater then 20
         """
-        # Show error and return if a mapping hasn't been loaded
-        if self.app_state.feat_group_enable.get() and self.app_state.feat_group_map is None:
-            messagebox.showerror("Mapping Error", "Feature grouping is enabled, but a feature group map hasn't been loaded")
-            raise AttributeError("Mapping error, feature grouping is enabled, but no feature map found")
+        # Get User Selection
+        grouping_enabled = app_state.feat_group_enabled.get()
+        group_map = app_state.feat_group_map
+        
+        # Disable Grouping if no Group-Map is uploaded
+        grouping_enabled = grouping_enabled and len(group_map) != 0
 
-        # Get the groups from the loaded mapping and seperate it into groups with an already
-        #   defined color and groups without
+        # Find all unique groups in the features
         feat_groups = set()
         for feat in features:
-            if self.app_state.feat_group_enable.get() and feat in self.app_state.feat_group_map.keys():
-                feat_groups.add(self.app_state.feat_group_map[feat])
-            elif self.app_state.feat_group_enable.get():
-                self.app_state.feat_group_map[feat] = feat
-                feat_groups.add(feat)
+            # Get the feature group from the group_map
+            if grouping_enabled and feat in group_map.keys():
+                feat_groups.add(group_map[feat])
+            # Add the feature as a unique group to the group_map and add it to the feat_groups
             else:
+                group_map[feat] = feat
                 feat_groups.add(feat)
 
-        # Parameter Validation
+        # Gets the most appropriate color map
         if (len(feat_groups) > 20):
             messagebox.showerror("Mapping Error", f"{len(feat_groups)} groups without predfined colors where requested, but only 20 colors are available")
-            raise ValueError("Mapping Error, not enough colors available for requested groups")
-        
-        # Color blind friendly colors used if possible       
-        if 10 >= len(feat):
-            colors = [to_hex(c) for c in plt.get_cmap('tab10').colors]
-        else:
-            # Non-color blind friendly pallet if needed
+            raise ValueError("Mapping Error, not enough colors available for requested groups")  
+        elif len(feat) > 10:
             colors = [to_hex(c) for c in plt.get_cmap('tab20').colors]
-        # Map newly generated colors to a group
+        else:
+            colors = [to_hex(c) for c in plt.get_cmap('tab10').colors]
+        
+        # Map Groups to colors
         color_group_map = {}
         for group, color in zip(feat_groups, colors):
                 color_group_map[group] = color
-        return color_group_map
+        
+        return color_group_map, grouping_enabled
             
     
 
