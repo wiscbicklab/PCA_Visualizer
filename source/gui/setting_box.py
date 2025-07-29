@@ -148,7 +148,7 @@ class SettingBox(tk.Frame):
         self.mapping_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.upload_mapping, state="disabled")
 
         # Creates heatmap components
-        self.heatmap_feat_lbl = tk.Label(self, text="Heatmap Targets:", **LABEL_STYLE)
+        self.heatmap_feat_lbl = tk.Label(self, text="Heatmap Targets:\n(comma seperated)", **LABEL_STYLE)
         self.heatmap_feat_entry = tk.Text(self, height=4, **BIG_ENTRY_STYLE)
         self.heatmap_feat_entry.bind("<KeyRelease>", self._on_text_change)
         

@@ -342,7 +342,8 @@ class PCAAnalysisApp(tk.Tk):
 
 
 
-TASKBAR_TOPBAR_HEIGHT = 125 #CHANGES OFFSET LEFT TO AVOID TASKBAR OVERLAP
+TASKBAR_HEIGHT = 75 #CHANGES OFFSET LEFT TO AVOID TASKBAR OVERLAP
+TOPBAR_HEIGHT = 50
 
 
 # Start App
@@ -357,9 +358,9 @@ if __name__ == "__main__":
             moniter = screeninfo.get_monitors()[0]
 
             x = moniter.x
-            y = moniter.y
+            y = moniter.y-TOPBAR_HEIGHT
             w = moniter.width
-            h = moniter.height - TASKBAR_TOPBAR_HEIGHT
+            h = moniter.height - TASKBAR_HEIGHT - TOPBAR_HEIGHT
 
             app.geometry(f"{w}x{h}+{x}+{y}")
 

@@ -108,14 +108,17 @@ class CreatePlotBox(tk.Frame):
         Creates a PCA plot of the first two prinicple components. Creates groupings using
             the selected Target Variable and gives them unique colors. Displays the generated plot.
         """
+        app_state = self.app_state
+        main = app_state.main
+        df = app_state.df
         # Validates that the data has been cleaned
-        if not self.app_state.df_cleaned.get():
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned in order to run PCA.")
             return  
         
         # Runs PCA Analysis and get important results
-        self.app_state.main.run_analysis()
-        transformed_data = self.app_state.pca_results['transformed_data']
+        pca_results = main.run_analysis()
+        transformed_data = pca_results['transformed_data']
         transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
         
@@ -123,15 +126,21 @@ class CreatePlotBox(tk.Frame):
         target = self.app_state.pca_target.get().strip()
 
         # Generate new blank figure
-        self.app_state.main.create_blank_fig()
+        __, ax = main.create_blank_fig()
         # Adds title and axis lables to the figure
-        self.app_state.ax.set_title("PCA Visualization")
-        self.app_state.ax.set_xlabel("Principal Component 1")
-        self.app_state.ax.set_ylabel("Principal Component 2")
+        ax.set_title("PCA Visualization")
+        ax.set_xlabel("Principal Component 1")
+        ax.set_ylabel("Principal Component 2")
         # Plot grouped by target if available
-        if target in self.app_state.df.columns:
+        if target == "":
+            # Plot without grouping
+            ax.scatter(
+                transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
+            )
+            main.replace_status_text("PCA Plot Successfully Generated")
+        elif target in self.app_state.df.columns:
             # Gets the values for the given target
-            target_vals = self.app_state.df[target].reset_index(drop=True)
+            target_vals = df[target].reset_index(drop=True)
 
             if target_vals.nunique() > 20:
                 # Bin the values into 20 equal-width intervals
@@ -155,23 +164,23 @@ class CreatePlotBox(tk.Frame):
             for i, t in enumerate(unique_targets):
                 mask = target_vals == t
                 color = colors[i]
-                self.app_state.ax.scatter(
+                ax.scatter(
                     transformed_df.loc[mask, "PC1"],
                     transformed_df.loc[mask, "PC2"],
                     c=[color], label=str(t), alpha=0.7,
                 )
 
-            self.app_state.ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
-            self.app_state.main.replace_status_text("PCA Plot Successfully Generated")
+            ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
+            main.replace_status_text("PCA Plot Successfully Generated")
         else:
             # Plot without grouping
-            self.app_state.ax.scatter(
+            ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
-            self.app_state.main.replace_status_text(f"{target} not found! Showing Default PCA Plot")
+            main.replace_status_text(f"{target} not found! Showing Default PCA Plot")
 
 
-        self.app_state.main.update_figure()
+        main.update_figure()
 
 
     #### 2. Create Scree Plot ####
