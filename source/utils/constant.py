@@ -39,7 +39,7 @@ ENTRY_SYLE = {
 }
 BIG_ENTRY_STYLE = {
     **ENTRY_SYLE,
-    "width": 22
+    "width": 28
 }
 SMALL_ENTRY_STYLE = {
     **ENTRY_SYLE,

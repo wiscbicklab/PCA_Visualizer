@@ -79,7 +79,7 @@ class CleanDataBox(tk.Frame):
         
         # Creates widgets for selecting columns to drop
         self.drop_label = tk.Label(self, text="Columns to Drop (comma-separated):", **LABEL_STYLE)
-        self.drop_entry = tk.Entry(self, **BIG_ENTRY_STYLE)
+        self.drop_entry = tk.Text(self, height=4, **BIG_ENTRY_STYLE)
 
         # Creates button for cleaning user data
         self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, command=self.clean_data)
@@ -202,7 +202,7 @@ class CleanDataBox(tk.Frame):
                     messagebox.showerror("Application Error", "An internal program error has occurred getting filter type")
         
         # Drop user-specified columns
-        missing_user_drop_cols =  [col.strip().lower() for col in self.drop_entry.get().split(",") if col.strip()]
+        missing_user_drop_cols =  [col.strip().lower() for col in self.drop_entry.get('1.0', 'end-1c').split(",") if col.strip()]
 
         # Ensures the user columns exist and prints an error message with missing columns
         user_drop_cols = [col for col in missing_user_drop_cols if col in df.columns]

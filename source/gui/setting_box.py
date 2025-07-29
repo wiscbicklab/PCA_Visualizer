@@ -143,7 +143,8 @@ class SettingBox(tk.Frame):
 
         # Creates heatmap components
         self.heatmap_feat_lbl = tk.Label(self, text="Heatmap Targets:", **LABEL_STYLE)
-        self.heatmap_feat_entry = tk.Entry(self, **BIG_ENTRY_STYLE, textvariable=self.app_state.heatmap_feat)
+        self.heatmap_feat_entry = tk.Text(self, height=4, **BIG_ENTRY_STYLE)
+        self.heatmap_feat_entry.bind("<KeyRelease>", self.on_text_change)
         
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
@@ -250,6 +251,9 @@ class SettingBox(tk.Frame):
         else:
             self.mapping_bttn.config(state='disabled')
             self.app_state.main.replace_status_text("Feature Mapping Disabled")
+
+    def on_text_change(self, event):
+        self.app_state.heatmap_feat.set(self.heatmap_feat_entry.get('1.0', 'end-1c'))
 
     #### 2. Feature Grouping Operations ####
 
