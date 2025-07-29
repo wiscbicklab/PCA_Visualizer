@@ -128,6 +128,7 @@ class CleanDataBox(tk.Frame):
                 self.app_state.main.replace_status_text("Data File Not Selected: Please Load Data")
             return
         self.app_state.df = df
+        self.app_state.original_df = df.copy()
 
         # Updates df status variables
         self.app_state.df_updated.set(True)
@@ -266,8 +267,8 @@ class CleanDataBox(tk.Frame):
         text += self.format_col_text(non_num_cols, "Non-numeric Columns Dropped:\t")
         text += "═══════════════════════════════════════\n\n"
 
-        orig_rows = df.shape[0] #FIX THIS LOGIC
-        orig_cols = df.shape[1]+len(user_drop_cols)+len(non_num_cols)
+        orig_rows = self.app_state.original_df.shape[0] #FIX THIS LOGIC
+        orig_cols = self.app_state.original_df.shape[1]
         text += f"Original Dataset Shape: {orig_rows} rows × {orig_cols} columns\n"
         text += f"Cleanded Dataset Shape: {df.shape[0]} rows x {df.shape[1]} columns\n\n"
         text += self.format_col_text(df.columns, "Cleaned Columns:\t")

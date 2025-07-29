@@ -119,10 +119,11 @@ class PCAAnalysisApp(tk.Tk):
         # Text Information Boxes
         self.program_status_lbl = tk.Label(self, text="Program Status:", **LABEL_STYLE)
         self.program_status_text = tk.Text(self, height=1, width=48, **LABEL_STYLE)
-        self.program_status_text.insert(tk.END, "Please Load Data")
+        self.program_status_text.insert(tk.END, "Please Load Data!")
         self.data_text = tk.Text(self, height=15, width=75, **LABEL_STYLE)
+        self.data_text.insert(tk.END, "Information will appear here once data has been loaded!")
         self.pca_text = tk.Text(self, height=15, width=80, **LABEL_STYLE)
-        self.pca_text.insert(tk.END, "Information will appear once PCA has been run")
+        self.pca_text.insert(tk.END, "Information will appear once PCA has been run!")
 
         # Save buttons
         self.save_data_bttn = tk.Button(

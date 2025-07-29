@@ -21,6 +21,7 @@ class AppState:
         self.output_dir = "KUpca_plots_output"
 
         # Variables for tracking the data frame with the data file
+        self.original_df = None
         self.df = None
         self.df_cleaned = tk.BooleanVar(main, value=False)
         self.df_updated = tk.BooleanVar(main, value=False)
