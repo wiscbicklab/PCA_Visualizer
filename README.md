@@ -17,15 +17,16 @@ PCA_11.27.24-pca/
     │   │   ├── filter_selector.py  ← GUI selector for filtering by a selected column
     |   |   └── missing_selector.py ← GUI checkbox for filtering/interpolating missing data
     |   |
-    │   ├── app.py                  ← Main GUI application (tkinter)   
-    │   ├── biplot_box.py           ← GUI functionality for creating several types of plots
-    │   ├── heatmap_box.py          ← GUI functionality for generating a heatmap
-    │   ├── load_clean_file_box.py  ← GUI functionality for loading and cleaning data
-    │   └── visual_settings_box.py  ← GUI functionality for selecting parameters for generating plots
+    │   ├── app.py                  ← Main GUI application (tkinter)  
+    |   ├── app_state.py            ← AppState object is used to pass information between GUI widgets
+    │   ├── clean_data_box.py       ← GUI functionality for loading and cleaning data 
+    │   ├── create_plot_box.py      ← GUI functionality for creating several types of plots
+    │   └── settings_box.py         ← GUI functionality for changing parameters for plot generation
     │
     └── utils/
         ├── constant.py             ← Styling and Theme 
-        └── file_operations.py      ← CSV loading/saving utilities
+        ├── file_operations.py      ← CSV loading/saving utilities
+        └── input_validation.py     ← Validation commands for user input
 ```
 
 ## How to start the application
@@ -35,7 +36,7 @@ PCA_11.27.24-pca/
   - Open the repository, ```cd PCA_11.27.24```
   - Create a virtual enviroment, ```python -m venv NAME_OF_ENVIROMENT```
   - Activate the enviroment, ```source NAMEOF_ENVIROMENT/bin/activate```
-  - Install dependencies, ```pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn Screeninfo```
+  - Install dependencies, ```pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn screeninfo```
   - Run application as a module, ```python -m source.gui.app```
     
 - To run on Windows
@@ -47,14 +48,12 @@ PCA_11.27.24-pca/
 ## How to use the application
 
 1. **Upload Data**:
-    
     - At the top of the application click the 'Browse' button next to 'Load CSV File:' text
     - Select a csv file from the pop up.
       - The first row of the csv file should be the names of the data in each column
       - Each additional row represents a collection of data, ie a data point
 
 2. **Clean the Data**:
-    
     - Select options for how to clean the data
       - Select an option for how to deal with missing values in the data
       - Select an option for how filtering by column
@@ -72,55 +71,42 @@ PCA_11.27.24-pca/
         IE. (year, rep, SAMPLENUM)
     - Click on the 'Clean CSV' button
 
-3. **Configure Settings**:
-    
-    - Select a target variable. Options: None, BBCH, and custom target
-      - Determines how the points will be color coded for the PCA plot
-      - If Custom target is selected you must enter the target you want to use in the box below
-      - If Custom target is selected and the custom target isn't found in the data None is used
-    - Select the 'Number of PCA components'
-      - Determines the number of PCA components shown on the Scree Plot and heatmap
-    - Select the 'Number of Features'
-      - If Feature Grouping is not enabled this determines the number of features to show on the biplot and interactive biplot
-      - Determines the number of features to use for the 'Top Feature Loadings' plot
-      - If 'Top Features' is selected for the heatmap mode this determines the number of features to use in the heatmap
-    - Select the "Focused PCA Component"
-      - This determines the PCA component to sort Loadings by for both the "Top Feature Loadings' plot and heatmap
-    - Select the 'Text Distance for Labels'
-      - This is a value that changes where the labels are placed on the biplot.
-      - Only Change this if you are having issues with text label overlap
-
 3. **Generate Plots**:
-    - Click the 'Visualize PCA' button to create a visualization of all points in the first two Principle Components
-    - Click the 'Show Scree Plot' button to generate a scree plot with the PCA results
+    - Click the 'Plot PCA' button to create a visualization of all points in the first two Principle Components
+    - Click the 'Plot Heatmap' button to create a heatmap of the top features
     - Click the 'Biplot' button to generate a Biplot over the first two Principle Components
     - Click the 'Interactive Biplot' button to generate an interactive biplot. This will be saved as an html file and opened in your browser
-    - Click the 'Top Feature Loadings' button to generate a bar plot of the absolute loadings. Sorted by top values on the selected PCA component
+    - Click the 'Scree Plot' button to generate a scree plot with the PCA results
+    - Click the 'Feature Loadings Plot' button to generate a bar plot of the absolute loadings. Sorted by top values on the selected PCA component
 
-5. **Enable Feature Grouping**
-    - Click the 'Enable Feature Grouping' checkbox at the top of the plot generation box
-    - Click the 'Browse' button next to the 'Feature Grouping Map:' text
-    - Select a csv file from the pop up
-      - The first row of the csv file should be, 'Feature,Group'
-      - Every other row should contain a Feature in the first column and it's associated group in the second column
-      - Extra Features not found in the dataset are fine
-    - Click on the 'Biplot' or 'Interactive Biplot' buttons to generate new plots color coded by group instead of feature
+4. **Configure Settings**:
+    - Change the Number of 'PCA Components'
+      - Determines the number of PCA components shown on the Scree Plot and heatmap
+    - Change the 'Number of Features'
+      - Determines the number of features to show on the Biplot, Interactive Biplot, Feature Loadings Plot, and Heatmap
+    - Change the "Focused PCA Component"
+      - Determines which PCA component to sort feature loadings by for the Heatmap
+      - Determines Which PCA component to show the top features for on the Feature Loadings Plot
+    - Add a 'PCA Plot Target'
+      - This adds groups to the PCA Plot for the selected target feature
+      - For up to 20 values of the selected feature a unique color is assigned
+      - If more than 20 value exist the values are grouped together with each group having the same number of unique values
+    - Select 'Heatmap Targets'
+      - Entering a list of features seperated by commas will override the heatmap to show the features specified instead of the top features
+    - Select 'Enable Feature Grouping'
+      - This will allow you to Click the 'Browse' button next to the checkbox
+      - Click the 'Browse' button to load a Feature-Group Map
+        - Select a csv file from the pop up
+          - The first row of the csv file should be, 'Feature,Group'
+          - Every other row should contain a Feature in the first column and it's associated group in the second column
+          - Any Features not in the Feature-Group Map will be assigned their own individual group automatically
+      - Groups Features together to use the same color on the Biplot and Interactive Biplot
 
-6. **Generate Heatmap**
-    - Select the heatmap feature from the dropdown menu or select 'Custom Features
-      - If 'Custom Features' is selected type the feature you would like to see in the box below seperated by commas
-    - Click the 'Plot Heatmap' button to generate a heatmap.
-
-7. **Save Plot**
+5. **Save Plot**
     - Below the 'PCA Analysis Results' box should be text showing the current output directory. By defualt: KUpca_plots_output
     - Click the 'Select Output Directory' button to the right of the text to select a different ouput directory.
     - Click the 'Save Plot' button to save a .png file of the currently displayed plot to the output directory
 
-8. **Select Color Palette**
-    - At the botton of the left side of the application is a dropdown that allows you to change the color palette used for the Biplot and Interactive Biplot
-    - This color palette applies colors to the following groupings: fab, non-fab, non-raa pests, beneficials, and raa.
-    - For any other groups or features a color-blind friendly palette is used if 10 or less are being used
-      If more than 10 but 20 or less are being used a non-color-blind palette is used
 
 ## Development Notes
 
