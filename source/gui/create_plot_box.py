@@ -597,7 +597,7 @@ class CreatePlotBox(tk.Frame):
         
         try:
             # Ensures PCA has been run
-            main.run_analysis()
+            pca_results = main.run_analysis()
 
             # Creates a new blank figure
             __, ax  = main.create_blank_fig(grid=False)
@@ -619,8 +619,9 @@ class CreatePlotBox(tk.Frame):
 
             # Update the heatmap figure
             self.display_loadings_heatmap(
-                loadings=loadings,
+                loadings=pca_results['loadings'],
                 data_columns=app_state.df.columns.tolist(),
+                app_state=app_state,    
                 focus_columns=focus_columns,
                 cmap="coolwarm"
             )
@@ -656,7 +657,7 @@ class CreatePlotBox(tk.Frame):
             target_feats = set([feat.strip() for feat in  heatmap_feats if feat.strip()])
             # Returns the top Features if the target is empty
             if not target_feats:
-                return sorted_columns[:]
+                return sorted_columns[:num_feat]
             else:
                 # Gets the focused columns and missing columns
                 df_feats = set(df.columns)

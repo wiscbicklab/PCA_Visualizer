@@ -191,19 +191,19 @@ class SettingBox(tk.Frame):
 
     #### 1. EVENT HANDLERS ####
 
-    def _on_entry_num_pca_comp(self):
+    def _on_entry_num_pca_comp(self, event):
         """Command for saving the value in num_pca_comp"""
         self.last_num_pca_comp = self.num_pca_comp_entry.get()
 
-    def _on_entry_top_n(self):
+    def _on_entry_top_n(self, event):
         """Command for saving the value in top_n"""
         self.last_top_n = self.top_n_entry.get()
 
-    def _on_entry_pca_num(self):
+    def _on_entry_pca_num(self, event):
         """Command for saving the value in pca_num"""
         self.last_pca_num = self.pca_num_entry.get()
 
-    def _on_exit_num_pca_comp(self, default_val):
+    def _on_exit_num_pca_comp(self, default_val=2):
         """Command for validating num_pca_comp entry during exit"""
         # Replaces the current value if it is not correct
         val = self.num_pca_comp_entry.get()
@@ -215,8 +215,9 @@ class SettingBox(tk.Frame):
         # Sets PCA to run again if the value has changed
         if self.num_pca_comp_entry.get() != self.last_num_pca_comp:
             self.app_state.df_updated.set(True)
+            self._on_exit_pca_num()
 
-    def _on_exit_top_n(self, default_val):
+    def _on_exit_top_n(self, default_val=10):
         """Command for validating top_n entry during exit"""
         # Replaces the current value if it is not correct
         val = self.top_n_entry.get()
@@ -229,7 +230,7 @@ class SettingBox(tk.Frame):
         if self.top_n_entry.get() != self.last_top_n:
             self.app_state.df_updated.set(True)
 
-    def _on_exit_pca_num(self, default_val):
+    def _on_exit_pca_num(self, default_val=1):
         """Command for validating top_n entry during exit"""
         # Replaces the current value if it is not correct
         val = self.pca_num_entry.get()

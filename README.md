@@ -35,7 +35,7 @@ PCA_11.27.24-pca/
   - Open the repository, ```cd PCA_11.27.24```
   - Create a virtual enviroment, ```python -m venv NAME_OF_ENVIROMENT```
   - Activate the enviroment, ```source NAMEOF_ENVIROMENT/bin/activate```
-  - Install dependencies, ```pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn```
+  - Install dependencies, ```pip install adjustText chardet matplotlib numpy pandas plotly scikit-learn seaborn Screeninfo```
   - Run application as a module, ```python -m source.gui.app```
     
 - To run on Windows
@@ -90,7 +90,7 @@ PCA_11.27.24-pca/
       - This is a value that changes where the labels are placed on the biplot.
       - Only Change this if you are having issues with text label overlap
 
-4. **Generate Plots**:
+3. **Generate Plots**:
     - Click the 'Visualize PCA' button to create a visualization of all points in the first two Principle Components
     - Click the 'Show Scree Plot' button to generate a scree plot with the PCA results
     - Click the 'Biplot' button to generate a Biplot over the first two Principle Components
