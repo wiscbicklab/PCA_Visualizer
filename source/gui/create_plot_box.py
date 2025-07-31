@@ -6,6 +6,7 @@ from matplotlib.colors import to_hex
 from matplotlib.patches import Ellipse
 import pandas as pd
 import numpy as np
+import seaborn as sns
 import plotly.graph_objects as go
 
 from scipy import stats
@@ -17,7 +18,7 @@ from source.utils.constant import *
 from adjustText import adjust_text
 
 
-class PlotBox(tk.Frame):
+class CreatePlotBox(tk.Frame):
     """
     A GUI box for generating different types of plots using PCA analysis
 
@@ -49,15 +50,19 @@ class PlotBox(tk.Frame):
         super().__init__(main, **kwargs)
         self.app_state = app_state
 
+
         # Declares frame banner
         self.biplot_banner = None
 
         # Declares plot generation buttons
         self.pca_plot_bttn = None
-        self.scree_plot_bttn = None
+        self.heatmap_mode_var = None # Variable For heatmap mode
+        self.heatmap_bttn = None
         self.biplot_bttn = None
         self.interactive_biplot_bttn = None
+        self.scree_plot_bttn = None
         self.top_feat_bttn = None
+
 
         # Creates components and sets them within the GUI
         self.create_components()
@@ -69,7 +74,8 @@ class PlotBox(tk.Frame):
         self.biplot_banner = tk.Label(self, **BANNER_STYLE, text="Plot Generation")
         
         # Creates plot generation buttons
-        self.pca_plot_bttn = tk.Button(self, text="PCA Visualization", **BUTTON_STYLE, command=self.visualize_pca)
+        self.pca_plot_bttn = tk.Button(self, text="Plot PCA", **BUTTON_STYLE, command=self.visualize_pca)
+        self.heatmap_bttn = tk.Button(self, text="Plot Heatmap", **BUTTON_STYLE, command=self.create_heatmap_fig)
         self.scree_plot_bttn = tk.Button(self, text="Scree Plot", **BUTTON_STYLE, command=self.create_scree_plot)
         self.biplot_bttn = tk.Button(self, text="Biplot", **BUTTON_STYLE, command=self.create_biplot)
         self.interactive_biplot_bttn = tk.Button(self, text="Interactive Biplot", **BUTTON_STYLE, command=self.create_interactive_biplot)
@@ -85,10 +91,11 @@ class PlotBox(tk.Frame):
         self.biplot_banner.grid(row=0, column=0, columnspan=2, sticky="we", padx=5, pady=5)
 
         # Places plot generation buttons
-        self.pca_plot_bttn.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
-        self.scree_plot_bttn.grid(row=2, column=0, padx=5, pady=5)
-        self.biplot_bttn.grid(row=2, column=1, padx=5, pady=5)
-        self.interactive_biplot_bttn.grid(row=3, column=0, padx=5, pady=5)
+        self.pca_plot_bttn.grid(row=1, column=0, padx=5, pady=5)
+        self.heatmap_bttn.grid(row=1, column=1, padx=5, pady=5)
+        self.biplot_bttn.grid(row=2, column=0, padx=5, pady=5)
+        self.interactive_biplot_bttn.grid(row=2, column=1, padx=5, pady=5)
+        self.scree_plot_bttn.grid(row=3, column=0, padx=5, pady=5)
         self.top_feat_bttn.grid(row=3, column=1, padx=5, pady=5)
 
 
@@ -101,127 +108,113 @@ class PlotBox(tk.Frame):
         Creates a PCA plot of the first two prinicple components. Creates groupings using
             the selected Target Variable and gives them unique colors. Displays the generated plot.
         """
+        app_state = self.app_state
+        main = app_state.main
+        df = app_state.df
         # Validates that the data has been cleaned
-        if not self.app_state.df_cleaned.get():
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned in order to run PCA.")
             return  
         
         # Runs PCA Analysis and get important results
-        self.app_state.main.run_analysis()
-        transformed_data = self.app_state.pca_results['transformed_data']
+        pca_results = main.run_analysis()
+        transformed_data = pca_results['transformed_data']
         transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
         
         # Gets the user selected target variable
-        target = self.get_target()
+        target = self.app_state.pca_target.get().strip()
 
         # Generate new blank figure
-        self.app_state.main.create_blank_fig()
+        __, ax = main.create_blank_fig()
         # Adds title and axis lables to the figure
-        self.app_state.ax.set_title("PCA Visualization")
-        self.app_state.ax.set_xlabel("Principal Component 1")
-        self.app_state.ax.set_ylabel("Principal Component 2")
-
+        ax.set_title("PCA Visualization")
+        ax.set_xlabel("Principal Component 1")
+        ax.set_ylabel("Principal Component 2")
         # Plot grouped by target if available
-        if target:
-            # Gets targets
-            target_vals = self.app_state.df[target].reset_index(drop=True)
-            unique_targets = sorted(target_vals.unique())
-
-            # Assign colors and adds a legend
-            colors = plt.cm.tab10(np.linspace(0, 1, len(unique_targets)))
-            for i, t in enumerate(unique_targets):
-                mask = target_vals == t
-                color = colors[i] 
-                self.app_state.ax.scatter(transformed_df.loc[mask, "PC1"],
-                                    transformed_df.loc[mask, "PC2"],
-                                    c=[color], label=str(t), alpha=0.7,
-                )
-            self.app_state.ax.legend(title=f"{target} Groups")
-        else:
+        if target == "":
             # Plot without grouping
-            self.app_state.ax.scatter(
+            ax.scatter(
                 transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
+            main.replace_status_text("PCA Plot Successfully Generated")
+        elif target in self.app_state.df.columns:
+            # Gets the values for the given target
+            target_vals = df[target].reset_index(drop=True)
 
-        self.app_state.main.update_figure()
+            if target_vals.nunique() > 20:
+                # Bin the values into 20 equal-width intervals
+                binned = pd.cut(target_vals, bins=20, include_lowest=True)
+                
+                # Format the interval labels to show up to 6 significant digits
+                def format_interval(interval):
+                    left = f"{interval.left:.6g}"
+                    right = f"{interval.right:.6g}"
+                    return f"({left}, {right}]"
 
-    def get_target(self):
-        """
-        Gets the user selected target
-        
-        Returns:
-            None if None is selected, the selected target is not in the df, or an error occures
-            Otherwise the selected target stripped of whitespace and in lower case
-        """
-        # Get the user selected target mode
-        target_mode = self.app_state.target_mode.get().strip().lower()
-
-        # Determines the target given the target mode
-        if target_mode == "none":
-            return None
-        elif target_mode == "bbch":
-            if target_mode in self.app_state.df.columns.to_list():
-                return "bbch"
+                formatted_bins = binned.apply(format_interval)
+                target_vals = formatted_bins
+                unique_targets = sorted(target_vals.unique())
             else:
-                messagebox.showerror(
-                    "Target Error",
-                    f"BBCH selected as target, but not found in the dataset!"
+                unique_targets = sorted(target_vals.unique())
+
+
+            # Assign colors and add a legend
+            colors = plt.cm.tab20(np.linspace(0, 1, len(unique_targets)))
+            for i, t in enumerate(unique_targets):
+                mask = target_vals == t
+                color = colors[i]
+                ax.scatter(
+                    transformed_df.loc[mask, "PC1"],
+                    transformed_df.loc[mask, "PC2"],
+                    c=[color], label=str(t), alpha=0.7,
                 )
-                return None
-        elif target_mode == "input specific target":
-            # If the target mode is a custom target get the user specified target
-            target = self.app_state.custom_target.get().strip().lower()
-            if not target or target.isspace():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Invalid target selected.\nDefaulting to no target."
-                )
-                return None
-            if target not in self.app_state.df.columns.to_list():
-                messagebox.showerror(
-                    "Target Error",
-                    f"Target variable '{target}' not found in the dataset!\nDefualting to no target."
-                )
-                return None
-            return target.strip().lower()
+
+            ax.legend(title=f"{target} Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
+            main.replace_status_text("PCA Plot Successfully Generated")
         else:
-            messagebox.showerror(
-                "Target_Mode Error",
-                f"An internal application error occured, an impossible target_mode was selected!"
+            # Plot without grouping
+            ax.scatter(
+                transformed_df["PC1"], transformed_df["PC2"], alpha=0.7, label="Data Points"
             )
-            return None
+            main.replace_status_text(f"{target} not found! Showing Default PCA Plot")
+
+
+        main.update_figure()
 
 
     #### 2. Create Scree Plot ####
 
     def create_scree_plot(self):
         """Creates scree plot and puts it in the GUI"""
+        app_state = self.app_state
+        main = app_state.main
         # Validates required input data
-        if not self.app_state.df_cleaned.get():
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
             return
 
         # Ensures that pca analysis has been run
-        self.app_state.main.run_analysis()
+        main.run_analysis()
         
         # Creates a new blank figure without a grid
-        self.app_state.main.create_blank_fig(grid=False)
+        main.create_blank_fig(grid=False)
+        ax = app_state.ax
 
         # Get the explained variance
-        explained_variance = self.app_state.pca_results['explained_variance']
+        explained_variance = app_state.pca_results['explained_variance']
 
         try:
             # Adds a title and an x and y label
-            self.app_state.ax.set_title('Scree Plot')
-            self.app_state.ax.set_xlabel('Principal Component Index')
-            self.app_state.ax.set_ylabel('Explained Variance Ratio')
+            ax.set_title('Scree Plot')
+            ax.set_xlabel('Principal Component Index')
+            ax.set_ylabel('Explained Variance Ratio')
             
             # Create a range for principal components
             pc_indices = range(1, len(explained_variance) + 1)
 
             # Creates bar plot of individual explained variance
-            self.app_state.ax.bar(
+            ax.bar(
                 pc_indices,
                 explained_variance,
                 alpha=0.7,
@@ -229,7 +222,7 @@ class PlotBox(tk.Frame):
             )
             
             # Creates step plot of cumulative explained variance
-            self.app_state.ax.step(
+            ax.step(
                 pc_indices,
                 np.cumsum(explained_variance),
                 where='mid',
@@ -237,7 +230,7 @@ class PlotBox(tk.Frame):
             )
 
             # Set x-axis ticks to whole numbers only
-            self.app_state.ax.set_xticks(pc_indices)
+            ax.set_xticks(pc_indices)
             
         except Exception as e:
             traceback.print_exc()
@@ -245,7 +238,8 @@ class PlotBox(tk.Frame):
             return
 
         # Updates the figure on the GUI
-        self.app_state.main.update_figure()
+        main.replace_status_text("Scree Plot Sucsessfully Generated")
+        main.update_figure()
 
 
     #### 3. Create Biplot ####
@@ -257,21 +251,24 @@ class PlotBox(tk.Frame):
         Creates a biplot using the Top N features selected by the user. Uses the top two
             priniciple components for the biplot. Creates a color map and addes it as a legend.
         """
-        if not self.app_state.df_cleaned:
+        app_state = self.app_state
+        if not app_state.df_cleaned:
             messagebox.showerror("Error", "DataFrame must be cleaned")
             return
         # Runs PCA analysis and gets relavent values
-        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, num_feat = self.validate_biplot_data()
+        scores, loadings, variance, eigvals, feat_names, top_idx, top_feat, __, num_feat = self.validate_biplot_data(app_state)
 
         # Intializes the figure
-        if not self.init_biplot_fig(variance, num_feat): return 
+        if not self.init_biplot_fig(variance, num_feat, app_state): return 
+        ax = app_state.ax
 
         # Add legend for groups
         try:
-            color_map = self.get_color_mapping(top_feat)
+            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, app_state)
             for group, color in color_map.items():
-                self.app_state.ax.plot([], [], '-', color=color, label=group, linewidth=2)
-            self.app_state.ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+                label = group[:35] + ('...' if len(group) > 35 else '')
+                ax.plot([], [], '-', color=color, label=label, linewidth=2)
+            ax.legend(title="Groups", bbox_to_anchor=(1.05, 1), loc='upper left')
         except Exception as e:
             traceback.print_exc()
             return
@@ -283,26 +280,35 @@ class PlotBox(tk.Frame):
         ellipse = Ellipse((0, 0), width=width, height=height, alpha=0.1, color='gray', linestyle='--')
         try:
             # Adds elipse to figure
-            self.app_state.ax.add_patch(ellipse)
+            ax.add_patch(ellipse)
+
             # Sets axis limits
             variance_scale = np.sqrt(eigvals)
             scaled_loadings = loadings[:, :2] * variance_scale
-            self.set_biplot_axis_limits(scaled_loadings, top_idx)
+            self.set_biplot_axis_limits(scaled_loadings, top_idx, ax)
+
 
             # Creates biplot arrows and arrow text
-            self.add_biplot_arrows(top_feat, top_idx, feat_names, magnitudes, scaled_loadings)
+            self.add_biplot_arrows(top_idx, feat_names, scaled_loadings, color_map, ax)
+
 
             # Creates Scatter Plot
-            self.app_state.ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
+            ax.scatter(scores[:, 0], scores[:, 1], alpha=0.2, color='gray', s=30, label='Samples')
         except Exception as e:
             traceback.print_exc()
             messagebox.showerror("Error", f"An error occures while generating the biplot: {e}")
             return
         
         # Updates the figure on the GUI
-        self.app_state.main.update_figure()
+        main = app_state.main
+        if user_mapping_enabled and app_state.feat_group_enabled.get():
+            main.replace_status_text("No Feature Grouping Loaded! Generic Biplot Generated")
+        else:
+            main.replace_status_text("Biplot Sucsessfully Generated")
 
-    def init_biplot_fig(self, variance, num_feat):
+        main.update_figure()
+
+    def init_biplot_fig(self, variance, num_feat, app_state: AppState):
         """
         Intializes a blank biplot with title and labels
 
@@ -314,25 +320,28 @@ class PlotBox(tk.Frame):
             True if the initialization was successful and False if an exception occured
         """
         # Generates a new blank figure
-        self.app_state.main.create_blank_fig()
+        main = app_state.main
+        main.create_blank_fig()        
+        ax = app_state.ax
+        
         try:
             # Adds title and labels to the figure
-            self.app_state.ax.set_title(f"Biplot with Top {num_feat} Significant Features")
-            self.app_state.ax.set_xlabel(f"PC1 ({variance[0]:.1%} explained var.)")
-            self.app_state.ax.set_ylabel(f"PC2 ({variance[1]:.1%} explained var.)")
+            ax.set_title(f"Biplot with Top {num_feat} Significant Features")
+            ax.set_xlabel(f"PC1 ({variance[0]:.1%} explained var.)")
+            ax.set_ylabel(f"PC2 ({variance[1]:.1%} explained var.)")
 
             # Set grid appearance and aspect ratio
-            self.app_state.ax.grid(True, linestyle='--', alpha=0.3)
-            self.app_state.ax.set_aspect('equal', adjustable='box')
+            ax.grid(True, linestyle='--', alpha=0.3)
+            ax.set_aspect('equal', adjustable='box')
 
             # Sets the background color of the plot
-            self.app_state.ax.set_facecolor('#f8f9fa')
+            ax.set_facecolor('#f8f9fa')
             return True
         except Exception as e:
             traceback.print_exc()
             return False
 
-    def set_biplot_axis_limits(self, scaled_loadings, top_idx):
+    def set_biplot_axis_limits(self, scaled_loadings, top_idx, ax):
         """
         Sets the figure axis limits for a biplot
 
@@ -348,10 +357,10 @@ class PlotBox(tk.Frame):
         margin = 0.2 * max(x_max - x_min, y_max - y_min)
 
         # Uses the x-y value range and margin to set the x and y axis limits
-        self.app_state.ax.set_xlim(x_min - margin, x_max + margin)
-        self.app_state.ax.set_ylim(y_min - margin, y_max + margin)
+        ax.set_xlim(x_min - margin, x_max + margin)
+        ax.set_ylim(y_min - margin, y_max + margin)
 
-    def add_biplot_arrows(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings):
+    def add_biplot_arrows(self, top_idx, feat_names, scaled_loadings, color_map, ax):
         """
         Adds arrows and arrow text to a biplot
         
@@ -359,33 +368,18 @@ class PlotBox(tk.Frame):
             top_feat:  List of the top PCA features
             top_idx:   List of the indexes of the top PCA features
             feat_names: List of all the PCA feature Names
-            magnitudes: List of all the PCA feature magnitudes
             scaled_loadings:   List of all the PCA loadings
         """
-        # List for holding generated text objects for the plot
-        texts = []
-
-        # Gets the color mapping for the biplot
-        color_map = self.get_color_mapping(top_feat)
-
         # Use the color mapping to add arrows to the plot
         for idx in top_idx:
             feature = feat_names[idx]
-            magnitude = magnitudes[idx]
-
-            # Skip if magnitude isn't large enough
-            if magnitude < 0.2:
-                continue
             
-            # Get feature color
-            if self.app_state.feat_group_enable.get() and feature in self.app_state.feat_group_map.keys():
-                group = self.app_state.feat_group_map[feature]
-                color = color_map.get(group)
-            else:
-                color = color_map.get(feature)
+            # Get feature group and group color
+            group = self.app_state.feat_group_map[feature]
+            color = color_map.get(group)
 
             # Generate arrow
-            self.app_state.ax.quiver(
+            ax.quiver(
                 0, 0,
                 scaled_loadings[idx, 0],
                 scaled_loadings[idx, 1],
@@ -398,47 +392,15 @@ class PlotBox(tk.Frame):
                 headwidth=3,
                 headlength=5
             )
-            
-            # Gets text distance from user Entry
-            text_dist = self.app_state.text_dist.get()
-
-            # Generates text for the plot and adds it to the list of texts
-            text = self.app_state.ax.text(
-                scaled_loadings[idx, 0] * text_dist,
-                scaled_loadings[idx, 1] * text_dist,
-                feature,
-                fontsize=10,
-                color=color,
-                ha='center',
-                va='center'
-            )
-            texts.append(text)
-
-        # Settings to control the text around arrows on the plot?
-        adjust_text(
-            texts,
-            arrowprops=dict(
-                arrowstyle='->',
-                color='gray',
-                alpha=0.5,
-                lw=0.5,
-                shrinkA=10,  # Moves arrowhead away from text
-                shrinkB=10  # Moves arrow tail away from origin
-            ),
-            force_text=1.5,  # Increased repulsion force to avoid overlaps
-            force_points=0.8,  # Avoid overlapping with points
-            expand_text=(1.5, 1.5),  # More spacing between labels
-            expand_points=(1.2, 1.2),  # Ensure spacing from points
-            lim=500  # Higher limit for iterations if overlaps persist
-        )
 
 
     #### 4. Create Interactive Biplot ####
 
     def create_interactive_biplot(self):
         """Creates an interactive biplot visualization and opens it in users webbrowser"""
+        app_state = self.app_state
         # Runs PCA analysis and gets relavent values
-        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data()
+        __, loadings, variance, eigvals, feat_names, top_idx, top_feat, magnitudes, __ = self.validate_biplot_data(app_state)
 
         try:
             # Intializes figure
@@ -447,7 +409,8 @@ class PlotBox(tk.Frame):
             # Sets axis limits
             variance_scale = np.sqrt(eigvals)
             scaled_loadings = loadings[:, :2] * variance_scale
-            self.add_interactive_biplot_groups(top_feat, top_idx, feat_names, magnitudes, scaled_loadings, fig)
+            color_map, user_mapping_enabled = self.get_color_mapping(top_feat, app_state)
+            self.add_interactive_biplot_groups(top_idx, feat_names, scaled_loadings, magnitudes, color_map, fig, app_state.feat_group_map)
 
             #Add interactivity to figure
             fig.update_layout(
@@ -468,16 +431,6 @@ class PlotBox(tk.Frame):
                     "xanchor": "left",
                     "yanchor": "top"
                 }],
-                sliders=[{
-                    "steps": [
-                        dict(
-                            method="update",
-                            args=[{"visible": [abs(magnitudes[i]) > t for i in range(len(top_idx))]}],
-                            label=f"{t:.1f}"
-                        ) for t in np.linspace(0, 1, 10)
-                    ],
-                    "currentvalue": {"prefix": "Significance Threshold: "}
-                }]
             )
             fig.update_layout(
                 title=f"Interactive Biplot with Top {self.app_state.num_feat.get()} Significant Features",
@@ -500,11 +453,11 @@ class PlotBox(tk.Frame):
             return
         
         # Save plot, opens it in users browser, and shows success message
-        file_name = file_ops.save_interactive_plot(fig, self.app_state.output_dir)
+        file_name = file_ops.save_interactive_plot(fig, app_state.output_dir)
         if file_name is not None:
-            messagebox.showinfo("Sucess", f"Interactive pca plot sucessfully created: {file_name}")
-
-    def add_interactive_biplot_groups(self, top_feat, top_idx, feat_names, magnitudes, scaled_loadings, fig):
+            app_state.main.replace_status_text("Interactive Biplot Sucsessfully Generated")
+    
+    def add_interactive_biplot_groups(self, top_idx, feat_names, scaled_loadings, magnitudes, color_map, fig, feat_group_map):
         """
         Adds biplot groupings to an interactive biplot
 
@@ -512,13 +465,9 @@ class PlotBox(tk.Frame):
             top_feat:  List of the top PCA features
             top_idx:   List of the indexes of the top PCA features
             feat_names: List of all the PCA feature Names
-            magnitudes: List of all the PCA feature magnitudes
             scaled_loadings:   List of all the PCA loadings
             fig:    The figure to generate the biplot groupings on
         """
-        # Gets the color mapping for the biplot
-        color_map = self.get_color_mapping(top_feat)
-
         # Set for holding legend groups to avoid duplicate legend entries
         legend_groups = set()
 
@@ -526,17 +475,9 @@ class PlotBox(tk.Frame):
             feature = feat_names[idx]
             magnitude = magnitudes[idx]
 
-            # Skip if magnitude isn't large enough
-            if magnitude < 0.2:
-                continue
-
             # Get feature color
-            if self.app_state.feat_group_enable.get():
-                group = self.app_state.feat_group_map.get(feature)
-                color = color_map.get(group)
-            else:
-                group = feature
-                color = color_map.get(feature)
+            group = feat_group_map.get(feature)
+            color = color_map.get(group)
 
             # Only show legend for the group once; check if it's already been shown
             showlegend = group not in legend_groups
@@ -565,25 +506,26 @@ class PlotBox(tk.Frame):
 
     def create_top_n_feat_plot(self):
         """Creates a plot showing the top feature loadings of the selected PCA component and Update the GUI plot"""
-        if not self.app_state.df_cleaned.get():
+        app_state = self.app_state
+        main = app_state.main
+        if not app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
             return
         
         # Ensures PCA has been run
-        self.app_state.main.run_analysis()
+        pca_results = main.run_analysis()
 
         # Get top N features from user input
-        top_n = self.app_state.num_feat.get()
-        pca_comp_num = self.app_state.focused_pca_num.get()-1
+        top_n = app_state.num_feat.get()
+        pca_comp_num = app_state.focused_pca_num.get()-1
 
         # Intialize the plot
-        if not self.init_top_feat_plot(top_n, pca_comp_num):
-            messagebox.showerror("Error", "Error occured while attemping to initialize the new figure")
-            return
+        if not self.init_top_feat_plot(top_n, pca_comp_num+1, app_state): return
+        ax = app_state.ax
         
         # Validate and retrieve loadings
-        loadings = abs(self.app_state.pca_results['components'][pca_comp_num])
-        feat_names = self.app_state.pca_results['feature_names']
+        loadings = abs(pca_results['components'][pca_comp_num])
+        feat_names = pca_results['feature_names']
         
         # Sorting the loadings
         sorted_pairs = sorted(zip(feat_names, loadings), key=lambda x: abs(x[1]), reverse=True)
@@ -593,7 +535,7 @@ class PlotBox(tk.Frame):
         
         try:
             # Plot top feature loadings
-            self.app_state.ax.barh(
+            ax.barh(
                 sorted_loadings[:top_n],
                 sorted_feat_names[:top_n],
                 color='steelblue',
@@ -605,10 +547,10 @@ class PlotBox(tk.Frame):
             return
         
         # Updates the figure on the GUI
-        self.app_state.main.update_figure()
-        messagebox.showinfo("Success", f"Top {top_n} feature loadings plotted successfully!")
+        main.replace_status_text("Top Feature Plot Sucessfully Generated")
+        main.update_figure()
 
-    def init_top_feat_plot(self, top_n, pca_num):
+    def init_top_feat_plot(self, top_n, pca_num, app_state):
         """
         Intializes a blank top feature plot with title and labels
         
@@ -618,38 +560,173 @@ class PlotBox(tk.Frame):
         Returns:
             True if the initialization was successful and False if an exception occured
         """
+        main = app_state.main
         # Generates a new blank figure
-        self.app_state.main.create_blank_fig(grid=False)
+        main.create_blank_fig(grid=False)
+        ax = app_state.ax
         try:
             # Adds title and labels to the figure
-            self.app_state.ax.set_title(f"Top {top_n} Features - PCA{pca_num} Absolute Loadings", fontsize=14)
-            self.app_state.ax.set_xlabel(f"PCA{pca_num} Absolute Loadings", fontsize=12)
-            self.app_state.ax.set_ylabel("Features", fontsize=12)
+            ax.set_title(f"Top {top_n} Features - PCA{pca_num} Absolute Loadings", fontsize=14)
+            ax.set_xlabel(f"PCA{pca_num} Absolute Loadings", fontsize=12)
+            ax.set_ylabel("Features", fontsize=12)
 
             # Sets the x and y axis variable sizes and rotation, to ensure labels fit on plot
-            self.app_state.ax.tick_params(axis='x', labelsize=10)
-            self.app_state.ax.tick_params(axis='y', labelsize=10, rotation=45)
+            ax.tick_params(axis='x', labelsize=10)
+            ax.tick_params(axis='y', labelsize=10, rotation=45)
             return True
         except Exception as e:
             traceback.print_exc()
             return False
-    
- 
-    #### 6. Data Functions ####
 
-    def validate_biplot_data(self):
-        """Runs PCA analysis and gets important pca results"""
-        # Validates required input data
+
+    #### 6. Create Heatmap ####
+
+    def create_heatmap_fig(self):
+        """
+        Plot loadings heatmap using user-selected mode.
+        
+        Creates a heatmap using the top number of features selected or custom features.
+            Shows the number of PCA components selected, and sorts the features by absolute 
+            loadings of the selected PCA component to analize
+        """
+        app_state = self.app_state
+        main = app_state.main
         if not self.app_state.df_cleaned.get():
             messagebox.showerror("Error", "Data must be cleaned first!")
-            return False
-        if self.app_state.feat_group_enable.get() and self.app_state.feat_group_map is None:
-            messagebox.showerror("Error", "Feature Groups is enabled, but a feature group has not been uploaded!")
-            return False
+            return
+        
+        try:
+            # Ensures PCA has been run
+            main.run_analysis()
+
+            # Creates a new blank figure
+            __, ax  = main.create_blank_fig(grid=False)
+
+            # Adds a title and x and y label 
+            ax.set_title('Loadings Heatmap', fontsize=16)
+            ax.set_xlabel('Principal Components', fontsize=14)
+            ax.set_ylabel('Features', fontsize=14)
+
+            # Sets tick parameters to fit on ax
+            ax.tick_params(axis='x', labelsize=12)
+            ax.tick_params(axis='y', labelsize=10)
+
+            # Determine focus columns
+            focus_columns = self.get_focus_cols(app_state)
+
+            if focus_columns is None:
+                return
+
+            # Update the heatmap figure
+            self.display_loadings_heatmap(
+                loadings=loadings,
+                data_columns=app_state.df.columns.tolist(),
+                focus_columns=focus_columns,
+                cmap="coolwarm"
+            )
+
+            # Ensure that the GUI updates
+            main.replace_status_text("Heatmap Sucessfully Generated")
+            main.update_figure()
+
+        except Exception as e:
+            error_str = traceback.print_exc()  # Keep detailed error tracking
+            print(error_str)
+            messagebox.showerror("Error", f"Error creating heatmap: {str(e)}")
+
+    def get_focus_cols(self, app_state):
+        """Determine columns to focus on based on heatmap mode."""
+        # Get user Settings
+        df = app_state.df
+        focused_pca_num = app_state.focused_pca_num.get()-1
+        heatmap_feats = app_state.heatmap_feat.get().strip().split(',')
+        num_feat = app_state.num_feat.get()
+        main = app_state.main
+
+        try:
+            # Get the column and loadings data
+            df_cols = df.columns.tolist()
+            loadings = abs(app_state.pca_results['loadings'])
+
+            # Get absolute loadings for the first principal component
+            pc1_loadings = abs(loadings[:,focused_pca_num])
+            loading_series = pd.Series(pc1_loadings, index=df_cols)
+            sorted_columns = loading_series.sort_values(ascending=False).index.tolist()
+
+            target_feats = set([feat.strip() for feat in  heatmap_feats if feat.strip()])
+            # Returns the top Features if the target is empty
+            if not target_feats:
+                return sorted_columns[:]
+            else:
+                # Gets the focused columns and missing columns
+                df_feats = set(df.columns)
+                focus_feats = target_feats & df_feats
+                missing_feat = target_feats - focus_feats
+
+                # If there are missing features, infom the user by updating the status
+                if len(missing_feat) != 0:
+                    main.replace_status_text(f"Heatmap Failed! Selected Features Not Found In Data!")
+                    main.replace_pca_text(f"Missing Features:\t{[feat for feat in missing_feat]}")
+                
+                return_list = [feat for feat in focus_feats]
+
+            return return_list or None
+        except Exception as e:
+            messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
+            return None
+
+    def display_loadings_heatmap(self, loadings, data_columns, app_state: AppState, focus_columns=None, cmap='viridis'):
+        """
+        Display a heatmap of loadings with improved design.
+
+        Args:
+            loadings: PCA loadings matrix.
+            data_columns: List of all data column names.
+            focus_columns: List of columns to focus on. Defaults to None.
+            cmap: Colormap to use for the heatmap.
+        """
+        ax = app_state.ax
+
+        if focus_columns is None:
+            focus_columns = data_columns  # Default to all columns if none specified
+
+        # Select only the relevant rows from the loadings matrix
+        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
+
+        # Create the heatmap
+        plt.figure(app_state.fig_size[0])  # Increase figure size for clarity
+        sns.heatmap(
+            selected_loadings,
+            annot=True,  # Add annotations to cells
+            fmt=".2f",  # Format numbers
+            cmap=cmap,  # Use perceptually uniform colormap
+            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
+            xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
+            yticklabels=focus_columns,
+            ax=ax
+        )
+
+        # Adds a title and x and y label
+        ax.set_title('Loadings Heatmap', fontsize=16)
+        ax.set_xlabel('Principal Components', fontsize=14)
+        ax.set_ylabel('Features', fontsize=14)
+        # Sets axis lablel size
+        ax.tick_params(axis='x', labelsize=12)
+        ax.tick_params(axis='y', labelsize=10)
+
+ 
+    #### 7. Data Functions ####
+
+    def validate_biplot_data(self, app_state: AppState):
+        """Runs PCA analysis and gets important pca results"""
+        # Validates required input data
+        if not app_state.df_cleaned.get():
+            messagebox.showerror("Error", "Data must be cleaned first!")
+            raise AttributeError("No data to Validate")
 
         # Ensure that PCA has been run and get results
-        self.app_state.main.run_analysis()
-        pca_results = self.app_state.pca_results
+        app_state.main.run_analysis()
+        pca_results = app_state.pca_results
         
         # Grab important results
         scores = pca_results['transformed_data']
@@ -661,16 +738,16 @@ class PlotBox(tk.Frame):
         eigenvals = variance[:2]
 
         # Gets Users number of PCA results
-        num_feat = self.app_state.num_feat.get()
+        num_feat = app_state.num_feat.get()
 
         # Calculates PCA magnitudes and gets top indexes and features
         magnitudes = np.sqrt(loadings[:, 0] ** 2 + loadings[:, 1] ** 2)
         top_idx = np.argsort(magnitudes)[::-1][:num_feat]
-        top_feat = self.app_state.df.columns[top_idx]
+        top_feat = app_state.df.columns[top_idx]
 
         return scores, loadings, variance, eigenvals, feat_names, top_idx, top_feat, magnitudes, num_feat
     
-    def get_color_mapping(self, features):
+    def get_color_mapping(self, features, app_state: AppState):
         """
         Creates a color mapping for biplot groups or features
 
@@ -689,74 +766,40 @@ class PlotBox(tk.Frame):
                     if feature gouping is disabled and no top_features are provided
             ValueError: If the number of features/groups without predefined colors is greater then 20
         """
-        # Get the current color palette
-        color_palette = COLOR_PALETTES[self.app_state.selected_palette.get()]
-        # Color Mapping if a feature grouping is enables
-        if self.app_state.feat_group_enable.get():
-            # Show error and return if a mapping hasn't been loaded
-            if self.app_state.feat_group_map is None:
-                messagebox.showerror("Mapping Error", "Feature grouping is enabled, but a feature group map hasn't been loaded")
-                raise AttributeError("Mapping error, feature grouping is enabled, but no feature map found")
-
-            # Get the groups from the loaded mapping and seperate it into groups with an already
-            #   defined color and groups without
-            predifined_groups = set()
-            undefined_groups = set()
-            for feat in features:
-                if feat in self.app_state.feat_group_map.keys():
-                    predifined_groups.add(self.app_state.feat_group_map[feat])
-                else:
-                    undefined_groups.add(feat)
-
-            # Map predefined colors to a group
-            color_group_map = {}
-            for group in predifined_groups:
-                color_group_map[group] = color_palette[group]
-
-            # Map undefined colors to the group
-            color_group_map.update(self.map_generic_colors(undefined_groups))
-
-            return color_group_map
+        # Get User Selection
+        grouping_enabled = app_state.feat_group_enabled.get()
+        group_map = app_state.feat_group_map
         
-        # Color Mapping without feature grouping
-        else:
-            if len(features) == 0:
-                raise AttributeError("No features have been provided")
-            return self.map_generic_colors(features)
-            
-    def map_generic_colors(self, feat):
-        """
-        Generates a generic color map
-        
-        Uses tab10 color blind friendly colors if possible, otherwise uses tab20 colors.
-            Maps the features to unique colors
+        # Disable Grouping if no Group-Map is uploaded
+        grouping_enabled = grouping_enabled and len(group_map) != 0
 
-        Args:
-            feat: The features to be color mapped
-        
-        Returns:
-            A dictionary with the features as keys and the mapped colors as values
-        
-        Raises:
-            ValueError: If the number of features is greater then 20
-        """
-        # Parameter Validation
-        if (len(feat) > 20):
-            messagebox.showerror("Mapping Error", f"{len(feat)} groups without predfined colors where requested, but only 20 colors are available")
-            raise ValueError("Mapping Error, not enough colors available for requested groups")
-        
-        # Color blind friendly colors used if possible       
-        if 10 >= len(feat):
-            colors = [to_hex(c) for c in plt.get_cmap('tab10').colors]
-        else:
-            # Non-color blind friendly pallet if needed
+        # Find all unique groups in the features
+        feat_groups = set()
+        for feat in features:
+            # Get the feature group from the group_map
+            if grouping_enabled and feat in group_map.keys():
+                feat_groups.add(group_map[feat])
+            # Add the feature as a unique group to the group_map and add it to the feat_groups
+            else:
+                group_map[feat] = feat
+                feat_groups.add(feat)
+
+        # Gets the most appropriate color map
+        if (len(feat_groups) > 20):
+            messagebox.showerror("Mapping Error", f"{len(feat_groups)} groups without predfined colors where requested, but only 20 colors are available")
+            raise ValueError("Mapping Error, not enough colors available for requested groups")  
+        elif len(feat) > 10:
             colors = [to_hex(c) for c in plt.get_cmap('tab20').colors]
-        # Map newly generated colors to a group
+        else:
+            colors = [to_hex(c) for c in plt.get_cmap('tab10').colors]
+        
+        # Map Groups to colors
         color_group_map = {}
-        for group, color in zip(feat, colors):
+        for group, color in zip(feat_groups, colors):
                 color_group_map[group] = color
-        return color_group_map
-
-
+        
+        return color_group_map, grouping_enabled
+            
+    
 
 

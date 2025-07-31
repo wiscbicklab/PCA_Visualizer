@@ -14,7 +14,6 @@ def load_csv_file():
 
     # Ensures the user selected an appropriate file
     if not file_path:
-        messagebox.showerror("File Error", "No file was selected. File loadings aborted!")
         return None
     if not file_path.lower().endswith(".csv"):
         messagebox.showerror("File Error", f"You selected: {file_path}\nYou must select a .csv file instead!")
@@ -104,11 +103,44 @@ def save_interactive_plot(fig, output_dir):
         # Open the file in the users webrowser
         webbrowser.open(f'file://{os.path.abspath(save_path)}')
     except Exception as e:
-        messagebox.showerror(
-            "File Error",
-            f"An error occured attempting to save and open the interactive biplot.\t{e}"
-        )
+        messagebox.showerror("File Error", f"An error occured attempting to save and open the interactive biplot.\t{e}")
         return None
 
     messagebox.showinfo("Plot Saved", f"Plot Sucsessfully Saved at {save_path}")
     return save_path
+
+def save_data_csv(df: pd.DataFrame, output_dir):
+    """
+    Saves a pandas dataframe as a csv and shows a message regaurding the save status
+    
+    Args:
+        df: A pd.DataFrame to be saved to a file
+        output_dir: The directory where the data file should be stored
+
+    Returns:
+        The full path to where the file is saved or None if the file doesn't save properly
+    """
+    # Creates the output path if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Create file_name and save_path
+    time_stamp = time.strftime("%Y%m%d-%H%M%S")
+    filename = f"Program_Data_{time_stamp}.csv"
+    save_path = os.path.join(output_dir, filename)
+
+
+    try:
+        df.to_csv(save_path, index=False)
+    except Exception as e:
+        messagebox.showerror("Save Error", "An error occured while attempting to save the current program data")
+        return None
+    
+    messagebox.showinfo("Data Saved", f"The current program data has been saved to {save_path}")
+    return save_path
+    
+
+
+
+
+

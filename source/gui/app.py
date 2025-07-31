@@ -1,28 +1,23 @@
-import os
-import time
+import platform
 import tkinter as tk
 from tkinter import VERTICAL, Scrollbar, filedialog, messagebox
 
 from matplotlib import pyplot as plt
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import matplotlib.cm as cm
-import matplotlib.colors as mcolors
 from matplotlib.figure import Figure
 
+import screeninfo
 
 # Core functionality imports
 from source.analysis.pca import PCAAnalyzer
 from source.utils.constant import *
 
 # Components Imports
-from source.gui.load_clean_file_box import CleanFileBox
+from source.gui.clean_data_box import CleanDataBox
 from source.gui.setting_box import SettingBox
-from source.gui.plot_box import PlotBox
-from source.gui.heatmap_box import HeatmapBox
+from source.gui.create_plot_box import CreatePlotBox
 from source.gui.app_state  import AppState
 import source.utils.file_operations as file_ops
-
-import traceback
 
 
 class PCAAnalysisApp(tk.Tk):
@@ -37,7 +32,9 @@ class PCAAnalysisApp(tk.Tk):
         # Sets up the window, and creates a way to track the app state
         super().__init__()
         self.app_state = AppState(self)
-        self.setup_window()
+        
+        self.title("PCA Analysis Tool")
+        self.configure(bg="#f5f5f5")
 
         # Object for running PCA analysis
         self.pca_analyzer = PCAAnalyzer()
@@ -49,46 +46,28 @@ class PCAAnalysisApp(tk.Tk):
         self.options_frame = None
 
         # Declare the custom component
-        self.load_clean_file_box = None
         self.pca_box = None
-        self.biplot_box = None
-        self.heatmap_box = None
-
-        # Declare color palette selection
-        self.palette_label = None
-        self.palette_menu = None
+        self.plot_box = None
+        self.settings_box = None
 
         # Declare space for the figure to be stored
         self.plot_canvas = None
         self.plot_canvas_figure = None
 
         # Results Section
-        self.data_insight_summary = None
+        self.program_status_lbl = None
+        self.program_status_text = None
+        self.data_text = None
+        self.pca_text = None
 
         # Save Button
-        self.save_button = None
+        self.save_data_bttn = None
+        self.save_plot_bttn = None
 
         # Set up the application
         self.create_components()
         self.setup_layout()
         self.protocol("WM_DELETE_WINDOW", self.on_close)
-
-    def setup_window(self):
-        """
-        Configure the main window.
-            Set the window to fullscreen or to normal, dependent on os
-            Sets a minimum application size
-            Sets a title and background color
-        """
-        self.title("PCA Analysis Tool")
-
-        # Sets state maximized if possible
-        if self.app_state.os_type == "Windows" or self.app_state.os_type == "Darwin":
-            self.state("zoomed")
-        else: self.state('normal')
-
-        self.configure(bg="#f5f5f5")
-        self.minsize(1350, 800)
 
     def create_components(self):
         """Creates the components to be placed onto this tk Frame"""
@@ -97,7 +76,7 @@ class PCAAnalysisApp(tk.Tk):
         self.plot_canvas_figure = self.plot_canvas.get_tk_widget()
 
         # Creates a scrollable window 
-        self.options_canvas = tk.Canvas(self)
+        self.options_canvas = tk.Canvas(self, width=450)
         self.options_scroll = Scrollbar(self, orient=VERTICAL, command=self.options_canvas.yview)
         self.options_canvas.configure(yscrollcommand=self.options_scroll.set)
         self.options_frame = tk.Frame(self.options_canvas, **BG_COLOR)
@@ -133,25 +112,29 @@ class PCAAnalysisApp(tk.Tk):
         )
 
         # Intialize Custom components
-        self.load_clean_file_box = CleanFileBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.pca_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.biplot_box = PlotBox(self.options_frame, self.app_state, **BG_COLOR)
-        self.heatmap_box = HeatmapBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.pca_box = CleanDataBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.plot_box = CreatePlotBox(self.options_frame, self.app_state, **BG_COLOR)
+        self.settings_box = SettingBox(self.options_frame, self.app_state, **BG_COLOR)
 
-        # Color Palette Selection
-        self.palette_label = tk.Label(self.options_frame, text="Select Color Palette:", **LABEL_STYLE)
-        self.palette_menu = tk.OptionMenu(
-            self.options_frame,
-            self.app_state.selected_palette,
-            *COLOR_PALETTES.keys(),
+
+
+        # Text Information Boxes
+        self.program_status_lbl = tk.Label(self, text="Program Status:", **LABEL_STYLE)
+        self.program_status_text = tk.Text(self, height=1, width=48, **LABEL_STYLE)
+        self.program_status_text.insert(tk.END, "Please Load Data!")
+        self.data_text = tk.Text(self, height=15, width=75, **LABEL_STYLE)
+        self.data_text.insert(tk.END, "Information will appear here once data has been loaded!")
+        self.pca_text = tk.Text(self, height=15, width=80, **LABEL_STYLE)
+        self.pca_text.insert(tk.END, "Information will appear once PCA has been run!")
+
+        # Save buttons
+        self.save_data_bttn = tk.Button(
+            self,
+            text="Save Data",
+            **BUTTON_STYLE,
+            command=lambda: file_ops.save_data_csv(self.app_state.df, self.app_state.output_dir)
         )
-        self.app_state.selected_palette.set("Default")
-
-        # Results Section
-        self.data_insight_summary = tk.Text(self, height=15, width=50, **LABEL_STYLE)
-
-        # Save
-        self.save_button = tk.Button(
+        self.save_plot_bttn = tk.Button(
             self,
             text="Save Plot",
             **BUTTON_STYLE,
@@ -167,35 +150,36 @@ class PCAAnalysisApp(tk.Tk):
         self.grid_rowconfigure(3, weight=1)
         self.grid_rowconfigure(4, weight=0)
 
-        self.grid_columnconfigure(0, weight=2)
+        self.grid_columnconfigure(0, weight=0)
         self.grid_columnconfigure(1, weight=0)
         self.grid_columnconfigure(2, weight=1)
         self.grid_columnconfigure(3, weight=1)
+        self.grid_columnconfigure(4, weight=1)
+        self.grid_columnconfigure(5, weight=1)
 
         # Adds plot and scrollable
         self.options_canvas.grid(row=0, column=0, rowspan=5, padx=10, pady=10, sticky="nswe")
         self.options_scroll.grid(row=0, column=1, rowspan=5, sticky="nsew")
-        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
+        self.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
         
         # Sets up custom Components
-        self.load_clean_file_box.grid(row=1, column=0, padx=10, pady=10, sticky="we")
         self.pca_box.grid(row=2, column=0, padx=10, pady=10, sticky="we")
-        self.biplot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
-        self.heatmap_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
-
-        # Feature Grouping Section/ Palette Colors
-        self.palette_label.grid(row=5, column=0, padx=5, pady=5, sticky="w")
-        self.palette_menu.grid(row=5, column=0, padx=5, pady=5, sticky="e")
+        self.plot_box.grid(row=3, column=0, padx=10, pady=10, sticky="we")
+        self.settings_box.grid(row=4, column=0, padx=10, pady=10, sticky="we")
         
         # Results Section
-        self.data_insight_summary.grid(row=3, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
+        self.program_status_lbl.grid(row=3, column=2, padx=5, pady=5, sticky='se')
+        self.program_status_text.grid(row=3, column=3, padx=5, pady=5, sticky='sw')
+        self.data_text.grid(row=4, column=2, columnspan=2, padx=5, pady=5, sticky="nsew")
+        self.pca_text.grid(row=4, column=4, columnspan=2, padx=5, pady=5, sticky="nsew")
 
-        # Save Button
-        self.save_button.grid(row=4, column=2, padx=5, pady=5, sticky="w")
+        # Save Buttons
+        self.save_data_bttn.grid(row=5, column=2, padx=5, pady=5, sticky="w")
+        self.save_plot_bttn.grid(row=5, column=3, padx=5, pady=5, sticky="e")
 
         # Output Directory
-        self.output_dir_label.grid(row=4, column=3, padx=5, pady=5, sticky="w")
-        self.output_dir_button.grid(row=4, column=3, padx=5, pady=5, sticky="e")
+        self.output_dir_label.grid(row=5, column=4, padx=5, pady=5, sticky="e")
+        self.output_dir_button.grid(row=5, column=5, padx=5, pady=5, sticky="e")
 
 
     #### 1. DATA HANDLING METHODS ####
@@ -204,7 +188,9 @@ class PCAAnalysisApp(tk.Tk):
         """Execute PCA analysis."""
         # Skip analysis if data isn't cleaned or if data has not changed
         if not self.app_state.df_cleaned.get() or not self.app_state.df_updated.get():
-            return
+            # Update display
+            text = self.create_pca_text(self.app_state.pca_results)
+            self.replace_pca_text(text)
 
         try:
             # Run analysis and store the result
@@ -214,14 +200,17 @@ class PCAAnalysisApp(tk.Tk):
             )
 
             # Update display
-            self.update_results_display(self.app_state.pca_results)
+            text = self.create_pca_text(self.app_state.pca_results)
+            self.replace_pca_text(text)
 
             # Update df status variables
             self.app_state.df_updated.set(False)
 
+            return self.app_state.pca_results
+
         except ValueError as e:
             print(e.with_traceback)
-            messagebox.showerror("Analysis Error", str(ve))
+            messagebox.showerror("Analysis Error", str(e))
         except Exception as e:
             print(e.with_traceback)
             messagebox.showerror("Error", f"PCA analysis failed: {str(e)}")
@@ -239,45 +228,28 @@ class PCAAnalysisApp(tk.Tk):
     
     #### 4. UI UPDATE METHODS ####
 
-    def update_data_info(self):
-        """Update display with simplified data information."""
-        if self.app_state.df is not None:
-            # Simple, clean formatting
-            info_text = "Data Information\n"
-            info_text += "═══════════════\n\n"
-            info_text += f"Dataset Shape: {self.app_state.df.shape[0]} rows × {self.app_state.df.shape[1]} columns\n\n"
-            info_text += "Columns:\n"
+    def replace_status_text(self, text):
+        """Replaces the text in the program status text widget"""
+        self.program_status_text.delete(1.0, tk.END)
+        self.program_status_text.insert(tk.END, text)
 
-            # Simple column listing
-            columns = self.app_state.df.columns.tolist()
-            for i, col in enumerate(columns, 1):
-                info_text += f"{i}. {col}\n"
+        self.update_figure()
 
-            # Insert the info_text into the GUI widget
-            self.data_insight_summary.delete(1.0, tk.END)
-            self.data_insight_summary.insert(tk.END, info_text)
+    def replace_data_text(self, text):
+        """Replaces the text in the data text widget"""
+        # Insert the info_text into the GUI widget
+        self.data_text.delete(1.0, tk.END)
+        self.data_text.insert(tk.END, text)
 
-            self.update_figure()
+        self.update_figure()
 
-    def update_results_display(self, results: dict):
-        """Update results display with simplified formatting."""
-        # Simple, clean formatting
-        summary = "PCA Analysis Results\n"
-        summary += "══════════════════\n\n"
+    def replace_pca_text(self, text):
+        """Replaces the text in the pca text widget"""
+        self.pca_text.delete(1.0, tk.END)
+        self.pca_text.insert(tk.END, text)
 
-        # Basic Information
-        summary += f"Number of components: {results['n_components']}\n"
-        summary += f"Original shape: {results['original_shape']}\n"
-        summary += f"Prepared shape: {results['prepared_shape']}\n\n"
-
-        # Explained Variance Section
-        summary += "Explained Variance Ratios:\n"
-        for i, var in enumerate(results['explained_variance']):
-            summary += f"PC{i + 1}: {var:.3f}\n"
-
-        # Insert the summary into the GUI widget
-        self.data_insight_summary.delete(1.0, tk.END)
-        self.data_insight_summary.insert(tk.END, summary)
+        self.update_figure()
+    
 
     def update_figure(self):
         # Destroy old canvas
@@ -291,12 +263,15 @@ class PCAAnalysisApp(tk.Tk):
 
         # Get the Tkinter widget and add it to the grid
         self.app_state.main.plot_canvas_figure = self.app_state.main.plot_canvas.get_tk_widget()
-        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=2, padx=10, pady=10, sticky="nw")
+        self.app_state.main.plot_canvas_figure.grid(row=0, column=2, rowspan=3, columnspan=4, padx=10, pady=10, sticky="nw")
 
-    def create_blank_fig(self, grid=True):
-        self.app_state.fig = Figure(self.app_state.fig_size)
-        self.app_state.ax = self.app_state.fig.add_subplot(111)
-        self.app_state.ax.grid(grid)
+    def create_blank_fig(self, grid=True, subplot_shape=111):
+        app_state = self.app_state
+        app_state.fig = fig = Figure(self.app_state.fig_size)
+        app_state.ax = ax = fig.add_subplot(subplot_shape)
+        ax.grid(grid)
+
+        return fig, ax
 
 
     #### 5. EVENT HANDLERS ####
@@ -327,16 +302,72 @@ class PCAAnalysisApp(tk.Tk):
         else:  # Windows/macOS
             self.options_canvas.yview_scroll(-1 * (event.delta // 120), "units")
 
-    def _update_palette_menu_state(self, *args):
-        if self.app_state.feat_group_enable.get():
-            self.palette_menu.config(state="normal")
-        else:
-            self.palette_menu.config(state="disabled")
+
+    #### Text Generation ####
+    def create_pca_text(self, pca_results):
+        # Simple, clean formatting
+        text = "PCA Analysis Results\n"
+        text += "══════════════════\n\n"
+
+        # Basic Information
+        text += f"Number of components: {pca_results['n_components']}\n"
+        text += f"Original shape: {pca_results['original_shape']}\n"
+        text += f"Prepared shape: {pca_results['prepared_shape']}\n\n"
+
+        # Explained Variance Section
+        text_cols = [f"PC{i + 1}: {var:.3f}" for i, var in enumerate(pca_results['explained_variance'])]
+        text += self.format_col_text(text_cols, "Explained Variance Ratios:\t", sep=",\t")
+
+        return text
+    
+    def format_col_text(self, cols, start_text="", line_limit=80, sep=", "):
+        if cols is None or len(cols) == 0:
+            return start_text + "None\n"
         
+        lines = []
+        current_line = start_text
+        for col in cols:
+            item_str = (sep if current_line != start_text else "") + col
+            if len(current_line) + len(item_str) > line_limit:
+                lines.append(current_line)
+                current_line = col
+            else:
+                current_line += item_str
+        if current_line:
+            lines.append(current_line)
+        
+        return "\n".join(lines) + "\n"
+
+
+
+
+
+TASKBAR_HEIGHT = 75 #CHANGES OFFSET LEFT TO AVOID TASKBAR OVERLAP
+TOPBAR_HEIGHT = 50
+
 
 # Start App
 if __name__ == "__main__":   
-        app = PCAAnalysisApp()  
+        app = PCAAnalysisApp()
+
+        os_type = platform.system()
+
+        if os_type == "Windows" or os_type == "Darwin":
+            app.state("zoomed")
+        else: 
+            moniter = screeninfo.get_monitors()[0]
+
+            x = moniter.x
+            y = moniter.y-TOPBAR_HEIGHT
+            w = moniter.width
+            h = moniter.height - TASKBAR_HEIGHT - TOPBAR_HEIGHT
+
+            app.geometry(f"{w}x{h}+{x}+{y}")
+
+        # Prevent window Resizing
+        app.resizable(False, False)
+        app.title("PCA Visualizer")
+
         app.mainloop()
 
 
