@@ -117,7 +117,7 @@ class CreatePlotBox(tk.Frame):
             return  
         
         # Runs PCA Analysis and get important results
-        pca_results = main.run_analysis()
+        pca_results = main.run_analysis(app_state)
         transformed_data = pca_results['transformed_data']
         transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
@@ -195,7 +195,7 @@ class CreatePlotBox(tk.Frame):
             return
 
         # Ensures that pca analysis has been run
-        main.run_analysis()
+        main.run_analysis(app_state)
         
         # Creates a new blank figure without a grid
         main.create_blank_fig(grid=False)
@@ -513,7 +513,7 @@ class CreatePlotBox(tk.Frame):
             return
         
         # Ensures PCA has been run
-        pca_results = main.run_analysis()
+        pca_results = main.run_analysis(app_state)
 
         # Get top N features from user input
         top_n = app_state.num_feat.get()
@@ -597,7 +597,7 @@ class CreatePlotBox(tk.Frame):
         
         try:
             # Ensures PCA has been run
-            main.run_analysis()
+            main.run_analysis(app_state)
 
             # Creates a new blank figure
             __, ax  = main.create_blank_fig(grid=False)
@@ -619,7 +619,7 @@ class CreatePlotBox(tk.Frame):
 
             # Update the heatmap figure
             self.display_loadings_heatmap(
-                loadings=loadings,
+                loadings=app_state.pca_results['loadings'],
                 data_columns=app_state.df.columns.tolist(),
                 focus_columns=focus_columns,
                 cmap="coolwarm"
@@ -725,8 +725,7 @@ class CreatePlotBox(tk.Frame):
             raise AttributeError("No data to Validate")
 
         # Ensure that PCA has been run and get results
-        app_state.main.run_analysis()
-        pca_results = app_state.pca_results
+        pca_results =  app_state.main.run_analysis(app_state)
         
         # Grab important results
         scores = pca_results['transformed_data']

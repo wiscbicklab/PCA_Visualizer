@@ -71,7 +71,7 @@ class CleanDataBox(tk.Frame):
 
         # Creates loading components
         self.load_label =  tk.Label(self, text="Load CSV File:", **LABEL_STYLE)
-        self.load_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=self.load_data)
+        self.load_bttn = tk.Button(self, text="Browse", **BUTTON_STYLE, command=lambda: self.load_data(self.app_state))
         
         # Creates selector components for user input       
         self.missing_selector = MissingSelector(self, self.app_state, bg="#f0f0f0")
@@ -82,7 +82,7 @@ class CleanDataBox(tk.Frame):
         self.drop_entry = tk.Text(self, height=4, **BIG_ENTRY_STYLE)
 
         # Creates button for cleaning user data
-        self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, command=self.clean_data)
+        self.clean_bttn = tk.Button(self, text="Clean CSV", **BUTTON_STYLE, command=lambda: self.clean_data(self.app_state))
  
     def setup_layout(self):
         """Sets the components onto this tk Frame"""
@@ -111,7 +111,7 @@ class CleanDataBox(tk.Frame):
 
     #### 1. Data Handling ####
 
-    def load_data(self):
+    def load_data(self, app_state: AppState):
         """
         Asks user to select a .csv data file and loads the data from the selected file
         
@@ -127,22 +127,23 @@ class CleanDataBox(tk.Frame):
             else:
                 self.app_state.main.replace_status_text("Data File Not Selected: Please Load Data")
             return
-        self.app_state.df = df
-        self.app_state.original_df = df.copy()
+        app_state.df = df
+        app_state.original_df = df.copy()
 
         # Updates df status variables
-        self.app_state.df_updated.set(True)
-        self.app_state.df_cleaned.set(False)
+        app_state.df_updated.set(True)
+        app_state.df_cleaned.set(False)
 
+        main = app_state.main
         # Generate new blank figure
-        self.app_state.main.create_blank_fig()    
+        main.create_blank_fig()    
 
         # Updates the GUI and shows sucess message
-        self.app_state.main.replace_data_text(self.create_load_data_str(df))
-        self.app_state.main.replace_status_text("Data Succsessfully Loaded!")
+        main.replace_data_text(self.create_load_data_str(df))
+        main.replace_status_text("Data Succsessfully Loaded!")
 
 
-    def clean_data(self):
+    def clean_data(self, app_state: AppState):
         """
         Cleans the data based on the user selections in preperation for PCA Analysis
         
@@ -155,11 +156,11 @@ class CleanDataBox(tk.Frame):
         Creates a new blank figure and updates the data info box text 
         """
         # Validates that the data has been loaded
-        if self.app_state.df is None:
+        if app_state.df is None:
             messagebox.showerror("Error", "Data must be loaded before it can be cleaned!")
             return  
         
-        df = self.app_state.df
+        df = app_state.df
 
         # Convert int64 to float for PCA compatibility
         int_cols = df.select_dtypes(include='int64').columns
@@ -233,20 +234,22 @@ class CleanDataBox(tk.Frame):
             df = pd.DataFrame(x_imputed, columns=df.columns)
         
         # Update varibales tracking df status
-        self.app_state.df = df
-        self.app_state.df_updated.set(True)
-        self.app_state.df_cleaned.set(True)
+        app_state.df = df
+        app_state.df_updated.set(True)
+        app_state.df_cleaned.set(True)
 
+
+        main = app_state.main
         # Generate new blank figure
-        self.app_state.main.create_blank_fig()
+        main.create_blank_fig()
 
         # Updates the GUI and shows sucess message
         text = self.create_clean_data_str(df, user_drop_cols, missing_user_drop_cols, non_num_cols)
-        self.app_state.main.replace_data_text(text)
+        main.replace_data_text(text)
         if len(missing_user_drop_cols) == 0:
-            self.app_state.main.replace_status_text("Data Succsessfully Cleaned!")
+            main.replace_status_text("Data Succsessfully Cleaned!")
         else:
-            self.app_state.main.replace_status_text("Data Partially Cleaned! Check data section")
+            main.replace_status_text("Data Partially Cleaned! Check data section")
         
 
     #### 2. Generate Information Strings ####

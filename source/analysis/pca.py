@@ -191,7 +191,6 @@ class PCAAnalyzer:
 
             # Run PCA
             results = self.run_pca(standardized_data, n_components)
-
             # Add additional context to results
             results.update({
                 'missing_columns': missing_cols,
