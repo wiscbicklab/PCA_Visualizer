@@ -621,6 +621,7 @@ class CreatePlotBox(tk.Frame):
             self.display_loadings_heatmap(
                 loadings=app_state.pca_results['loadings'],
                 data_columns=app_state.df.columns.tolist(),
+                app_state=app_state,
                 focus_columns=focus_columns,
                 cmap="coolwarm"
             )
