@@ -191,15 +191,15 @@ class SettingBox(tk.Frame):
 
     #### 1. EVENT HANDLERS ####
 
-    def _on_entry_num_pca_comp(self):
+    def _on_entry_num_pca_comp(self, event):
         """Command for saving the value in num_pca_comp"""
         self.last_num_pca_comp = self.num_pca_comp_entry.get()
 
-    def _on_entry_top_n(self):
+    def _on_entry_top_n(self, event):
         """Command for saving the value in top_n"""
         self.last_top_n = self.top_n_entry.get()
 
-    def _on_entry_pca_num(self):
+    def _on_entry_pca_num(self, event):
         """Command for saving the value in pca_num"""
         self.last_pca_num = self.pca_num_entry.get()
 
