@@ -320,7 +320,7 @@ class PCAAnalysisApp(tk.Tk):
 
             # Data in PCA space
             text += "Data after Analysis\n"
-            text += f"PCA Components: {len(pca_results['components'][1])}\n"
+            text += f"PCA Components: {len(pca_results['components'])}\n"
 
             # Explained Variance Section
             text_cols = [f"PC{i + 1}: {var:.3f}" for i, var in enumerate(pca_results['explained_variance'])]
