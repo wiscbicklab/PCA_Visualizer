@@ -184,29 +184,30 @@ class PCAAnalysisApp(tk.Tk):
 
     #### 1. DATA HANDLING METHODS ####
 
-    def run_analysis(self):
+    def run_analysis(self, app_state: AppState):
         """Execute PCA analysis."""
+        main = app_state.main
         # Skip analysis if data isn't cleaned or if data has not changed
-        if not self.app_state.df_cleaned.get() or not self.app_state.df_updated.get():
+        if not app_state.df_cleaned.get() or not app_state.df_updated.get():
             # Update display
-            text = self.create_pca_text(self.app_state.pca_results)
-            self.replace_pca_text(text)
+            text = main.create_pca_text(app_state.pca_results)
+            main.replace_pca_text(text)
+            return app_state.pca_results
 
         try:
             # Run analysis and store the result
-            self.app_state.pca_results = self.pca_analyzer.analyze(
-                df=self.app_state.df,
-                n_components=self.app_state.num_pca_comp.get(),
+            app_state.pca_results = pca_results =  self.pca_analyzer.analyze(
+                df=app_state.df,
+                n_components=app_state.num_pca_comp.get(),
             )
 
             # Update display
-            text = self.create_pca_text(self.app_state.pca_results)
-            self.replace_pca_text(text)
+            text = main.create_pca_text(pca_results)
+            main.replace_pca_text(text)
 
             # Update df status variables
-            self.app_state.df_updated.set(False)
-
-            return self.app_state.pca_results
+            app_state.df_updated.set(False)
+            return pca_results
 
         except ValueError as e:
             print(e.with_traceback)
@@ -305,20 +306,43 @@ class PCAAnalysisApp(tk.Tk):
 
     #### Text Generation ####
     def create_pca_text(self, pca_results):
-        # Simple, clean formatting
-        text = "PCA Analysis Results\n"
-        text += "══════════════════\n\n"
+        try:
+            # Simple, clean formatting
+            text = "PCA Analysis Results\n"
+            text += "═══════════════════════════════════════\n\n"
 
-        # Basic Information
-        text += f"Number of components: {pca_results['n_components']}\n"
-        text += f"Original shape: {pca_results['original_shape']}\n"
-        text += f"Prepared shape: {pca_results['prepared_shape']}\n\n"
+            # Data Information
+            text += "Data Before Analysis\n"
+            text += f"Shape: {pca_results['original_shape']}\n"
+            text += f"Features: {len(pca_results['feature_names'])}\n"
+            text += f"Observations: {pca_results['original_shape'][0]}\n"
+            text += "═══════════════════════════════════════\n\n"
 
-        # Explained Variance Section
-        text_cols = [f"PC{i + 1}: {var:.3f}" for i, var in enumerate(pca_results['explained_variance'])]
-        text += self.format_col_text(text_cols, "Explained Variance Ratios:\t", sep=",\t")
+            # Data in PCA space
+            text += "Data after Analysis\n"
+            text += f"PCA Components: {len(pca_results['components'][1])}\n"
 
-        return text
+            # Explained Variance Section
+            text_cols = [f"PC{i + 1}: {var:.3f}" for i, var in enumerate(pca_results['explained_variance'])]
+            text += self.format_col_text(text_cols, "Explained Variance Ratios:\t", sep=",\t")
+
+            # Cumulative Variance Section
+            cumulative_variance = pca_results['explained_variance'].cumsum()
+            text_cols = [f"PC{i + 1}: {cum_var:.3f}" for i, cum_var in enumerate(cumulative_variance)]
+            text += self.format_col_text(text_cols, "Cumulative Variance:\t", sep=",\t")
+
+            # Seperator
+            text += "═══════════════════════════════════════\n\n"
+
+            # Eigen Vector Section
+            eigen_vectors = pca_results['components']
+            text_rows = [f"EigenVector{i + 1}:\n {eig_vect}\n" for i, eig_vect in enumerate(eigen_vectors)]
+            for row in text_rows:
+                text += row
+
+            return text
+        except Exception:
+            return "PCA TEXT CREATION FAILED"
     
     def format_col_text(self, cols, start_text="", line_limit=80, sep=", "):
         if cols is None or len(cols) == 0:

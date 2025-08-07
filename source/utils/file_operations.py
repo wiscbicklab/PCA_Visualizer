@@ -37,7 +37,7 @@ def load_csv_file():
         
 def save_plot(fig, output_dir):
         """
-        Saves a figure as a png image
+        Saves a figure as a png and an svg image file.
         
         Finds or creates the ouput_dir and save the figure there using a time stamped name.
             Shows an error message if the file could not be saved.
@@ -55,20 +55,23 @@ def save_plot(fig, output_dir):
 
         # Creates a file_name and save_path
         timestamp = time.strftime("%Y%m%d-%H%M%S")
-        plot_filename = f'plot_{timestamp}.png'
-        save_path = os.path.join(output_dir, plot_filename)
+        png_filename = f'plot_{timestamp}.png'
+        svg_filename = f'plot_{timestamp}.svg'
+        png_save_path = os.path.join(output_dir, png_filename)
+        svg_save_path = os.path.join(output_dir, svg_filename)
 
         # Saves the figure to the save_path
         try:
-            fig.savefig(save_path)
+            fig.savefig(png_save_path, format="png")
+            fig.savefig(svg_save_path, format="svg")
         except Exception as e:
             messagebox.showerror(
                 "File Error",
                 f"An error occured attempting to save the figure.\t{e}"
             )
             return None
-        messagebox.showinfo("Plot Saved", f"Plot Sucsessfully Saved at {save_path}")
-        return save_path
+        messagebox.showinfo("Plot Saved", f"Plot Sucsessfully Saved at {png_save_path} and {svg_save_path}")
+        return png_save_path, svg_save_path
 
 def save_interactive_plot(fig, output_dir):
     """

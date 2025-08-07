@@ -117,7 +117,7 @@ class CreatePlotBox(tk.Frame):
             return  
         
         # Runs PCA Analysis and get important results
-        pca_results = main.run_analysis()
+        pca_results = main.run_analysis(app_state)
         transformed_data = pca_results['transformed_data']
         transformed_cols = [f'PC{i + 1}' for i in range(transformed_data.shape[1])]
         transformed_df = pd.DataFrame(transformed_data, columns=transformed_cols)
@@ -195,7 +195,7 @@ class CreatePlotBox(tk.Frame):
             return
 
         # Ensures that pca analysis has been run
-        main.run_analysis()
+        main.run_analysis(app_state)
         
         # Creates a new blank figure without a grid
         main.create_blank_fig(grid=False)
@@ -513,7 +513,7 @@ class CreatePlotBox(tk.Frame):
             return
         
         # Ensures PCA has been run
-        pca_results = main.run_analysis()
+        pca_results = main.run_analysis(app_state)
 
         # Get top N features from user input
         top_n = app_state.num_feat.get()
@@ -597,7 +597,7 @@ class CreatePlotBox(tk.Frame):
         
         try:
             # Ensures PCA has been run
-            pca_results = main.run_analysis()
+            pca_results = main.run_analysis(app_state)
 
             # Creates a new blank figure
             __, ax  = main.create_blank_fig(grid=False)
@@ -617,13 +617,20 @@ class CreatePlotBox(tk.Frame):
             if focus_columns is None:
                 return
 
-            # Update the heatmap figure
-            self.display_loadings_heatmap(
-                loadings=pca_results['loadings'],
-                data_columns=app_state.df.columns.tolist(),
-                app_state=app_state,    
-                focus_columns=focus_columns,
-                cmap="coolwarm"
+            loadings = app_state.pca_results['loadings']
+            col_names = app_state.df.columns.tolist()
+            selected_loadings = loadings[[col_names.index(col) for col in focus_columns], :]
+            # Create the heatmap
+            plt.figure(app_state.fig_size[0])  # Increase figure size for clarity
+            sns.heatmap(
+                selected_loadings,
+                annot=True,  # Add annotations to cells
+                fmt=".2f",  # Format numbers
+                cmap="coolwarm",  # Use perceptually uniform colormap
+                cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
+                xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
+                yticklabels=focus_columns,
+                ax=ax
             )
 
             # Ensure that the GUI updates
@@ -664,7 +671,7 @@ class CreatePlotBox(tk.Frame):
                 focus_feats = target_feats & df_feats
                 missing_feat = target_feats - focus_feats
 
-                # If there are missing features, infom the user by updating the status
+                # If there are missing features, inform the user by updating the status
                 if len(missing_feat) != 0:
                     main.replace_status_text(f"Heatmap Failed! Selected Features Not Found In Data!")
                     main.replace_pca_text(f"Missing Features:\t{[feat for feat in missing_feat]}")
@@ -675,45 +682,6 @@ class CreatePlotBox(tk.Frame):
         except Exception as e:
             messagebox.showerror("Error", f"Error determining focus columns: {str(e)}")
             return None
-
-    def display_loadings_heatmap(self, loadings, data_columns, app_state: AppState, focus_columns=None, cmap='viridis'):
-        """
-        Display a heatmap of loadings with improved design.
-
-        Args:
-            loadings: PCA loadings matrix.
-            data_columns: List of all data column names.
-            focus_columns: List of columns to focus on. Defaults to None.
-            cmap: Colormap to use for the heatmap.
-        """
-        ax = app_state.ax
-
-        if focus_columns is None:
-            focus_columns = data_columns  # Default to all columns if none specified
-
-        # Select only the relevant rows from the loadings matrix
-        selected_loadings = loadings[[data_columns.index(col) for col in focus_columns], :]
-
-        # Create the heatmap
-        plt.figure(app_state.fig_size[0])  # Increase figure size for clarity
-        sns.heatmap(
-            selected_loadings,
-            annot=True,  # Add annotations to cells
-            fmt=".2f",  # Format numbers
-            cmap=cmap,  # Use perceptually uniform colormap
-            cbar_kws={'label': 'Absolute Loadings'},  # Single, descriptive colorbar
-            xticklabels=[f'PC{i + 1}' for i in range(loadings.shape[1])],
-            yticklabels=focus_columns,
-            ax=ax
-        )
-
-        # Adds a title and x and y label
-        ax.set_title('Loadings Heatmap', fontsize=16)
-        ax.set_xlabel('Principal Components', fontsize=14)
-        ax.set_ylabel('Features', fontsize=14)
-        # Sets axis lablel size
-        ax.tick_params(axis='x', labelsize=12)
-        ax.tick_params(axis='y', labelsize=10)
 
  
     #### 7. Data Functions ####
@@ -726,8 +694,7 @@ class CreatePlotBox(tk.Frame):
             raise AttributeError("No data to Validate")
 
         # Ensure that PCA has been run and get results
-        app_state.main.run_analysis()
-        pca_results = app_state.pca_results
+        pca_results =  app_state.main.run_analysis(app_state)
         
         # Grab important results
         scores = pca_results['transformed_data']
